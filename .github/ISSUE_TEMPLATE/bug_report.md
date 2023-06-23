@@ -27,7 +27,6 @@ If applicable, add screenshots to help explain your problem.
  - OS: [e.g. iOS]
  - python version
  - django version
- - django-rq version
  - requirements.txt?
 
 **Additional context**

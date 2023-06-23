@@ -456,10 +456,6 @@ class ViewTest(BaseTestCase):
         self.assertEqual(404, res.status_code)
 
     def test_statistics_json_view(self):
-        """
-        Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN
-        """
-
         # Override testing SCHEDULER_QUEUES
         queues = {
             'default': {

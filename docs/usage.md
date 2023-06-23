@@ -52,7 +52,7 @@ RQ = {
 ## Scheduling a job Through django-admin
 
 * Sign in to the Django Admin site (e.g., http://localhost:8000/admin/) and locate the  
-  **Django RQ Scheduler** section.
+  **Tasks Scheduler** section.
 * Click on the **Add** link for the type of job you want to add (`Scheduled Job` - run once, `Repeatable Job` - run
   multiple times, `Cron Job` - Run based on cron schedule).
 * Enter a unique name for the job in the **Name** field.

@@ -1,4 +1,4 @@
-# Django RQ Scheduler
+# Django tasks Scheduler
 
 [![Django CI](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml/badge.svg)](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json)
@@ -7,16 +7,8 @@
 
 ---
 
-A database backed job scheduler for Django RQ.
+A database backed async tasks scheduler for django.
 This allows remembering scheduled jobs, their parameters, etc.
-
-!!! Info
-
-    Starting v2023.5.0, django-tasks-scheduler does not require django-rq to run. 
-    Most features from django-rq are now implemented on this package.
-
-    It is recommended you use the import/export management commands to
-    save your database.
 
 ## Terminology
 
@@ -126,7 +118,5 @@ Please report issues via [GitHub Issues](https://github.com/dsoftwareinc/django-
 ---
 
 ## Acknowledgements
-
-Based on original [django-tasks-scheduler](https://github.com/isl-x/django-tasks-scheduler) - Now supports Django 4.0.
 
 A lot of django-admin views and their tests were adopted from [django-rq](https://github.com/rq/django-rq).
