@@ -1,0 +1,68 @@
+{% load scheduler_tags i18n %}
+{% if not add %}
+    <fieldset class="module aligned {{ fieldset.classes }}">
+        <h2>Job executions</h2>
+        <div class="results">
+            <table id="result_list">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>STATUS</th>
+                    <th>Created at</th>
+                    <th>Enqueued at</th>
+                    <th>Started at</th>
+                    <th>Ran for</th>
+                    <th>Worker name</th>
+                    <th>Result</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for exec in executions %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'job_details' exec.id %}">{{ exec.id }}</a>
+                        </td>
+                        <td>
+                            {{ exec|job_status }}
+                        </td>
+                        <td>
+                            {{ exec.created_at|date:"Y-m-d, H:i:s"|default:"-" }}
+                        </td>
+                        <td>
+                            {{ exec.enqueued_at|date:"Y-m-d, H:i:s"|default:"-" }}
+                        </td>
+                        <td>
+                            {{ exec.started_at|date:"Y-m-d, H:i:s"|default:"-" }}
+                        </td>
+                        <td>
+                            {{ exec|job_runtime }}
+                        </td>
+                        <td>
+                            {{ exec.worker_name|default:"-" }}
+                        </td>
+                        <td>
+                            {{ exec|job_result|default:"-" }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="paginator">
+            {% if pagination_required %}
+                {% for i in page_range %}
+                    {% if i == executions.paginator.ELLIPSIS %}
+                        {{ executions.paginator.ELLIPSIS }}
+                    {% elif i == executions.number %}
+                        <span class="this-page">{{ i }}</span>
+                    {% else %}
+                        <a href="?{{ page_var }}={{ i }}" {% if i == executions.paginator.num_pages %}
+                           class="end" {% endif %}>{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+                {{ executions.paginator.count }} {% blocktranslate count counter=executions.paginator.count %}entry
+                {% plural %}entries{% endblocktranslate %}
+            {% endif %}
+        </p>
+    </fieldset>
+{% endif %}

@@ -1,0 +1,40 @@
+{% extends "admin/scheduler/scheduler_base.html" %}
+{% load scheduler_tags %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'queues_home' %}">Queues</a> &rsaquo;
+        <a href="{% url 'queue_registry_jobs' queue.name 'queued' %}">{{ queue.name }}</a> &rsaquo;
+        <a href="{% url 'job_details' job.id %}">{{ job.id }}</a> &rsaquo;
+        Delete
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Are you sure?</h1>{% endblock %}
+
+{% block content %}
+
+    <div id="content-main">
+        <p>
+            Are you sure you want to {{ action }}
+            <a href="{% url 'job_details' job.id %}">
+                {{ job.id }} ({{ job|show_func_name }})
+            </a>
+            from
+            <a href="{% url 'queue_registry_jobs' queue.name 'queued' %}">{{ queue.name }}</a>?
+            This action can not be undone.
+            <br/>
+            {% if job.is_scheduled_job %}
+                <b>Note: This scheduled job will be scheduled again if it is enabled</b>
+            {% endif %}
+        </p>
+        <form action="" method="post">
+            {% csrf_token %}
+            <div>
+                <input type="submit" value="Yes, I'm sure"/>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

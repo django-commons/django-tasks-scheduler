@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load scheduler_tags %}
+
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+            font-size: 12px;
+            padding-top: 3px;
+        }
+    </style>
+    <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script type="text/javascript" src="{% static "admin/js/actions.js" %}"></script>
+{% endblock %}

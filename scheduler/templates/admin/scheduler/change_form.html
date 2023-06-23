@@ -1,0 +1,6 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block after_related_objects %}
+    {% include 'admin/scheduler/jobs-list.partial.html' %}
+{% endblock %}

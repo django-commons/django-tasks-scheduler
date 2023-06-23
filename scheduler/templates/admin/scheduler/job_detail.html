@@ -1,0 +1,217 @@
+{% extends "admin/scheduler/scheduler_base.html" %}
+{% load static scheduler_tags %}
+
+{% load static %}
+
+{% block title %}Job {{ job.id }} {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'queues_home' %}">Queues</a> &rsaquo;
+        <a href="{% url 'queue_registry_jobs' queue.name 'queued' %}">{{ queue.name }}</a> &rsaquo;
+        <a href="{% url 'job_details' job.id %}">{{ job.id }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}
+    <h2>Job {{ job.id }}
+        {% if job.is_scheduled_job %}
+            <small>
+                <a href="{{ job|scheduled_job }}">Link to scheduled job</a>
+            </small>
+        {% endif %}
+    </h2>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        <fieldset class="module aligned ">
+            <div class="form-row">
+                <label>Queue:</label>
+                <div class="readonly">{{ job.origin }}</div>
+            </div>
+
+
+            <div class="form-row">
+                <label>Timeout:</label>
+                <div class="readonly">{{ job.timeout }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Result TTL:</label>
+                <div class="readonly">{{ job.result_ttl }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Created:</label>
+                <div class="readonly">{{ job.created_at|date:"Y-m-d, H:i:s"|default:"-" }}</div>
+            </div>
+
+
+            <div class="form-row">
+                <label>Queued:</label>
+                <div class="readonly">{{ job.enqueued_at|date:"Y-m-d, H:i:s"|default:"-" }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Started:</label>
+                <div class="readonly">{{ job.started_at|date:"Y-m-d, H:i:s"|default:"-" }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Ended:</label>
+                <div class="readonly">{{ job.ended_at|date:"Y-m-d, H:i:s"|default:"-" }}</div>
+            </div>
+
+
+            <div class="form-row">
+                <label>Status:</label>
+                <div class="readonly">{{ job.get_status }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Direct callable:</label>
+                <div class="readonly">
+                    {% if data_is_valid %}
+                        {{ job.func_name }}(
+                        {% if job.args %}
+                            {% for arg in job.args %}
+                                {{ arg|force_escape }},
+                            {% endfor %}
+                        {% endif %}
+                        {% for key, value in job.kwargs.items %}
+                            {{ key }}={{ value|force_escape }},
+                        {% endfor %})
+                    {% else %}
+                        Unpickling Error
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-row">
+                <label>Scheduler callable:</label>
+                <div class="data">{{ job | show_func_name }}</div>
+            </div>
+
+            <div class="form-row">
+                <label>Meta:</label>
+                <div class="data">
+                    {% for k in job.meta %}
+                        <div class="form-row">
+                            <label>{{ k }}</label>
+                            <div class="data">{{ job.meta | get_item:k }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+
+            <div class="form-row">
+                <div>
+                    <label>Depends On:</label>
+                    <div class="readonly">
+                        {% if dependency_id %}
+                            <a href="{% url 'job_details' dependency_id %}">
+                                {{ dependency_id }}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if exc_info %}
+                <div class="form-row">
+                    <label>Exception:</label>
+                    <div>
+                        <pre>{% if job.exc_info %}{{ job.exc_info|linebreaks }}{% endif %}</pre>
+                    </div>
+
+                </div>
+            {% endif %}
+
+            <div class="form-row">
+                <label>Result:</label>
+                <div>{{ job.result | default:'-' }}</div>
+            </div>
+        </fieldset>
+
+
+        <div class="submit-row">
+            <div class="deletelink-box">
+                <a href="{% url 'queue_job_action'  job.id 'delete' %}"
+                   class="deletelink">Delete</a>
+            </div>
+            {% if job.is_started %}
+                <div class="deletelink-box">
+                    <form method='POST' action="{% url 'queue_job_action'  job.id 'cancel' %}">
+                        {% csrf_token %}
+                        <input type="submit" value="cancel" class="default" name="cancel">
+                    </form>
+                </div>
+            {% endif %}
+            {% if job.is_failed %}
+                <div class="deletelink-box">
+                    <form method='POST' action="{% url 'queue_job_action'  job.id 'requeue' %}">
+                        {% csrf_token %}
+                        <input type="submit" value="Requeue" class="default" name="requeue">
+                    </form>
+                </div>
+            {% endif %}
+            {% if not job.is_queued and not job.is_failed %}
+                <div class="deletelink-box">
+                    <form method='POST' action="{% url 'queue_job_action'  job.id 'enqueue' %}">
+                        {% csrf_token %}
+                        <input type="submit" value="Enqueue" class="default" name="Enqueue">
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <div class="inline-group" id="choice_set-group">
+
+        {% for result in job.results %}
+            <h2>Result {{ result.id }}</h2>
+            <div class="inline-related">
+
+                <fieldset class="module aligned ">
+                    <div class="form-row field-choice_text">
+                        <div>
+                            <label>Type:</label>
+                            <div class="readonly">{{ result.type.name }}</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row field-votes">
+                        <div>
+                            <label>Created at: {{ result.Type }}</label>
+                            <div class="readonly">{{ result.created_at|date:"Y-m-d, H:i:s" }}</div>
+                        </div>
+                    </div>
+                    {% if result.type.value == 1 %}
+                        <div class="form-row field-votes">
+                            <div>
+                                <label>Return value:</label>
+                                <div>
+                                    <pre>{{ result.return_value }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif result.type.value == 2 %}
+                        <div class="form-row field-votes">
+                            <div>
+                                <label>Exception:</label>
+                                <div>
+                                    <pre>{{ result.exc_string }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </fieldset>
+            </div>
+        {% endfor %}
+    </div>
+
+    </div>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "admin/scheduler/scheduler_base.html" %}
+
+{% load static scheduler_tags l10n %}
+
+{% block title %}Workers in {{ queue.name }} {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+{% endblock %}
+
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'workers_home' %}">Workers</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Django Workers</h1>{% endblock %}
+
+{% block content %}
+
+    <div id="content-main">
+        <div class="module" id="changelist">
+            <form id="changelist-form" action="{% url 'workers_home' %}" method="post">
+                {% csrf_token %}
+                {% include 'admin/scheduler/workers-list.partial.html' %}
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,56 @@
+{% load scheduler_tags %}
+{% load l10n %}
+<div class="results">
+    <table id="result_list">
+        <thead>
+        <tr>
+            <th>
+                <div class='text'><span>Name</span></div>
+            </th>
+            <th>
+                <div class='text'><span>State</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Birth</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Hostname</span></div>
+            </th>
+            <th>
+                <div class='text'><span>PID</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Working time</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Successful jobs</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Failed jobs</span></div>
+            </th>
+            <th>
+                <div class='text'><span>Scheduler</span></div>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for worker in workers %}
+            <tr class="{% cycle 'row1' 'row2' %}">
+                <td>
+                    <a href='{% url 'worker_details' worker.name %}'>
+                        {{ worker.name }}
+                    </a>
+                </td>
+                <td>{{ worker.get_state }}</td>
+                <td>{{ worker.birth_date|date:"Y-m-d, H:i:s" }}</td>
+                <td>{{ worker.hostname }}</td>
+                <td>{{ worker.pid|unlocalize }}</td>
+                <td>{{ worker.total_working_time|default:0|floatformat }}secs</td>
+                <td>{{ worker.successful_job_count|default:0 }}</td>
+                <td>{{ worker.failed_job_count|default:0 }}</td>
+                <td>{{ worker | worker_scheduler_pid }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

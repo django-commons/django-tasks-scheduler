@@ -1,0 +1,152 @@
+name: Django CI
+
+on:
+  pull_request_target:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  flake8:
+    runs-on: ubuntu-latest
+    name: "flake8 on code"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache-dependency-path: poetry.lock
+      - name: Install poetry and dependencies
+        shell: bash
+        run: |
+          python -m pip --quiet install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry install
+      - name: Run flake8
+        shell: bash
+        run: |
+          poetry run flake8 scheduler/
+  testFakeRedis:
+    needs: [ 'flake8' ]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 6
+      matrix:
+        python-version: [ '3.9', '3.10', '3.11' ]
+        django-version: [ '3.2.19', '4.2.1' ]
+    outputs:
+      version: ${{ steps.getVersion.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-path: poetry.lock
+      - name: Install poetry and dependencies
+        shell: bash
+        run: |
+          python -m pip --quiet install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry install -E yaml
+          poetry run pip install django==${{ matrix.django-version }}
+
+      - name: Get version
+        id: getVersion
+        shell: bash
+        run: |
+          VERSION=$(poetry version -s --no-ansi -n)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Run Tests without coverage
+        run: |
+          cd testproject
+          export FAKEREDIS=True
+          poetry run python manage.py test scheduler
+
+  testRedis:
+    needs: [ 'flake8' ]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 6
+      matrix:
+        python-version: [ '3.9', '3.10', '3.11' ]
+        django-version: [ '3.2.19', '4.2.1' ]
+        include:
+          - python-version: '3.11'
+            django-version: '4.2.1'
+            coverage: yes
+    services:
+      redis:
+        image: redis:7.0.7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    outputs:
+      version: ${{ steps.getVersion.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-path: poetry.lock
+      - name: Install poetry and dependencies
+        shell: bash
+        run: |
+          python -m pip --quiet install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry install -E yaml
+          poetry run pip install django==${{ matrix.django-version }}
+
+      - name: Get version
+        id: getVersion
+        shell: bash
+        run: |
+          VERSION=$(poetry version -s --no-ansi -n)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Run Tests without coverage
+        if: ${{ matrix.coverage != 'yes' }}
+        run: |
+          cd testproject
+          poetry run python manage.py test scheduler
+      # Steps for coverage check
+      - name: Run tests with coverage
+        uses: ./.github/actions/test-coverage
+        if: ${{ matrix.coverage == 'yes' }}
+        with:
+          pythonVer: ${{ matrix.python-version }}
+          djangoVer: ${{ matrix.django-version }}
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create coverage badge
+        if: ${{ matrix.coverage == 'yes' && github.event_name == 'push' }}
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: b756396efb895f0e34558c980f1ca0c7
+          filename: django-tasks-scheduler-4.json
+          label: coverage
+          message: ${{ env.COVERAGE }}%
+          color: green
+  # Prepare a draft release for GitHub Releases page for the manual verification
+  # If accepted and published, release workflow would be triggered
+  update_release_draft:
+    permissions:
+      # write permission is required to create a GitHub release
+      contents: write
+      # write permission is required for auto-labeler
+      # otherwise, read permission is required at least
+      pull-requests: write
+    needs: testRedis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
