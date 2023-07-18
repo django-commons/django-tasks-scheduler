@@ -54,7 +54,7 @@ pyyaml = { version = "^6.0", optional = true }
 [tool.poetry.dev-dependencies]
 poetry = "^1.5"
 coverage = "^7"
-fakeredis = { version = "^2.15", extras = ['lua'] }
+fakeredis = { version = "^2.17", extras = ['lua'] }
 Flake8-pyproject = "^1.2"
 
 [tool.poetry.extras]
