@@ -56,6 +56,8 @@ poetry = "^1.6"
 coverage = "^7"
 fakeredis = { version = "^2.15", extras = ['lua'] }
 Flake8-pyproject = "^1.2"
+mkdocs = "^1.5"
+mkdocs-material = "^9.2"
 
 [tool.poetry.extras]
 yaml = ["pyyaml"]
