@@ -61,6 +61,10 @@ jobs:
         run: |
           VERSION=$(poetry version -s --no-ansi -n)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check for missing migrations
+        run: |
+          cd testproject
+          poetry run python manage.py makemigrations --check
       - name: Run Tests without coverage
         run: |
           cd testproject
@@ -112,6 +116,10 @@ jobs:
         run: |
           VERSION=$(poetry version -s --no-ansi -n)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check for missing migrations
+        run: |
+          cd testproject
+          poetry run python manage.py makemigrations --check
       - name: Run Tests without coverage
         if: ${{ matrix.coverage != 'yes' }}
         run: |
