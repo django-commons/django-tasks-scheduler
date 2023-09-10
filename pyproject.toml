@@ -7,7 +7,7 @@ name = "django-tasks-scheduler"
 packages = [
     { include = "scheduler" },
 ]
-version = "1.0.1"
+version = "1.0.2"
 description = "An async job scheduler for django using redis"
 readme = "README.md"
 keywords = ["redis", "django", "background-jobs", "job-queue", "task-queue", "redis-queue", "scheduled-jobs"]
@@ -56,8 +56,7 @@ poetry = "^1.6"
 coverage = "^7"
 fakeredis = { version = "^2.15", extras = ['lua'] }
 Flake8-pyproject = "^1.2"
-mkdocs = "^1.5"
-mkdocs-material = "^9.2"
+
 
 [tool.poetry.extras]
 yaml = ["pyyaml"]

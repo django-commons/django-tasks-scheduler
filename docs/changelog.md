@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.2 🌈
+
+### 🧰 Maintenance
+
+- Update dependencies
+
+### 🐛 Bug Fixes
+
+- Add missing migration and check for missing migrations
+
 ## v1.0.1 🌈
 
 * Update dependencies
