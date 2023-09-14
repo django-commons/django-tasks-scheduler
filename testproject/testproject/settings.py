@@ -114,7 +114,7 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
-RQ_QUEUES = {
+SCHEDULER_QUEUES = {
     'default': {
         'URL': 'redis://localhost:6379/0',
     },
@@ -153,7 +153,7 @@ LOGGING = {
     'loggers': {
         'scheduler': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
     },
 }
