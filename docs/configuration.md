@@ -22,6 +22,7 @@ SCHEDULER_QUEUES = {
         'REDIS_CLIENT_KWARGS': {  # Eventual additional Redis connection arguments
             'ssl_cert_reqs': None,
         },
+        'TOKEN_VALIDATION_METHOD': None,  # Method to validate auth-header
     },
     'high': {
         'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'),  # If you're on Heroku
@@ -58,6 +59,13 @@ Default scheduler interval, a scheduler is a subprocess of a worker and
 will check which job executions are pending.
 
 Default: `10` (10 seconds).
+
+### SCHEDULER_CONFIG: `TOKEN_VALIDATION_METHOD`
+
+Method to validate request `Authorization` header with.
+Enables checking stats using API token.
+
+Default: no tokens allowed.
 
 ### `SCHEDULER_QUEUES`
 

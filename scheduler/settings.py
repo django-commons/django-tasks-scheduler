@@ -9,6 +9,10 @@ QUEUES = dict()
 SCHEDULER_CONFIG = dict()
 
 
+def _token_validation(token: str) -> bool:
+    return False
+
+
 def conf_settings():
     global QUEUES
     global SCHEDULER_CONFIG
@@ -26,6 +30,7 @@ def conf_settings():
         'DEFAULT_TIMEOUT': 300,  # 5 minutes
         'SCHEDULER_INTERVAL': 10,  # 10 seconds
         'FAKEREDIS': False,  # For testing purposes
+        'TOKEN_VALIDATION_METHOD': _token_validation,  # Access stats from another application using API tokens
     }
     user_settings = getattr(settings, 'SCHEDULER_CONFIG', {})
     SCHEDULER_CONFIG.update(user_settings)

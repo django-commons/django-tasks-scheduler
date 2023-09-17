@@ -46,8 +46,10 @@ def stats(request):
 
 
 def stats_json(request):
-    # TODO support API token
-    if request.user.is_staff:
+    auth_token = request.headers.get('Authorization')
+    token_validation_func = SCHEDULER_CONFIG.get('TOKEN_VALIDATION_METHOD')
+    if (request.user.is_staff or
+            (token_validation_func and auth_token and token_validation_func(auth_token))):
         return JsonResponse(get_statistics())
 
     return HttpResponseNotFound()

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0 🌈
+
+### 🚀 Features
+
+- Enable using stats view using api token
+
 ## v1.0.2 🌈
 
 ### 🧰 Maintenance
