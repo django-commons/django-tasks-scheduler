@@ -61,9 +61,11 @@
    
 4. Optional: Configure default values for queuing jobs from code:
    ```python
-   RQ = {
-     'DEFAULT_RESULT_TTL': 360,
-     'DEFAULT_TIMEOUT': 60,
+   SCHEDULER_CONFIG = {
+    'EXECUTIONS_IN_PAGE': 20,
+    'DEFAULT_RESULT_TTL': 500,
+    'DEFAULT_TIMEOUT': 300,  # 5 minutes
+    'SCHEDULER_INTERVAL': 10,  # 10 seconds
    }
    ```
    

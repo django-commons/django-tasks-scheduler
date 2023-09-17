@@ -13,7 +13,7 @@ community looks forward to your contributions. 🎉
 > the project and show your appreciation, which we would also be very happy about:
 > - Star the project
 > - Tweet about it
-> - Refer this project in your project's readme
+> - Refer to this project in your project's readme
 > - Mention the project at local meetups and tell your friends/colleagues
 
 <!-- omit in toc -->
@@ -59,7 +59,7 @@ We will then take care of the issue as soon as possible.
 <!--
 You might want to create a separate issue tag for questions and include it in this description. People should then tag their issues accordingly.
 
-Depending on how large the project is, you may want to outsource the questioning, e.g. to Stack Overflow or Gitter. You may add additional contact and information possibilities:
+Depending on how large the project is, you may want to outsource the questioning, e.g., to Stack Overflow or Gitter. You may add additional contact and information possibilities:
 - IRC
 - Slack
 - Gitter
@@ -88,7 +88,7 @@ investigate carefully, collect information and describe the issue in detail in y
 following steps in advance to help us fix any potential bug as fast as possible.
 
 - Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment
+- Determine if your bug is really a bug and not an error on your side, e.g., using incompatible environment
   components/versions (Make sure that you have read
   the [documentation](https://github.com/dsoftwareinc/django-tasks-scheduler). If you are looking for support, you might
   want to check [this section](#i-have-a-question)).
@@ -108,18 +108,19 @@ following steps in advance to help us fix any potential bug as fast as possible.
 
 #### How Do I Submit a Good Bug Report?
 
-> You must never report security related issues, vulnerabilities or bugs including sensitive information to the issue
+> You must never report security related issues, vulnerabilities or bugs, including sensitive information to the issue
 > tracker, or elsewhere in public. Instead, sensitive bugs must be sent by email to <daniel.maruani@gmail.com>.
 <!-- You may add a PGP key to allow the messages to be sent encrypted as well. -->
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-- Open an [Issue](https://github.com/dsoftwareinc/django-tasks-scheduler/issues/new). (Since we can't be sure at this point
-  whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
+- Open an [Issue](https://github.com/dsoftwareinc/django-tasks-scheduler/issues/new).
+  (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and 
+  not to label the issue.)
 - Explain the behavior you would expect and the actual behavior.
 - Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to
-  recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem
-  and create a reduced test case.
+  recreate the issue on their own. This usually includes your code.  
+  For good bug reports, you should isolate the problem and create a reduced test case.
 - Provide the information you collected in the previous section.
 
 Once it's filed:
@@ -135,7 +136,8 @@ Once it's filed:
 
 ### Suggesting Enhancements
 
-This section guides you through submitting an enhancement suggestion for django-tasks-scheduler, **including completely new
+This section guides you through submitting an enhancement suggestion for django-tasks-scheduler, **including completely
+new
 features and minor improvements to existing functionality**. Following these guidelines will help maintainers and the
 community to understand your suggestion and find related suggestions.
 
@@ -146,7 +148,8 @@ community to understand your suggestion and find related suggestions.
 - Make sure that you are using the latest version.
 - Read the [documentation](https://github.com/dsoftwareinc/django-tasks-scheduler) carefully and find out if the
   functionality is already covered, maybe by an individual configuration.
-- Perform a [search](https://github.com/dsoftwareinc/django-tasks-scheduler/issues) to see if the enhancement has already
+- Perform a [search](https://github.com/dsoftwareinc/django-tasks-scheduler/issues) to see if the enhancement has
+  already
   been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 - Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to
   convince the project's developers of the merits of this feature. Keep in mind that we want features that will be
@@ -168,24 +171,28 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/dsoftw
   and Windows, and [this tool](https://github.com/colinkeenan/silentcast)
   or [this tool](https://github.com/GNOME/byzanz) on
   Linux. <!-- this should only be included if the project has a GUI -->
-- **Explain why this enhancement would be useful** to most django-tasks-scheduler users. You may also want to point out the
+- **Explain why this enhancement would be useful** to most django-tasks-scheduler users. You may also want to point out
+  the
   other projects that solved it better and which could serve as inspiration.
 
 <!-- You might want to create an issue template for enhancement suggestions that can be used as a guide and that defines the structure of the information to be included. If you do so, reference it here in the description. -->
 
 ### Your First Code Contribution
 
-<!-- TODO
-include Setup of env, IDE and typical getting started instructions?
+Unsure where to begin contributing? You can start by looking through
+[help-wanted issues](https://github.com/dsoftwareinc/wiwik/labels/help%20wanted).
 
--->
+Never contributed to open source before? Here are a couple of friendly
+tutorials:
+
+- <http://makeapullrequest.com/>
+- <http://www.firsttimersonly.com/>
 
 ### Improving The Documentation
 
-<!-- TODO
-Updating, improving and correcting the documentation
-
--->
+- Create your own fork of the repository
+- Do the changes in your fork.
+- Create a pull request with the changes.
 
 ## Style guides
 
@@ -201,7 +208,8 @@ Taken from [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/
 [optional footer(s)]
 ```
 
-The commit contains the following structural elements, to communicate intent to the consumers of your library:
+The commit message contains the following structural elements,
+in order to communicate intent to the consumers of your library:
 
 * `fix:` a commit of the type fix patches a bug in your codebase (this correlates with `PATCH` in Semantic Versioning).
 * `feat:` a commit of the type feat introduces a new feature to the codebase (this correlates with `MINOR` in Semantic
@@ -209,7 +217,7 @@ The commit contains the following structural elements, to communicate intent to 
 * `BREAKING CHANGE:` a commit that has a footer BREAKING CHANGE:, or appends a ! after the type/scope, introduces a
   breaking API change (correlating with MAJOR in Semantic Versioning). A BREAKING CHANGE can be part of commits of any
   type.
-* types other than `fix:` and `feat:` are allowed, for example @commitlint/config-conventional (based on the Angular
+* types other than `fix:` and `feat:` are allowed, for example, @commitlint/config-conventional (based on the Angular
   convention) recommends `build:`, `chore:`, `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, and others.
 * footers other than `BREAKING CHANGE: <description>` may be provided and follow a convention similar to
   [git trailer format](https://git-scm.com/docs/git-interpret-trailers).
@@ -220,7 +228,8 @@ contextual information and is contained within parenthesis, e.g., feat(parser): 
 
 ## Join The Project Team
 
-<!-- TODO -->
+If you wish to be added to the project team as a collaborator, please create an issue 
+explaining why you wish to join the team and tag @cunla in the issue.
 
 <!-- omit in toc -->
 
