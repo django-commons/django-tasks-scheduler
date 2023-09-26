@@ -542,13 +542,13 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fakeredis"
-version = "2.18.1"
+version = "2.19.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.18.1-py3-none-any.whl", hash = "sha256:d780da2519b2e9d741056cf2b68604a4e59286bc6fde78b40a2b2b1367a51b30"},
-    {file = "fakeredis-2.18.1.tar.gz", hash = "sha256:9742d6d4673df0f5f6ade4e4eee763b7f3517178ffa82508310325a6305651ec"},
+    {file = "fakeredis-2.19.0-py3-none-any.whl", hash = "sha256:83dbf922d07244d114103843d8d4e760fa25119a5fc88cfc21b4548ea2d6353c"},
+    {file = "fakeredis-2.19.0.tar.gz", hash = "sha256:e136cd13bddd7e7f71270cc7c4693d14f975d929135eb0f8625ef55f204eee25"},
 ]
 
 [package.dependencies]
@@ -557,7 +557,8 @@ redis = ">=4"
 sortedcontainers = ">=2,<3"
 
 [package.extras]
-json = ["jsonpath-ng (>=1.5,<2.0)"]
+bf = ["pybloom-live (>=4.0,<5.0)"]
+json = ["jsonpath-ng (>=1.6,<2.0)"]
 lua = ["lupa (>=1.14,<3.0)"]
 
 [[package]]
@@ -1630,4 +1631,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6ea88af8bec256122c0e01414091d658479d70be8de9dd8c27d4434cf1e92202"
+content-hash = "6ac3a167c2371ce7471fc66bcd84f3e06414c7f5f33b634615b5ee573e3b0bd1"
