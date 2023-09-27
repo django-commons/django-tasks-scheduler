@@ -83,12 +83,18 @@ class BaseJob(models.Model):
     @admin.display(boolean=True, description=_('is scheduled?'))
     def is_scheduled(self) -> bool:
         """Check whether job is queued/scheduled to be executed"""
-        if not self.job_id:
+        if not self.job_id: # no job_id => is not scheduled
             return False
+        # check whether job_id is in scheduled/enqueued/active jobs
         scheduled_jobs = self.rqueue.scheduled_job_registry.get_job_ids()
         enqueued_jobs = self.rqueue.get_job_ids()
-        res = (self.job_id in scheduled_jobs) or (self.job_id in enqueued_jobs)
-        if not res:  # self.job_id is not None
+        active_jobs = self.rqueue.started_job_registry.get_job_ids()
+        res = ((self.job_id in scheduled_jobs) 
+               or (self.job_id in enqueued_jobs) 
+               or (self.job_id in active_jobs))
+        # If the job_id is not scheduled/enqueued/started, 
+        # update the job_id to None. (The job_id belongs to a previous run which is completed)
+        if not res: 
             self.job_id = None
             super(BaseJob, self).save()
         return res
