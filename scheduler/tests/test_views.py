@@ -21,7 +21,7 @@ class BaseTestCase(TestCase):
         self.user = User.objects.create_superuser('user', password='pass')
         self.client = Client()
         self.client.login(username=self.user.username, password='pass')
-        get_queue('django_rq_scheduler_test').connection.flushall()
+        get_queue('django_tasks_scheduler_test').connection.flushall()
 
 
 class SingleJobActionViewsTest(BaseTestCase):
@@ -54,7 +54,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         job.delete()
 
     def test_single_job_action_delete_job(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job = queue.enqueue(test_job)
         res = self.client.get(reverse('queue_job_action', args=[job.id, 'delete']), follow=True)
         self.assertEqual(200, res.status_code)
@@ -63,7 +63,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertNotIn(job.id, queue.get_job_ids())
 
     def test_single_job_action_cancel_job(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job = queue.enqueue(long_job)
         res = self.client.get(reverse('queue_job_action', args=[job.id, 'cancel']), follow=True)
         self.assertEqual(200, res.status_code)
@@ -74,7 +74,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertNotIn(job.id, queue.get_job_ids())
 
     def test_single_job_action_cancel_job_that_is_already_cancelled(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job = queue.enqueue(long_job)
         res = self.client.post(reverse('queue_job_action', args=[job.id, 'cancel']), {'post': 'yes'}, follow=True)
         self.assertEqual(200, res.status_code)
@@ -86,7 +86,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         assert_message_in_response(res, f'Could not perform action: Cannot cancel already canceled job: {job.id}')
 
     def test_single_job_action_enqueue_job(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job_list = []
         # enqueue some jobs that depends on other
         previous_job = None
@@ -114,7 +114,7 @@ class SingleJobActionViewsTest(BaseTestCase):
 
 class JobListActionViewsTest(BaseTestCase):
     def test_job_list_action_delete_jobs__with_bad_next_url(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
 
         # enqueue some jobs
         job_ids = []
@@ -136,7 +136,7 @@ class JobListActionViewsTest(BaseTestCase):
             self.assertNotIn(job_id, queue.job_ids)
 
     def test_job_list_action_delete_jobs(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
 
         # enqueue some jobs
         job_ids = []
@@ -155,8 +155,8 @@ class JobListActionViewsTest(BaseTestCase):
             self.assertNotIn(job_id, queue.job_ids)
 
     def test_job_list_action_requeue_jobs(self):
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         # enqueue some jobs that will fail
         jobs = []
@@ -167,7 +167,7 @@ class JobListActionViewsTest(BaseTestCase):
             job_ids.append(job.id)
 
         # do those jobs = fail them
-        worker = create_worker('django_rq_scheduler_test')
+        worker = create_worker('django_tasks_scheduler_test')
         worker.work(burst=True)
 
         # check if all jobs are really failed
@@ -182,12 +182,12 @@ class JobListActionViewsTest(BaseTestCase):
             self.assertFalse(job.is_failed)
 
     def test_job_list_action_stop_jobs(self):
-        queue_name = 'django_rq_scheduler_test'
+        queue_name = 'django_tasks_scheduler_test'
         queue = get_queue(queue_name)
 
         # Enqueue some jobs
         job_ids = []
-        worker = create_worker('django_rq_scheduler_test')
+        worker = create_worker('django_tasks_scheduler_test')
         for _ in range(3):
             job = queue.enqueue(test_job)
             job_ids.append(job.id)
@@ -231,8 +231,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_finished_jobs(self):
         """Ensure that finished jobs page works properly."""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         job = queue.enqueue(test_job)
         registry = queue.finished_job_registry
@@ -242,8 +242,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_failed_jobs(self):
         """Ensure that failed jobs page works properly."""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         # Test that page doesn't fail when FailedJobRegistry is empty
         res = self.client.get(reverse('queue_registry_jobs', args=[queue_name, 'failed']))
@@ -257,8 +257,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_scheduled_jobs(self):
         """Ensure that scheduled jobs page works properly."""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         # Test that page doesn't fail when ScheduledJobRegistry is empty
         res = self.client.get(reverse('queue_registry_jobs', args=[queue_name, 'scheduled']))
@@ -270,8 +270,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_scheduled_jobs_registry_removal(self):
         """Ensure that non-existing job is being deleted from registry by view"""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         registry = queue.scheduled_job_registry
         job = queue.enqueue_at(datetime.now(), test_job)
@@ -285,8 +285,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_started_jobs(self):
         """Ensure that active jobs page works properly."""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         job = queue.enqueue(test_job)
         registry = queue.started_job_registry
@@ -296,8 +296,8 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
     def test_deferred_jobs(self):
         """Ensure that active jobs page works properly."""
-        queue = get_queue('django_rq_scheduler_test')
-        queue_name = 'django_rq_scheduler_test'
+        queue = get_queue('django_tasks_scheduler_test')
+        queue_name = 'django_tasks_scheduler_test'
 
         job = queue.enqueue(test_job)
         registry = queue.deferred_job_registry
@@ -388,19 +388,19 @@ class ViewTest(BaseTestCase):
         self.assertEqual(len(queue), 1)
 
     def test_clear_queue_unknown_registry(self):
-        queue_name = 'django_rq_scheduler_test'
+        queue_name = 'django_tasks_scheduler_test'
         res = self.client.post(reverse('queue_clear', args=[queue_name, 'unknown']), {'post': 'yes'})
         self.assertEqual(404, res.status_code)
 
     def test_clear_queue_enqueued(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job = queue.enqueue(test_job)
         self.client.post(reverse('queue_clear', args=[queue.name, 'queued']), {'post': 'yes'})
         self.assertFalse(JobExecution.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
 
     def test_clear_queue_scheduled(self):
-        queue = get_queue('django_rq_scheduler_test')
+        queue = get_queue('django_tasks_scheduler_test')
         job = queue.enqueue_at(datetime.now(), test_job)
 
         res = self.client.get(reverse('queue_clear', args=[queue.name, 'scheduled']), follow=True)
@@ -416,7 +416,7 @@ class ViewTest(BaseTestCase):
     def test_workers_home(self):
         res = self.client.get(reverse('workers_home'))
         prev_workers = res.context['workers']
-        worker1 = create_worker('django_rq_scheduler_test')
+        worker1 = create_worker('django_tasks_scheduler_test')
         worker1.register_birth()
         worker2 = create_worker('test3')
         worker2.register_birth()
@@ -426,9 +426,9 @@ class ViewTest(BaseTestCase):
 
     def test_queue_workers(self):
         """Worker index page should show workers for a specific queue"""
-        queue_name = 'django_rq_scheduler_test'
+        queue_name = 'django_tasks_scheduler_test'
 
-        worker1 = create_worker('django_rq_scheduler_test')
+        worker1 = create_worker('django_tasks_scheduler_test')
         worker1.register_birth()
         worker2 = create_worker('test3')
         worker2.register_birth()
@@ -439,7 +439,7 @@ class ViewTest(BaseTestCase):
     def test_worker_details(self):
         """Worker index page should show workers for a specific queue"""
 
-        worker = create_worker('django_rq_scheduler_test', name=uuid.uuid4().hex)
+        worker = create_worker('django_tasks_scheduler_test', name=uuid.uuid4().hex)
         worker.register_birth()
 
         url = reverse('worker_details', args=[worker.name, ])
@@ -449,7 +449,7 @@ class ViewTest(BaseTestCase):
     def test_worker_details__non_existing_worker(self):
         """Worker index page should show workers for a specific queue"""
 
-        worker = create_worker('django_rq_scheduler_test', name='WORKER')
+        worker = create_worker('django_tasks_scheduler_test', name='WORKER')
         worker.register_birth()
 
         res = self.client.get(reverse('worker_details', args=['bad-worker-name']))

@@ -13,7 +13,7 @@ def test_job():
     return 1 + 1
 
 
-@job('django_rq_scheduler_test')
+@job('django_tasks_scheduler_test')
 def test_job_diff_queue():
     time.sleep(1)
     return 1 + 1
@@ -56,7 +56,7 @@ class JobDecoratorTest(TestCase):
         test_job_diff_queue.delay()
         config = settings.SCHEDULER_CONFIG
         self._assert_job_with_func_and_props(
-            'django_rq_scheduler_test',
+            'django_tasks_scheduler_test',
             test_job_diff_queue,
             config.get('DEFAULT_RESULT_TTL'),
             config.get('DEFAULT_TIMEOUT'))

@@ -56,7 +56,7 @@ class RqworkerTestCase(TestCase):
 
     def test_rqworker__worker_with_two_queues(self):
         queue = get_queue('default')
-        queue2 = get_queue('django_rq_scheduler_test')
+        queue2 = get_queue('django_tasks_scheduler_test')
 
         # enqueue some jobs that will fail
         jobs = []
@@ -70,7 +70,7 @@ class RqworkerTestCase(TestCase):
         job_ids.append(job.id)
 
         # Create a worker to execute these jobs
-        call_command('rqworker', 'default', 'django_rq_scheduler_test', fork_job_execution=False, burst=True)
+        call_command('rqworker', 'default', 'django_tasks_scheduler_test', fork_job_execution=False, burst=True)
 
         # check if all jobs are really failed
         for job in jobs:
@@ -78,7 +78,7 @@ class RqworkerTestCase(TestCase):
 
     def test_rqworker__worker_with_one_queue__does_not_perform_other_queue_job(self):
         queue = get_queue('default')
-        queue2 = get_queue('django_rq_scheduler_test')
+        queue2 = get_queue('django_tasks_scheduler_test')
 
         job = queue.enqueue(failing_job)
         other_job = queue2.enqueue(failing_job)

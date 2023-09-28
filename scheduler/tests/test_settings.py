@@ -25,7 +25,6 @@ settings.SCHEDULER_QUEUES = {
         'PORT': 1,
         'DB': 1,
         'DEFAULT_TIMEOUT': 400,
-        'QUEUE_CLASS': 'django_rq.tests.fixtures.DummyQueue',
     },
     'test2': {
         'HOST': 'localhost',
@@ -53,7 +52,7 @@ settings.SCHEDULER_QUEUES = {
     'url_default_db': {
         'URL': 'redis://username:password@host:1234',
     },
-    'django_rq_scheduler_test': {
+    'django_tasks_scheduler_test': {
         'HOST': 'localhost',
         'PORT': 6379,
         'DB': 0,
@@ -82,7 +81,7 @@ settings.SCHEDULER_QUEUES = {
         'DB': 0,
         'ASYNC': False,
     },
-    'django_rq_scheduler_test2': {
+    'django_tasks_scheduler_test2': {
         'HOST': 'localhost',
         'PORT': 6379,
         'DB': 0,

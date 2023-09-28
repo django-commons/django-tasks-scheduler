@@ -6,6 +6,10 @@
 
 - Enable using stats view using api token
 
+### 🐛 Bug Fixes
+
+- Running jobs should be marked as scheduled jobs. #32
+
 ## v1.0.2 🌈
 
 ### 🧰 Maintenance

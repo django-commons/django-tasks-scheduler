@@ -9,7 +9,7 @@ from .. import settings
 
 class TestWorker(SchedulerBaseCase):
     def test_create_worker__two_workers_same_queue(self):
-        worker1 = create_worker('default', 'django_rq_scheduler_test')
+        worker1 = create_worker('default', 'django_tasks_scheduler_test')
         worker1.register_birth()
         worker2 = create_worker('default')
         worker2.register_birth()
