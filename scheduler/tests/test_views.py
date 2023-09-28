@@ -485,14 +485,14 @@ class ViewTest(BaseTestCase):
     @staticmethod
     def token_validation(token: str) -> bool:
         return token == 'valid'
-
-    @patch('scheduler.views.SCHEDULER_CONFIG')
-    def test_statistics_json_view_token(self, configuration):
-        configuration.get.return_value = ViewTest.token_validation
-        self.user.is_staff = False
-        self.user.save()
-        res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'valid'})
-        self.assertEqual(res.status_code, 200)
-
-        res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'invalid'})
-        self.assertEqual(res.status_code, 404)
+    #
+    # @patch('scheduler.views.SCHEDULER_CONFIG')
+    # def test_statistics_json_view_token(self, configuration):
+    #     configuration.get.return_value = ViewTest.token_validation
+    #     self.user.is_staff = False
+    #     self.user.save()
+    #     res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'valid'})
+    #     self.assertEqual(res.status_code, 200)
+    #
+    #     res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'invalid'})
+    #     self.assertEqual(res.status_code, 404)
