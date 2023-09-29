@@ -8,7 +8,7 @@
 
 ### 🐛 Bug Fixes
 
-- Running jobs should be marked as scheduled jobs. #32
+- #32 Running jobs should be marked as scheduled jobs. @rstalbow (#33) 
 
 ## v1.0.2 🌈
 
