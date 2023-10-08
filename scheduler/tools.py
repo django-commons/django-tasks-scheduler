@@ -28,7 +28,7 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
     return utc(itr.get_next(timezone.datetime))
 
 
-def get_scheduled_job(task_model: str, task_id: int):
+def get_scheduled_task(task_model: str, task_id: int):
     if task_model not in MODEL_NAMES:
         raise ValueError(f'Job Model {task_model} does not exist, choices are {MODEL_NAMES}')
     model = apps.get_model(app_label='scheduler', model_name=task_model)
@@ -38,14 +38,14 @@ def get_scheduled_job(task_model: str, task_id: int):
     return task
 
 
-def run_job(task_model: str, task_id: int):
+def run_task(task_model: str, task_id: int):
     """Run a scheduled job
     """
-    scheduled_job = get_scheduled_job(task_model, task_id)
-    logger.debug(f'Running task {str(scheduled_job)}')
-    args = scheduled_job.parse_args()
-    kwargs = scheduled_job.parse_kwargs()
-    res = scheduled_job.callable_func()(*args, **kwargs)
+    scheduled_task = get_scheduled_task(task_model, task_id)
+    logger.debug(f'Running task {str(scheduled_task)}')
+    args = scheduled_task.parse_args()
+    kwargs = scheduled_task.parse_kwargs()
+    res = scheduled_task.callable_func()(*args, **kwargs)
     return res
 
 
@@ -76,8 +76,8 @@ def create_worker(*queue_names, **kwargs):
     return worker
 
 
-def get_job_executions(queue_name, scheduled_job):
+def get_job_executions(queue_name, scheduled_task):
     queue = get_queue(queue_name)
     job_list = queue.get_all_jobs()
-    res = list(filter(lambda j: j.is_execution_of(scheduled_job), job_list))
+    res = list(filter(lambda j: j.is_execution_of(scheduled_task), job_list))
     return res

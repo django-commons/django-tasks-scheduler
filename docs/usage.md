@@ -53,8 +53,8 @@ RQ = {
 
 * Sign in to the Django Admin site (e.g., http://localhost:8000/admin/) and locate the  
   **Tasks Scheduler** section.
-* Click on the **Add** link for the type of job you want to add (`Scheduled Job` - run once, `Repeatable Job` - run
-  multiple times, `Cron Job` - Run based on cron schedule).
+* Click on the **Add** link for the type of job you want to add (`Scheduled Task` - run once, `Repeatable Task` - run
+  multiple times, `Cron Task` - Run based on cron schedule).
 * Enter a unique name for the job in the **Name** field.
 * In the **Callable** field, enter a Python dot notation path to the method that defines the job. For the example  
   above, that would be `myapp.jobs.count`
@@ -83,11 +83,11 @@ calculated in runtime.
 
 ![](media/add-args.jpg)
 
-### Scheduled Job - run once
+### Scheduled Task - run once
 
 No additional steps required.
 
-### Repeatable Job - Run a job multiple time based on interval
+### Repeatable Task - Run a job multiple time based on interval
 
 Additional fields required:
 
@@ -96,7 +96,7 @@ Additional fields required:
 * In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will  
   be scheduled to run forever.
 
-### Cron Job - Run a job multiple time based on cron
+### Cron Task - Run a job multiple time based on cron
 
 Additional fields required:
 
@@ -104,11 +104,11 @@ Additional fields required:
   scheduled to run forever.
 * In the **cron string** field, enter a cron string describing how often the job should run.
 
-### Scheduled Job - run once
+### Scheduled Task - run once
 
 No additional steps required.
 
-### Repeatable Job - Run a job multiple time based on interval
+### Repeatable Task - Run a job multiple time based on interval
 
 Additional fields required:
 
@@ -117,7 +117,7 @@ Additional fields required:
 * In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will  
   be scheduled to run forever.
 
-### Cron Job - Run a job multiple time based on cron
+### Cron Task - Run a job multiple time based on cron
 
 Additional fields required:
 
@@ -177,12 +177,14 @@ WantedBy = multi-user.target
 ```
 
 After you are done editing the file, reload the settings and start the new workers:
+
 ```shell
 sudo systemctl daemon-reload
 sudo systemctl start rqworker@{1..3} 
 ```
 
 You can target a specific worker using its number:
+
 ```shell
 sudo systemctl stop rqworker@2
 ```

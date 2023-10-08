@@ -80,12 +80,12 @@ class BaseJobArg(models.Model):
         ordering = ['id']
 
 
-class JobArg(BaseJobArg):
+class TaskArg(BaseJobArg):
     def __str__(self):
         return f'JobArg[arg_type={self.arg_type},value={self.value()}]'
 
 
-class JobKwarg(BaseJobArg):
+class TaskKwarg(BaseJobArg):
     key = models.CharField(max_length=255)
 
     def __str__(self):
@@ -93,4 +93,4 @@ class JobKwarg(BaseJobArg):
         return f'JobKwarg[key={key},arg_type={self.arg_type},value={self.val}]'
 
     def value(self):
-        return self.key, super(JobKwarg, self).value()
+        return self.key, super(TaskKwarg, self).value()

@@ -2,13 +2,13 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from scheduler.models import JobArg, JobKwarg
+from scheduler.models import TaskArg, TaskKwarg
 from .jobs import arg_callable
 from .testtools import jobarg_factory
 
 
 class TestAllJobArg(TestCase):
-    JobArgClass = JobArg
+    JobArgClass = TaskArg
 
     def test_bad_arg_type(self):
         arg = jobarg_factory(self.JobArgClass, arg_type='bad_arg_type', val='something')
@@ -46,7 +46,7 @@ class TestAllJobArg(TestCase):
 
 
 class TestJobArg(TestCase):
-    JobArgClass = JobArg
+    JobArgClass = TaskArg
 
     def test_str(self):
         arg = jobarg_factory(self.JobArgClass)
@@ -102,7 +102,7 @@ class TestJobArg(TestCase):
 
 
 class TestJobKwarg(TestAllJobArg):
-    JobArgClass = JobKwarg
+    JobArgClass = TaskKwarg
 
     def test_str(self):
         arg = jobarg_factory(self.JobArgClass)

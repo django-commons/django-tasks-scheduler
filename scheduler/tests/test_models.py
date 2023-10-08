@@ -8,8 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models import BaseJob, CronJob, JobArg, JobKwarg, RepeatableJob, ScheduledJob
-from scheduler.tools import run_job, create_worker
+from scheduler.models import BaseTask, CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
+from scheduler.tools import run_task, create_worker
 from . import jobs
 from .testtools import (
     job_factory, jobarg_factory, _get_job_from_scheduled_registry,
@@ -34,7 +34,7 @@ def has_execution_with_status(django_job, status) -> bool:
 
 class BaseTestCases:
     class TestBaseJob(SchedulerBaseCase):
-        JobModelClass = BaseJob
+        JobModelClass = BaseTask
 
         def test_callable_func(self):
             job = job_factory(self.JobModelClass)
@@ -164,7 +164,7 @@ class BaseTestCases:
         def test_callable_passthrough(self):
             job = job_factory(self.JobModelClass)
             entry = _get_job_from_scheduled_registry(job)
-            self.assertEqual(entry.func, run_job)
+            self.assertEqual(entry.func, run_task)
             job_model, job_id = entry.args
             self.assertEqual(job_model, self.JobModelClass.__name__)
             self.assertEqual(job_id, job.id)
@@ -192,14 +192,14 @@ class BaseTestCases:
 
         def test_delete_args(self):
             job = job_factory(self.JobModelClass, )
-            arg = jobarg_factory(JobArg, val='one', content_object=job)
+            arg = jobarg_factory(TaskArg, val='one', content_object=job)
             self.assertEqual(1, job.callable_args.count())
             arg.delete()
             self.assertEqual(0, job.callable_args.count())
 
         def test_delete_kwargs(self):
             job = job_factory(self.JobModelClass, )
-            kwarg = jobarg_factory(JobKwarg, key='key1', arg_type='str', val='one', content_object=job)
+            kwarg = jobarg_factory(TaskKwarg, key='key1', arg_type='str', val='one', content_object=job)
             self.assertEqual(1, job.callable_kwargs.count())
             kwarg.delete()
             self.assertEqual(0, job.callable_kwargs.count())
@@ -207,30 +207,30 @@ class BaseTestCases:
         def test_parse_args(self):
             job = job_factory(self.JobModelClass, )
             date = timezone.now()
-            jobarg_factory(JobArg, val='one', content_object=job)
-            jobarg_factory(JobArg, arg_type='int', val=2, content_object=job)
-            jobarg_factory(JobArg, arg_type='bool', val=True, content_object=job)
-            jobarg_factory(JobArg, arg_type='bool', val=False, content_object=job)
-            jobarg_factory(JobArg, arg_type='datetime', val=date, content_object=job)
+            jobarg_factory(TaskArg, val='one', content_object=job)
+            jobarg_factory(TaskArg, arg_type='int', val=2, content_object=job)
+            jobarg_factory(TaskArg, arg_type='bool', val=True, content_object=job)
+            jobarg_factory(TaskArg, arg_type='bool', val=False, content_object=job)
+            jobarg_factory(TaskArg, arg_type='datetime', val=date, content_object=job)
             self.assertEqual(job.parse_args(), ['one', 2, True, False, date])
 
         def test_parse_kwargs(self):
             job = job_factory(self.JobModelClass, )
             date = timezone.now()
-            jobarg_factory(JobKwarg, key='key1', arg_type='str', val='one', content_object=job)
-            jobarg_factory(JobKwarg, key='key2', arg_type='int', val=2, content_object=job)
-            jobarg_factory(JobKwarg, key='key3', arg_type='bool', val=True, content_object=job)
-            jobarg_factory(JobKwarg, key='key4', arg_type='datetime', val=date, content_object=job)
+            jobarg_factory(TaskKwarg, key='key1', arg_type='str', val='one', content_object=job)
+            jobarg_factory(TaskKwarg, key='key2', arg_type='int', val=2, content_object=job)
+            jobarg_factory(TaskKwarg, key='key3', arg_type='bool', val=True, content_object=job)
+            jobarg_factory(TaskKwarg, key='key4', arg_type='datetime', val=date, content_object=job)
             kwargs = job.parse_kwargs()
             self.assertEqual(kwargs, dict(key1='one', key2=2, key3=True, key4=date))
 
         def test_callable_args_and_kwargs(self):
             job = job_factory(self.JobModelClass, callable='scheduler.tests.jobs.test_args_kwargs')
             date = timezone.now()
-            jobarg_factory(JobArg, arg_type='str', val='one', content_object=job)
-            jobarg_factory(JobKwarg, key='key1', arg_type='int', val=2, content_object=job)
-            jobarg_factory(JobKwarg, key='key2', arg_type='datetime', val=date, content_object=job)
-            jobarg_factory(JobKwarg, key='key3', arg_type='bool', val=False, content_object=job)
+            jobarg_factory(TaskArg, arg_type='str', val='one', content_object=job)
+            jobarg_factory(TaskKwarg, key='key1', arg_type='int', val=2, content_object=job)
+            jobarg_factory(TaskKwarg, key='key2', arg_type='datetime', val=date, content_object=job)
+            jobarg_factory(TaskKwarg, key='key3', arg_type='bool', val=False, content_object=job)
             job.save()
             entry = _get_job_from_scheduled_registry(job)
             self.assertEqual(entry.perform(),
@@ -239,14 +239,14 @@ class BaseTestCases:
         def test_function_string(self):
             job = job_factory(self.JobModelClass, )
             date = timezone.now()
-            jobarg_factory(JobArg, arg_type='str', val='one', content_object=job)
-            jobarg_factory(JobArg, arg_type='int', val='1', content_object=job)
-            jobarg_factory(JobArg, arg_type='datetime', val=date, content_object=job)
-            jobarg_factory(JobArg, arg_type='bool', val=True, content_object=job)
-            jobarg_factory(JobKwarg, key='key1', arg_type='str', val='one', content_object=job)
-            jobarg_factory(JobKwarg, key='key2', arg_type='int', val=2, content_object=job)
-            jobarg_factory(JobKwarg, key='key3', arg_type='datetime', val=date, content_object=job)
-            jobarg_factory(JobKwarg, key='key4', arg_type='bool', val=False, content_object=job)
+            jobarg_factory(TaskArg, arg_type='str', val='one', content_object=job)
+            jobarg_factory(TaskArg, arg_type='int', val='1', content_object=job)
+            jobarg_factory(TaskArg, arg_type='datetime', val=date, content_object=job)
+            jobarg_factory(TaskArg, arg_type='bool', val=True, content_object=job)
+            jobarg_factory(TaskKwarg, key='key1', arg_type='str', val='one', content_object=job)
+            jobarg_factory(TaskKwarg, key='key2', arg_type='int', val=2, content_object=job)
+            jobarg_factory(TaskKwarg, key='key3', arg_type='datetime', val=date, content_object=job)
+            jobarg_factory(TaskKwarg, key='key4', arg_type='bool', val=False, content_object=job)
             self.assertEqual(job.function_string(),
                              f"scheduler.tests.jobs.test_job('one', 1, {repr(date)}, True, "
                              f"key1='one', key2=2, key3={repr(date)}, key4=False)")
@@ -334,7 +334,7 @@ class BaseTestCases:
             self.assertEqual(200, res.status_code)
             entry = _get_job_from_scheduled_registry(job)
             job_model, scheduled_job_id = entry.args
-            self.assertEqual(job_model, job.JOB_TYPE)
+            self.assertEqual(job_model, job.TASK_TYPE)
             self.assertEqual(scheduled_job_id, job.id)
             self.assertEqual('scheduled', entry.get_status())
             self.assertTrue(has_execution_with_status(job, 'queued'))
@@ -345,7 +345,7 @@ class BaseTestCases:
 
             # assert 2
             entry = _get_job_from_scheduled_registry(job)
-            self.assertEqual(job_model, job.JOB_TYPE)
+            self.assertEqual(job_model, job.TASK_TYPE)
             self.assertEqual(scheduled_job_id, job.id)
             self.assertTrue(has_execution_with_status(job, 'finished'))
 
@@ -438,7 +438,7 @@ class BaseTestCases:
 
     class TestSchedulableJob(TestBaseJob):
         # Currently ScheduledJob and RepeatableJob
-        JobModelClass = ScheduledJob
+        JobModelClass = ScheduledTask
 
         def test_schedule_time_utc(self):
             job = job_factory(self.JobModelClass)
@@ -456,7 +456,7 @@ class BaseTestCases:
 
 
 class TestScheduledJob(BaseTestCases.TestSchedulableJob):
-    JobModelClass = ScheduledJob
+    JobModelClass = ScheduledTask
 
     def test_clean(self):
         job = job_factory(self.JobModelClass)
@@ -470,7 +470,7 @@ class TestScheduledJob(BaseTestCases.TestSchedulableJob):
 
 
 class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
-    JobModelClass = RepeatableJob
+    JobModelClass = RepeatableTask
 
     def test_unschedulable_old_job(self):
         job = job_factory(self.JobModelClass, scheduled_time=timezone.now() - timedelta(hours=1), repeat=0)
@@ -566,7 +566,7 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
         self.assertEqual(900.0, job.interval_seconds())
 
     def test_interval_seconds_seconds(self):
-        job = RepeatableJob(interval=15, interval_unit='seconds')
+        job = RepeatableTask(interval=15, interval_unit='seconds')
         self.assertEqual(15.0, job.interval_seconds())
 
     def test_interval_display(self):
@@ -622,7 +622,7 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
 
 
 class TestCronJob(BaseTestCases.TestBaseJob):
-    JobModelClass = CronJob
+    JobModelClass = CronTask
 
     def test_clean(self):
         job = job_factory(self.JobModelClass)

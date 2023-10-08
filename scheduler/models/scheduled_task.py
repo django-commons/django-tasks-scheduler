@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import settings
 from scheduler import tools
-from scheduler.models.args import JobArg, JobKwarg
+from scheduler.models.args import TaskArg, TaskKwarg
 from scheduler.queues import get_queue, logger
 from scheduler.rq_classes import DjangoQueue
 
@@ -35,17 +35,17 @@ def callback_save_job(job, connection, result, *args, **kwargs):
         scheduled_job.schedule()
 
 
-class BaseJob(models.Model):
+class BaseTask(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     QUEUES = [(key, key) for key in settings.QUEUES.keys()]
-    JOB_TYPE = 'BaseJob'
+    TASK_TYPE = 'BaseTask'
     name = models.CharField(
         _('name'), max_length=128, unique=True,
         help_text='Name of the job.', )
     callable = models.CharField(_('callable'), max_length=2048)
-    callable_args = GenericRelation(JobArg, related_query_name='args')
-    callable_kwargs = GenericRelation(JobKwarg, related_query_name='kwargs')
+    callable_args = GenericRelation(TaskArg, related_query_name='args')
+    callable_kwargs = GenericRelation(TaskKwarg, related_query_name='kwargs')
     enabled = models.BooleanField(
         _('enabled'), default=True,
         help_text=_('Should job be scheduled? This field is useful to keep '
@@ -80,23 +80,21 @@ class BaseJob(models.Model):
         """Translate callable string to callable"""
         return tools.callable_func(self.callable)
 
-    @admin.display(boolean=True, description=_('is scheduled?'))
+    @admin.display(boolean=True, description=_('is next scheduled?'))
     def is_scheduled(self) -> bool:
-        """Check whether job is queued/scheduled to be executed"""
+        """Check whether a next job for this task is queued/scheduled to be executed"""
         if not self.job_id:  # no job_id => is not scheduled
             return False
         # check whether job_id is in scheduled/enqueued/active jobs
         scheduled_jobs = self.rqueue.scheduled_job_registry.get_job_ids()
         enqueued_jobs = self.rqueue.get_job_ids()
-        active_jobs = self.rqueue.started_job_registry.get_job_ids()
         res = ((self.job_id in scheduled_jobs)
-               or (self.job_id in enqueued_jobs)
-               or (self.job_id in active_jobs))
-        # If the job_id is not scheduled/enqueued/started,
-        # update the job_id to None. (The job_id belongs to a previous run which is completed)
+               or (self.job_id in enqueued_jobs))
+        # If the job_id is not scheduled/enqueued, update the job_id to None.
+        # (The job_id belongs to a previous run which is completed or currently running)
         if not res:
             self.job_id = None
-            super(BaseJob, self).save()
+            super(BaseTask, self).save()
         return res
 
     @admin.display(description='Callable')
@@ -134,7 +132,7 @@ class BaseJob(models.Model):
         res = dict(
             meta=dict(
                 repeat=self.repeat,
-                job_type=self.JOB_TYPE,
+                job_type=self.TASK_TYPE,
                 scheduled_job_id=self.id,
             ),
             on_success=callback_save_job,
@@ -156,12 +154,12 @@ class BaseJob(models.Model):
         return get_queue(self.queue)
 
     def ready_for_schedule(self) -> bool:
-        """Is job ready to be scheduled?
+        """Is task ready to be scheduled?
 
-        If job is already scheduled or disabled, then it is not
+        If task is already scheduled or disabled, then it is not
         ready to be scheduled.
 
-        :returns: True if job is ready to be scheduled.
+        :returns: True if task is ready to be scheduled.
         """
         if self.is_scheduled():
             logger.debug(f'Job {self.name} already scheduled')
@@ -181,11 +179,11 @@ class BaseJob(models.Model):
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue_at(
             schedule_time,
-            tools.run_job,
-            args=(self.JOB_TYPE, self.id),
+            tools.run_task,
+            args=(self.TASK_TYPE, self.id),
             **kwargs, )
         self.job_id = job.id
-        super(BaseJob, self).save()
+        super(BaseTask, self).save()
         return True
 
     def enqueue_to_run(self) -> bool:
@@ -193,12 +191,12 @@ class BaseJob(models.Model):
         """
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue(
-            tools.run_job,
-            args=(self.JOB_TYPE, self.id),
+            tools.run_task,
+            args=(self.TASK_TYPE, self.id),
             **kwargs,
         )
         self.job_id = job.id
-        super(BaseJob, self).save()
+        super(BaseTask, self).save()
         return True
 
     def unschedule(self) -> bool:
@@ -211,7 +209,7 @@ class BaseJob(models.Model):
             queue.remove(self.job_id)
             queue.scheduled_job_registry.remove(self.job_id)
         self.job_id = None
-        super(BaseJob, self).save()
+        super(BaseTask, self).save()
         return True
 
     def _schedule_time(self):
@@ -221,7 +219,7 @@ class BaseJob(models.Model):
         """Export model to dictionary, so it can be saved as external file backup
         """
         res = dict(
-            model=self.JOB_TYPE,
+            model=self.TASK_TYPE,
             name=self.name,
             callable=self.callable,
             callable_args=[
@@ -249,21 +247,21 @@ class BaseJob(models.Model):
 
     def __str__(self):
         func = self.function_string()
-        return f'{self.JOB_TYPE}[{self.name}={func}]'
+        return f'{self.TASK_TYPE}[{self.name}={func}]'
 
     def save(self, **kwargs):
         schedule_job = kwargs.pop('schedule_job', True)
         update_fields = kwargs.get('update_fields', None)
         if update_fields:
             kwargs['update_fields'] = set(update_fields).union({'modified'})
-        super(BaseJob, self).save(**kwargs)
+        super(BaseTask, self).save(**kwargs)
         if schedule_job:
             self.schedule()
-            super(BaseJob, self).save()
+            super(BaseTask, self).save()
 
     def delete(self, **kwargs):
         self.unschedule()
-        super(BaseJob, self).delete(**kwargs)
+        super(BaseTask, self).delete(**kwargs)
 
     def clean_callable(self):
         try:
@@ -298,22 +296,22 @@ class ScheduledTimeMixin(models.Model):
         abstract = True
 
 
-class ScheduledJob(ScheduledTimeMixin, BaseJob):
+class ScheduledTask(ScheduledTimeMixin, BaseTask):
     repeat = None
-    JOB_TYPE = 'ScheduledJob'
+    TASK_TYPE = 'ScheduledTask'
 
     def ready_for_schedule(self) -> bool:
-        return (super(ScheduledJob, self).ready_for_schedule()
+        return (super(ScheduledTask, self).ready_for_schedule()
                 and (self.scheduled_time is None
                      or self.scheduled_time >= timezone.now()))
 
     class Meta:
-        verbose_name = _('Scheduled Job')
-        verbose_name_plural = _('Scheduled Jobs')
+        verbose_name = _('Scheduled Task')
+        verbose_name_plural = _('Scheduled Tasks')
         ordering = ('name',)
 
 
-class RepeatableJob(ScheduledTimeMixin, BaseJob):
+class RepeatableTask(ScheduledTimeMixin, BaseTask):
     class TimeUnits(models.TextChoices):
         SECONDS = 'seconds', _('seconds')
         MINUTES = 'minutes', _('minutes')
@@ -325,10 +323,10 @@ class RepeatableJob(ScheduledTimeMixin, BaseJob):
     interval_unit = models.CharField(
         _('interval unit'), max_length=12, choices=TimeUnits.choices, default=TimeUnits.HOURS
     )
-    JOB_TYPE = 'RepeatableJob'
+    TASK_TYPE = 'RepeatableTask'
 
     def clean(self):
-        super(RepeatableJob, self).clean()
+        super(RepeatableTask, self).clean()
         self.clean_interval_unit()
         self.clean_result_ttl()
 
@@ -365,12 +363,12 @@ class RepeatableJob(ScheduledTimeMixin, BaseJob):
         return timedelta(**kwargs).total_seconds()
 
     def _enqueue_args(self):
-        res = super(RepeatableJob, self)._enqueue_args()
+        res = super(RepeatableTask, self)._enqueue_args()
         res['meta']['interval'] = self.interval_seconds()
         return res
 
     def ready_for_schedule(self):
-        if super(RepeatableJob, self).ready_for_schedule() is False:
+        if super(RepeatableTask, self).ready_for_schedule() is False:
             return False
         if self.scheduled_time < timezone.now():
             gap = math.ceil((timezone.now().timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
@@ -383,13 +381,13 @@ class RepeatableJob(ScheduledTimeMixin, BaseJob):
         return True
 
     class Meta:
-        verbose_name = _('Repeatable Job')
-        verbose_name_plural = _('Repeatable Jobs')
+        verbose_name = _('Repeatable Task')
+        verbose_name_plural = _('Repeatable Tasks')
         ordering = ('name',)
 
 
-class CronJob(BaseJob):
-    JOB_TYPE = 'CronJob'
+class CronTask(BaseTask):
+    TASK_TYPE = 'CronTask'
 
     cron_string = models.CharField(
         _('cron string'), max_length=64,
@@ -399,7 +397,7 @@ class CronJob(BaseJob):
     )
 
     def clean(self):
-        super(CronJob, self).clean()
+        super(CronTask, self).clean()
         self.clean_cron_string()
 
     def clean_cron_string(self):
@@ -412,6 +410,6 @@ class CronJob(BaseJob):
         return tools.get_next_cron_time(self.cron_string)
 
     class Meta:
-        verbose_name = _('Cron Job')
-        verbose_name_plural = _('Cron Jobs')
+        verbose_name = _('Cron Task')
+        verbose_name_plural = _('Cron Tasks')
         ordering = ('name',)

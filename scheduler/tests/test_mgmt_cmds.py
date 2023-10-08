@@ -7,7 +7,7 @@ import yaml
 from django.core.management import call_command
 from django.test import TestCase
 
-from scheduler.models import ScheduledJob, RepeatableJob
+from scheduler.models import ScheduledTask, RepeatableTask
 from scheduler.queues import get_queue
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.testtools import job_factory
@@ -131,8 +131,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True))
 
         # act
         call_command('export', filename=self.tmpfile.name)
@@ -144,8 +144,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_enabled_jobs_only(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True))
-        jobs.append(job_factory(RepeatableJob, enabled=False))
+        jobs.append(job_factory(ScheduledTask, enabled=True))
+        jobs.append(job_factory(RepeatableTask, enabled=False))
 
         # act
         call_command('export', filename=self.tmpfile.name, enabled=True)
@@ -156,8 +156,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job_yaml_without_yaml_lib(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True))
 
         # act
         with mock.patch.dict('sys.modules', {'yaml': None}):
@@ -167,8 +167,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job_yaml_green(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True))
 
         # act
         call_command('export', filename=self.tmpfile.name, format='yaml')
@@ -188,40 +188,40 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True, instance_only=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True, instance_only=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True, instance_only=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True, instance_only=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
         call_command('import', filename=self.tmpfile.name)
         # assert
-        self.assertEqual(1, ScheduledJob.objects.count())
-        db_job = ScheduledJob.objects.first()
+        self.assertEqual(1, ScheduledTask.objects.count())
+        db_job = ScheduledTask.objects.first()
         attrs = ['name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
 
     def test_import__should_schedule_job_yaml(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True, instance_only=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True, instance_only=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True, instance_only=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in jobs], default_flow_style=False)
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
         call_command('import', filename=self.tmpfile.name, format='yaml')
         # assert
-        self.assertEqual(1, ScheduledJob.objects.count())
-        db_job = ScheduledJob.objects.first()
+        self.assertEqual(1, ScheduledTask.objects.count())
+        db_job = ScheduledTask.objects.first()
         attrs = ['name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
 
     def test_import__should_schedule_job_yaml_without_yaml_lib(self):
         jobs = list()
-        jobs.append(job_factory(ScheduledJob, enabled=True, instance_only=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True, instance_only=True))
+        jobs.append(job_factory(ScheduledTask, enabled=True, instance_only=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in jobs], default_flow_style=False)
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -233,39 +233,39 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_reset(self):
         jobs = list()
-        job_factory(ScheduledJob, enabled=True)
-        job_factory(ScheduledJob, enabled=True)
-        jobs.append(job_factory(ScheduledJob, enabled=True))
-        jobs.append(job_factory(RepeatableJob, enabled=True, instance_only=True))
+        job_factory(ScheduledTask, enabled=True)
+        job_factory(ScheduledTask, enabled=True)
+        jobs.append(job_factory(ScheduledTask, enabled=True))
+        jobs.append(job_factory(RepeatableTask, enabled=True, instance_only=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
         call_command('import', filename=self.tmpfile.name, reset=True, )
         # assert
-        self.assertEqual(1, ScheduledJob.objects.count())
-        db_job = ScheduledJob.objects.first()
+        self.assertEqual(1, ScheduledTask.objects.count())
+        db_job = ScheduledTask.objects.first()
         attrs = ['name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
-        self.assertEqual(1, RepeatableJob.objects.count())
-        db_job = RepeatableJob.objects.first()
+        self.assertEqual(1, RepeatableTask.objects.count())
+        db_job = RepeatableTask.objects.first()
         attrs = ['name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
             self.assertEqual(getattr(jobs[1], attr), getattr(db_job, attr))
 
     def test_import__should_schedule_job_update_existing(self):
         jobs = list()
-        job_factory(ScheduledJob, enabled=True)
-        jobs.append(job_factory(ScheduledJob, enabled=True))
+        job_factory(ScheduledTask, enabled=True)
+        jobs.append(job_factory(ScheduledTask, enabled=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
         call_command('import', filename=self.tmpfile.name, update=True, )
         # assert
-        self.assertEqual(2, ScheduledJob.objects.count())
-        db_job = ScheduledJob.objects.get(name=jobs[0].name)
+        self.assertEqual(2, ScheduledTask.objects.count())
+        db_job = ScheduledTask.objects.get(name=jobs[0].name)
         self.assertNotEqual(jobs[0].id, db_job.id)
         attrs = ['name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
@@ -273,16 +273,16 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_without_update_existing(self):
         jobs = list()
-        job_factory(ScheduledJob, enabled=True)
-        jobs.append(job_factory(ScheduledJob, enabled=True))
+        job_factory(ScheduledTask, enabled=True)
+        jobs.append(job_factory(ScheduledTask, enabled=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
         call_command('import', filename=self.tmpfile.name, )
         # assert
-        self.assertEqual(2, ScheduledJob.objects.count())
-        db_job = ScheduledJob.objects.get(name=jobs[0].name)
+        self.assertEqual(2, ScheduledTask.objects.count())
+        db_job = ScheduledTask.objects.get(name=jobs[0].name)
         attrs = ['id', 'name', 'queue', 'callable', 'enabled', 'timeout']
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))

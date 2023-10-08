@@ -14,7 +14,7 @@ python manage.py rqworker queue1 queue2 queue3
 
 ## export
 
-Export all scheduled jobs from django db to json/yaml format.
+Export all scheduled tasks from django db to json/yaml format.
 
 ```shell
 python manage.py export -o {yaml,json}
@@ -26,7 +26,7 @@ Result should be (for json):
 [
   {
     "model": "ScheduledJob",
-    "name": "Scheduled Job 1",
+    "name": "Scheduled Task 1",
     "callable": "scheduler.tests.test_job",
     "callable_args": [
       {
@@ -52,7 +52,7 @@ A json/yaml that was exported using the `export` command
 can be imported to django.
 
 - Specify the source file using `--filename` or take it from the standard input (default).
-- Reset all scheduled jobs in the database before importing using `-r`/`--reset`.
+- Reset all scheduled tasks in the database before importing using `-r`/`--reset`.
 - Update existing jobs for names that are found using `-u`/`--update`.
 
 ```shell

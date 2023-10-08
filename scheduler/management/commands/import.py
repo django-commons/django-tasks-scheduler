@@ -1,4 +1,5 @@
 import sys
+from typing import Dict, Any
 
 import click
 from django.apps import apps
@@ -7,12 +8,18 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from scheduler.models import JobArg, JobKwarg
+from scheduler.models import TaskArg, TaskKwarg
 from scheduler.tools import MODEL_NAMES
 
 
-def create_job_from_dict(job_dict, update):
-    model = apps.get_model(app_label='scheduler', model_name=job_dict['model'])
+def job_model_str(model_str: str) -> str:
+    if model_str.find('Job') == len(model_str) - 3:
+        return model_str[:-3] + 'Task'
+    return model_str
+
+
+def create_job_from_dict(job_dict: Dict[str, Any], update):
+    model = apps.get_model(app_label='scheduler', model_name=job_model_str(job_dict['model']))
     existing_job = model.objects.filter(name=job_dict['name']).first()
     if existing_job:
         if update:
@@ -38,10 +45,10 @@ def create_job_from_dict(job_dict, update):
     content_type = ContentType.objects.get_for_model(scheduled_job)
 
     for arg in job_dict['callable_args']:
-        JobArg.objects.create(
+        TaskArg.objects.create(
             content_type=content_type, object_id=scheduled_job.id, **arg, )
     for arg in job_dict['callable_kwargs']:
-        JobKwarg.objects.create(
+        TaskKwarg.objects.create(
             content_type=content_type, object_id=scheduled_job.id, **arg, )
 
 

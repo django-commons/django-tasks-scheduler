@@ -1,10 +1,18 @@
 # Changelog
 
+## v1.2.0 🌈
+
+### 🚀 Features
+
+- Rename `*Job` models to `*Task` to differentiate.
+
+
 ## v1.1.0 🌈
 
 ### 🚀 Features
 
 - Enable using stats view using api token
+- Reverted, active jobs are not marked as scheduled as there is currently no new job instance for them.
 
 ### 🐛 Bug Fixes
 

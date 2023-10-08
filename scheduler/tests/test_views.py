@@ -12,7 +12,7 @@ from scheduler.tools import create_worker
 from . import test_settings  # noqa
 from .jobs import failing_job, long_job, test_job
 from .testtools import assert_message_in_response, job_factory, _get_job_from_scheduled_registry
-from ..models import ScheduledJob
+from ..models import ScheduledTask
 from ..rq_classes import JobExecution, ExecutionStatus
 
 
@@ -331,7 +331,7 @@ class ViewTest(BaseTestCase):
 
     def test_scheduled_job_details(self):
         """Job data is displayed properly"""
-        scheduled_job = job_factory(ScheduledJob, enabled=True)
+        scheduled_job = job_factory(ScheduledTask, enabled=True)
         job = _get_job_from_scheduled_registry(scheduled_job)
 
         url = reverse('job_details', args=[job.id, ])
@@ -485,14 +485,14 @@ class ViewTest(BaseTestCase):
     @staticmethod
     def token_validation(token: str) -> bool:
         return token == 'valid'
-    #
-    # @patch('scheduler.views.SCHEDULER_CONFIG')
-    # def test_statistics_json_view_token(self, configuration):
-    #     configuration.get.return_value = ViewTest.token_validation
-    #     self.user.is_staff = False
-    #     self.user.save()
-    #     res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'valid'})
-    #     self.assertEqual(res.status_code, 200)
-    #
-    #     res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'invalid'})
-    #     self.assertEqual(res.status_code, 404)
+
+    @patch('scheduler.views.SCHEDULER_CONFIG')
+    def test_statistics_json_view_token(self, configuration):
+        configuration.get.return_value = ViewTest.token_validation
+        self.user.is_staff = False
+        self.user.save()
+        res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'valid'})
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get(reverse('queues_home_json'), headers={'Authorization': 'invalid'})
+        self.assertEqual(res.status_code, 404)

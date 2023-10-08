@@ -8,7 +8,7 @@
 ---
 
 A database backed async tasks scheduler for django.
-This allows remembering scheduled jobs, their parameters, etc.
+This allows remembering scheduled tasks, their parameters, etc.
 
 ## Terminology
 
@@ -17,7 +17,7 @@ This allows remembering scheduled jobs, their parameters, etc.
 A queue of messages between processes (main django-app process and worker usually).
 This is implemented in `rq` package.
 
-* A queue contains multiple registries for scheduled jobs, finished jobs, failed jobs, etc.
+* A queue contains multiple registries for scheduled tasks, finished jobs, failed jobs, etc.
 
 ### Worker
 
@@ -36,7 +36,7 @@ This is a sub-process of worker.
 Once a worker listening to the queue becomes available,
 the job will be executed
 
-### Scheduled Job Execution
+### Scheduled Task Execution
 
 A scheduler checking the queue periodically will check
 whether the time the job should be executed has come, and if so, it will queue it.
@@ -44,18 +44,18 @@ whether the time the job should be executed has come, and if so, it will queue i
 * A job is considered scheduled if it is queued to be executed, or scheduled to be executed.
 * If there is no scheduler, the job will not be queued to run.
 
-### Scheduled Job
+### Scheduled Task
 
 django models storing information about jobs. So it is possible to schedule using
 django-admin and track their status.
 
-There are 3 types of scheduled job.
+There are 3 types of scheduled task.
 
-* `Scheduled Job` - Run a job once, on a specific time (can be immediate).
-* `Repeatable Job` - Run a job multiple times (limited number of times or infinite times) based on an interval
-* `Cron Job` - Run a job multiple times (limited number of times or infinite times) based on a cron string
+* `Scheduled Task` - Run a job once, on a specific time (can be immediate).
+* `Repeatable Task` - Run a job multiple times (limited number of times or infinite times) based on an interval
+* `Cron Task` - Run a job multiple times (limited number of times or infinite times) based on a cron string
 
-Scheduled jobs are scheduled when the django application starts, and after a scheduled job is executed.
+Scheduled jobs are scheduled when the django application starts, and after a scheduled task is executed.
 
 ## Scheduler sequence diagram
 
@@ -65,12 +65,22 @@ sequenceDiagram
     box Worker
         participant scheduler as Scheduler Process
     end
+    box DB
+        participant db as Database
+        
+    end
     box Redis queue
         participant queue as Queue
-        participant schedule as Queue scheduled jobs
+        participant schedule as Queue scheduled tasks
     end    
     loop Scheduler process - loop forever
-        scheduler ->> schedule: check whether there are jobs that should be scheduled for execution
+        note over scheduler,schedule: Database interaction
+        scheduler ->> db: Check for enabled tasks that should be scheduled
+        critical There are tasks to be scheduled
+            scheduler ->> schedule: Create a job for task that should be scheduled
+        end
+        note over scheduler,schedule: Redis queues interaction
+        scheduler ->> schedule: check whether there are scheduled tasks that should be executed
         critical there are jobs that are scheduled to be executed
             scheduler ->> schedule: remove jobs to be scheduled
             scheduler ->> queue: enqueue jobs to be executed

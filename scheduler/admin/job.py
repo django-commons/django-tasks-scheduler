@@ -4,7 +4,7 @@ from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
-from scheduler.models import CronJob, JobArg, JobKwarg, RepeatableJob, ScheduledJob
+from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions
 
@@ -15,7 +15,7 @@ class HiddenMixin(object):
 
 
 class JobArgInline(HiddenMixin, GenericStackedInline):
-    model = JobArg
+    model = TaskArg
     extra = 0
     fieldsets = (
         (None, {
@@ -25,7 +25,7 @@ class JobArgInline(HiddenMixin, GenericStackedInline):
 
 
 class JobKwargInline(HiddenMixin, GenericStackedInline):
-    model = JobKwarg
+    model = TaskKwarg
     extra = 0
     fieldsets = (
         (None, {
@@ -34,17 +34,17 @@ class JobKwargInline(HiddenMixin, GenericStackedInline):
     )
 
 
-@admin.register(CronJob, ScheduledJob, RepeatableJob)
+@admin.register(CronTask, ScheduledTask, RepeatableTask)
 class JobAdmin(admin.ModelAdmin):
     LIST_DISPLAY_EXTRA = dict(
-        CronJob=('cron_string', 'next_run',),
-        ScheduledJob=('scheduled_time',),
-        RepeatableJob=('scheduled_time', 'interval_display'),
+        CronTask=('cron_string', 'next_run',),
+        ScheduledTask=('scheduled_time',),
+        RepeatableTask=('scheduled_time', 'interval_display'),
     )
     FIELDSET_EXTRA = dict(
-        CronJob=('cron_string', 'repeat', 'timeout', 'result_ttl',),
-        ScheduledJob=('scheduled_time', 'timeout', 'result_ttl'),
-        RepeatableJob=('scheduled_time', ('interval', 'interval_unit',), 'repeat', 'timeout', 'result_ttl',),
+        CronTask=('cron_string', 'repeat', 'timeout', 'result_ttl',),
+        ScheduledTask=('scheduled_time', 'timeout', 'result_ttl'),
+        RepeatableTask=('scheduled_time', ('interval', 'interval_unit',), 'repeat', 'timeout', 'result_ttl',),
     )
     """BaseJob admin class"""
     save_on_top = True
@@ -77,7 +77,7 @@ class JobAdmin(admin.ModelAdmin):
         }),)
 
     @admin.display(description='Next run')
-    def next_run(self, o: CronJob):
+    def next_run(self, o: CronTask):
         return tools.get_next_cron_time(o.cron_string)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):

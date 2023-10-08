@@ -20,7 +20,7 @@ from rq.worker import WorkerStatus
 
 from scheduler import settings
 
-MODEL_NAMES = ['ScheduledJob', 'RepeatableJob', 'CronJob']
+MODEL_NAMES = ['ScheduledTask', 'RepeatableTask', 'CronTask']
 
 rq_job_decorator = job
 ExecutionStatus = JobStatus
@@ -61,7 +61,7 @@ class JobExecution(Job):
         return self.meta.get('scheduled_job_id', None) is not None
 
     def is_execution_of(self, scheduled_job):
-        return (self.meta.get('job_type', None) == scheduled_job.JOB_TYPE
+        return (self.meta.get('job_type', None) == scheduled_job.TASK_TYPE
                 and self.meta.get('scheduled_job_id', None) == scheduled_job.id)
 
     def stop_execution(self, connection: Redis):

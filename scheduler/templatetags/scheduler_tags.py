@@ -4,7 +4,7 @@ from django import template
 from django.utils.safestring import mark_safe
 
 from scheduler.rq_classes import JobExecution, DjangoQueue
-from scheduler.tools import get_scheduled_job
+from scheduler.tools import get_scheduled_task
 
 register = template.Library()
 
@@ -14,8 +14,8 @@ def show_func_name(rq_job: JobExecution) -> str:
     try:
         res = rq_job.func_name
         if res == 'scheduler.tools.run_job':
-            job = get_scheduled_job(*rq_job.args)
-            res = job.function_string()
+            task = get_scheduled_task(*rq_job.args)
+            res = task.function_string()
         return mark_safe(res)
     except Exception as e:
         return repr(e)
@@ -28,7 +28,7 @@ def get_item(dictionary: Dict, key):
 
 @register.filter
 def scheduled_job(job: JobExecution):
-    django_scheduled_job = get_scheduled_job(*job.args)
+    django_scheduled_job = get_scheduled_task(*job.args)
     return django_scheduled_job.get_absolute_url()
 
 
