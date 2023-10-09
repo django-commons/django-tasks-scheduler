@@ -46,7 +46,8 @@ def success_callback(job, connection, result, *args, **kwargs):
     task = model.objects.filter(job_id=job.id).first()
     if task is None:
         return
-    task.schedule()
+    task.job_id = None
+    task.save(schedule_job=True)
 
 
 class BaseTask(models.Model):
@@ -268,10 +269,10 @@ class BaseTask(models.Model):
         update_fields = kwargs.get('update_fields', None)
         if update_fields:
             kwargs['update_fields'] = set(update_fields).union({'modified'})
+        super(BaseTask, self).save(**kwargs)
         if schedule_job:
-            self.schedule()  # schedule() already calls save()
-        else:
-            super(BaseTask, self).save(**kwargs)
+            self.schedule()
+            super(BaseTask, self).save()
 
     def delete(self, **kwargs):
         self.unschedule()

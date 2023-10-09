@@ -618,14 +618,14 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
         self.assertTrue(job.is_scheduled())
 
     def test_check_rescheduled_after_execution(self):
-        job = task_factory(self.TaskModelClass, scheduled_time=timezone.now() + timedelta(seconds=1))
-        queue = job.rqueue
-        first_run_id = job.job_id
+        task = task_factory(self.TaskModelClass, scheduled_time=timezone.now() + timedelta(seconds=1))
+        queue = task.rqueue
+        first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
-        job.refresh_from_db()
-        self.assertTrue(job.is_scheduled())
-        self.assertNotEquals(job.job_id, first_run_id)
+        task.refresh_from_db()
+        self.assertTrue(task.is_scheduled())
+        self.assertNotEquals(task.job_id, first_run_id)
 
 
 class TestCronJob(BaseTestCases.TestBaseJob):

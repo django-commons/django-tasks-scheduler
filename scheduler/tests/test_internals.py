@@ -9,9 +9,9 @@ from scheduler.tools import get_scheduled_task
 
 class TestInternals(SchedulerBaseCase):
     def test_get_scheduled_job(self):
-        job = task_factory(ScheduledTask, scheduled_time=timezone.now() - timedelta(hours=1))
-        self.assertEqual(job, get_scheduled_task(job.TASK_TYPE, job.id))
+        task = task_factory(ScheduledTask, scheduled_time=timezone.now() - timedelta(hours=1))
+        self.assertEqual(task, get_scheduled_task(task.TASK_TYPE, task.id))
         with self.assertRaises(ValueError):
-            get_scheduled_task(job.TASK_TYPE, job.id + 1)
+            get_scheduled_task(task.TASK_TYPE, task.id + 1)
         with self.assertRaises(ValueError):
-            get_scheduled_task('UNKNOWN_JOBTYPE', job.id)
+            get_scheduled_task('UNKNOWN_JOBTYPE', task.id)
