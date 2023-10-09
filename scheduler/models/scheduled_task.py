@@ -29,10 +29,10 @@ def callback_save_job(job, connection, result, *args, **kwargs):
     if model_name is None:
         return
     model = apps.get_model(app_label='scheduler', model_name=model_name)
-    scheduled_job = model.objects.filter(job_id=job.id).first()
-    if scheduled_job is not None:
-        scheduled_job.unschedule()
-        scheduled_job.schedule()
+    task = model.objects.filter(job_id=job.id).first()
+    if task is not None:
+        task.unschedule()
+        task.schedule()
 
 
 class BaseTask(models.Model):
@@ -200,16 +200,17 @@ class BaseTask(models.Model):
         return True
 
     def unschedule(self) -> bool:
-        """Remove job from django-queue.
+        """Remove a job from django-queue.
 
-        If job is queued to be executed or scheduled to be executed, it will remove it.
+        If a job is queued to be executed or scheduled to be executed, it will remove it.
         """
         queue = self.rqueue
-        if self.is_scheduled():
-            queue.remove(self.job_id)
-            queue.scheduled_job_registry.remove(self.job_id)
+        if self.job_id is None:
+            return True
+        queue.remove(self.job_id)
+        queue.scheduled_job_registry.remove(self.job_id)
         self.job_id = None
-        super(BaseTask, self).save()
+        self.save(schedule_job=False)
         return True
 
     def _schedule_time(self):

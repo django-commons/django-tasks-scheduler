@@ -26,7 +26,7 @@ def sequence_gen():
 seq = sequence_gen()
 
 
-def job_factory(cls, instance_only=False, **kwargs):
+def task_factory(cls, instance_only=False, **kwargs):
     values = dict(
         name='Scheduled Job %d' % next(seq),
         job_id=None,
@@ -55,10 +55,10 @@ def job_factory(cls, instance_only=False, **kwargs):
     return instance
 
 
-def jobarg_factory(cls, **kwargs):
+def taskarg_factory(cls, **kwargs):
     content_object = kwargs.pop('content_object', None)
     if content_object is None:
-        content_object = job_factory(ScheduledTask)
+        content_object = task_factory(ScheduledTask)
     values = dict(
         arg_type='str',
         val='',

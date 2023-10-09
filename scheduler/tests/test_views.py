@@ -11,7 +11,7 @@ from scheduler.queues import get_queue
 from scheduler.tools import create_worker
 from . import test_settings  # noqa
 from .jobs import failing_job, long_job, test_job
-from .testtools import assert_message_in_response, job_factory, _get_job_from_scheduled_registry
+from .testtools import assert_message_in_response, task_factory, _get_job_from_scheduled_registry
 from ..models import ScheduledTask
 from ..rq_classes import JobExecution, ExecutionStatus
 
@@ -331,7 +331,7 @@ class ViewTest(BaseTestCase):
 
     def test_scheduled_job_details(self):
         """Job data is displayed properly"""
-        scheduled_job = job_factory(ScheduledTask, enabled=True)
+        scheduled_job = task_factory(ScheduledTask, enabled=True)
         job = _get_job_from_scheduled_registry(scheduled_job)
 
         url = reverse('job_details', args=[job.id, ])

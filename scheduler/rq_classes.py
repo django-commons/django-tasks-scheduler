@@ -57,12 +57,12 @@ class JobExecution(Job):
         return isinstance(other, Job) and self.id == other.id
 
     @property
-    def is_scheduled_job(self):
-        return self.meta.get('scheduled_job_id', None) is not None
+    def is_scheduled_task(self):
+        return self.meta.get('scheduled_task_id', None) is not None
 
     def is_execution_of(self, scheduled_job):
         return (self.meta.get('job_type', None) == scheduled_job.TASK_TYPE
-                and self.meta.get('scheduled_job_id', None) == scheduled_job.id)
+                and self.meta.get('scheduled_task_id', None) == scheduled_job.id)
 
     def stop_execution(self, connection: Redis):
         send_stop_job_command(connection, self.id)

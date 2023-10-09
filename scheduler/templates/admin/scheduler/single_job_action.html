@@ -25,7 +25,7 @@
             <a href="{% url 'queue_registry_jobs' queue.name 'queued' %}">{{ queue.name }}</a>?
             This action can not be undone.
             <br/>
-            {% if job.is_scheduled_job %}
+            {% if job.is_scheduled_task %}
                 <b>Note: This scheduled job will be scheduled again if it is enabled</b>
             {% endif %}
         </p>
