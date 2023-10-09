@@ -139,8 +139,8 @@ class JobAdmin(admin.ModelAdmin):
 
     @admin.action(description="Enqueue now", permissions=('change',))
     def enqueue_job_now(self, request, queryset):
-        job_names = []
-        for job in queryset:
-            job.enqueue_to_run()
-            job_names.append(job.name)
-        self.message_user(request, f"The following jobs have been enqueued: {', '.join(job_names)}", )
+        task_names = []
+        for task in queryset:
+            task.enqueue_to_run()
+            task_names.append(task.name)
+        self.message_user(request, f"The following jobs have been enqueued: {', '.join(task_names)}", )

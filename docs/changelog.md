@@ -1,11 +1,16 @@
 # Changelog
 
+## v1.2.1 🌈
+
+### 🐛 Bug Fixes
+
+- Fix infinite loop on callback calling is_scheduled() #37.
+
 ## v1.2.0 🌈
 
 ### 🚀 Features
 
 - Rename `*Job` models to `*Task` to differentiate.
-
 
 ## v1.1.0 🌈
 
@@ -16,7 +21,7 @@
 
 ### 🐛 Bug Fixes
 
-- #32 Running jobs should be marked as scheduled jobs. @rstalbow (#33) 
+- #32 Running jobs should be marked as scheduled jobs. @rstalbow (#33)
 
 ## v1.0.2 🌈
 

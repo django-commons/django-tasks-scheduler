@@ -61,7 +61,7 @@ class JobExecution(Job):
         return self.meta.get('scheduled_task_id', None) is not None
 
     def is_execution_of(self, scheduled_job):
-        return (self.meta.get('job_type', None) == scheduled_job.TASK_TYPE
+        return (self.meta.get('task_type', None) == scheduled_job.TASK_TYPE
                 and self.meta.get('scheduled_task_id', None) == scheduled_job.id)
 
     def stop_execution(self, connection: Redis):

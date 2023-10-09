@@ -333,9 +333,9 @@ class BaseTestCases:
             # assert part 1
             self.assertEqual(200, res.status_code)
             entry = _get_job_from_scheduled_registry(task)
-            task_model, scheduled_job_id = entry.args
+            task_model, scheduled_task_id = entry.args
             self.assertEqual(task_model, task.TASK_TYPE)
-            self.assertEqual(scheduled_job_id, task.id)
+            self.assertEqual(scheduled_task_id, task.id)
             self.assertEqual('scheduled', entry.get_status())
             assert_has_execution_with_status(task, 'queued')
 
@@ -346,7 +346,7 @@ class BaseTestCases:
             # assert 2
             entry = _get_job_from_scheduled_registry(task)
             self.assertEqual(task_model, task.TASK_TYPE)
-            self.assertEqual(scheduled_job_id, task.id)
+            self.assertEqual(scheduled_task_id, task.id)
             assert_has_execution_with_status(task, 'finished')
 
         def test_admin_enable_job(self):

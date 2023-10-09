@@ -25,14 +25,13 @@ SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL']
 
 
 def callback_save_job(job, connection, result, *args, **kwargs):
-    model_name = job.meta.get('job_type', None)
+    model_name = job.meta.get('task_type', None)
     if model_name is None:
         return
     model = apps.get_model(app_label='scheduler', model_name=model_name)
     task = model.objects.filter(job_id=job.id).first()
     if task is not None:
-        task.unschedule()
-        task.schedule()
+        task.force_schedule()
 
 
 class BaseTask(models.Model):
@@ -80,18 +79,20 @@ class BaseTask(models.Model):
         """Translate callable string to callable"""
         return tools.callable_func(self.callable)
 
-    @admin.display(boolean=True, description=_('is next scheduled?'))
+    @admin.display(boolean=True, description=_('is scheduled?'))
     def is_scheduled(self) -> bool:
         """Check whether a next job for this task is queued/scheduled to be executed"""
-        if not self.job_id:  # no job_id => is not scheduled
+        if self.job_id is None:  # no job_id => is not scheduled
             return False
         # check whether job_id is in scheduled/enqueued/active jobs
         scheduled_jobs = self.rqueue.scheduled_job_registry.get_job_ids()
         enqueued_jobs = self.rqueue.get_job_ids()
+        active_jobs = self.rqueue.started_job_registry.get_job_ids()
         res = ((self.job_id in scheduled_jobs)
-               or (self.job_id in enqueued_jobs))
-        # If the job_id is not scheduled/enqueued, update the job_id to None.
-        # (The job_id belongs to a previous run which is completed or currently running)
+               or (self.job_id in enqueued_jobs)
+               or (self.job_id in active_jobs))
+        # If the job_id is not scheduled/enqueued/started,
+        # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
             self.job_id = None
             super(BaseTask, self).save()
@@ -132,8 +133,8 @@ class BaseTask(models.Model):
         res = dict(
             meta=dict(
                 repeat=self.repeat,
-                job_type=self.TASK_TYPE,
-                scheduled_job_id=self.id,
+                task_type=self.TASK_TYPE,
+                scheduled_task_id=self.id,
             ),
             on_success=callback_save_job,
             on_failure=callback_save_job,
@@ -175,6 +176,11 @@ class BaseTask(models.Model):
         """
         if not self.ready_for_schedule():
             return False
+        self.force_schedule()
+        return True
+
+    def force_schedule(self):
+        """Schedule task regardless of its current status"""
         schedule_time = self._schedule_time()
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue_at(
@@ -184,11 +190,9 @@ class BaseTask(models.Model):
             **kwargs, )
         self.job_id = job.id
         super(BaseTask, self).save()
-        return True
 
     def enqueue_to_run(self) -> bool:
-        """Enqueue job to run now.
-        """
+        """Enqueue job to run now."""
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue(
             tools.run_task,
@@ -196,7 +200,7 @@ class BaseTask(models.Model):
             **kwargs,
         )
         self.job_id = job.id
-        super(BaseTask, self).save()
+        self.save(schedule_job=False)
         return True
 
     def unschedule(self) -> bool:
@@ -217,8 +221,7 @@ class BaseTask(models.Model):
         return utc(self.scheduled_time)
 
     def to_dict(self) -> Dict:
-        """Export model to dictionary, so it can be saved as external file backup
-        """
+        """Export model to dictionary, so it can be saved as external file backup"""
         res = dict(
             model=self.TASK_TYPE,
             name=self.name,
