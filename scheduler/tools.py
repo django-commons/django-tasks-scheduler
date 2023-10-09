@@ -3,7 +3,6 @@ import os
 
 import croniter
 from django.apps import apps
-from django.templatetags.tz import utc
 from django.utils import timezone
 
 from scheduler.queues import get_queues, logger, get_queue
@@ -25,8 +24,8 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
     with a cron string"""
     now = timezone.now()
     itr = croniter.croniter(cron_string, now)
-    return utc(itr.get_next(timezone.datetime))
-
+    next_itr = itr.get_next(timezone.datetime)
+    return next_itr
 
 def get_scheduled_task(task_model: str, task_id: int):
     if task_model not in MODEL_NAMES:

@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 
 from scheduler import settings
 from scheduler.models import BaseTask, CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
@@ -440,14 +441,20 @@ class BaseTestCases:
         # Currently ScheduledJob and RepeatableJob
         TaskModelClass = ScheduledTask
 
-        def test_schedule_time_utc(self):
+        @freeze_time("2016-12-25")
+        @override_settings(USE_TZ=False)
+        def test_schedule_time_no_tz(self):
+            task = task_factory(self.TaskModelClass)
+            task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=None)
+            self.assertEqual("2016-12-25T08:00:00", task._schedule_time().isoformat())
+
+        @freeze_time("2016-12-25")
+        @override_settings(USE_TZ=True)
+        def test_schedule_time_with_tz(self):
             task = task_factory(self.TaskModelClass)
             est = zoneinfo.ZoneInfo('US/Eastern')
-            scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=est)
-            task.scheduled_time = scheduled_time
-            utc = zoneinfo.ZoneInfo('UTC')
-            expected = scheduled_time.astimezone(utc).isoformat()
-            self.assertEqual(expected, task._schedule_time().isoformat())
+            task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=est)
+            self.assertEqual("2016-12-25T13:00:00+00:00", task._schedule_time().isoformat())
 
         def test_result_ttl_passthrough(self):
             job = task_factory(self.TaskModelClass, result_ttl=500)

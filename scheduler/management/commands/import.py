@@ -33,9 +33,10 @@ def create_job_from_dict(job_dict: Dict[str, Any], update):
     del kwargs['callable_args']
     del kwargs['callable_kwargs']
     if kwargs.get('scheduled_time', None):
-        kwargs['scheduled_time'] = timezone.datetime.fromisoformat(kwargs['scheduled_time'])
-        if not settings.USE_TZ:
-            kwargs['scheduled_time'] = timezone.make_naive(kwargs['scheduled_time'])
+        target = timezone.datetime.fromisoformat(kwargs['scheduled_time'])
+        if not settings.USE_TZ and not timezone.is_naive(target):
+            target = timezone.make_naive(target)
+        kwargs['scheduled_time'] = target
     model_fields = set(map(lambda field: field.attname, model._meta.get_fields()))
     keys_to_ignore = list(filter(lambda k: k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:

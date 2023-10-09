@@ -5,9 +5,11 @@ from typing import Dict
 
 import croniter
 from django.apps import apps
+from django.conf import settings as django_settings
 from django.contrib import admin
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
+from django.core.mail import mail_admins
 from django.db import models
 from django.templatetags.tz import utc
 from django.urls import reverse
@@ -24,14 +26,27 @@ from scheduler.rq_classes import DjangoQueue
 SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL']
 
 
-def callback_save_job(job, connection, result, *args, **kwargs):
+def failure_callback(job, connection, result, *args, **kwargs):
+    model_name = job.meta.get('task_type', None)
+    scheduled_task_id = job.meta.get('scheduled_task_id', None)
+    if model_name is None or scheduled_task_id:
+        return
+    model = apps.get_model(app_label='scheduler', model_name=model_name)
+    task = model.objects.filter(id=scheduled_task_id).first()
+    mail_admins(f'Task {task.id}/{task.name} has failed',
+                'See django-admin for logs', )
+    pass
+
+
+def success_callback(job, connection, result, *args, **kwargs):
     model_name = job.meta.get('task_type', None)
     if model_name is None:
         return
     model = apps.get_model(app_label='scheduler', model_name=model_name)
     task = model.objects.filter(job_id=job.id).first()
-    if task is not None:
-        task.force_schedule()
+    if task is None:
+        return
+    task.schedule()
 
 
 class BaseTask(models.Model):
@@ -107,12 +122,12 @@ class BaseTask(models.Model):
         return self.callable + f"({', '.join(args_list + kwargs_list)})"
 
     def parse_args(self):
-        """Parse args for running job"""
+        """Parse args for running the job"""
         args = self.callable_args.all()
         return [arg.value() for arg in args]
 
     def parse_kwargs(self):
-        """Parse kwargs for running job"""
+        """Parse kwargs for running the job"""
         kwargs = self.callable_kwargs.all()
         return dict([kwarg.value() for kwarg in kwargs])
 
@@ -122,12 +137,12 @@ class BaseTask(models.Model):
         return f'{self.queue}:{name}:{addition}'
 
     def _enqueue_args(self) -> Dict:
-        """args for DjangoQueue.enqueue.
+        """Args for DjangoQueue.enqueue.
         Set all arguments for DjangoQueue.enqueue/enqueue_at.
         Particularly:
         - set job timeout and ttl
-        - ensure a callback to reschedule job next iteration.
-        - set job-id to proper format
+        - ensure a callback to reschedule the job next iteration.
+        - Set job-id to proper format
         - set job meta
         """
         res = dict(
@@ -136,8 +151,8 @@ class BaseTask(models.Model):
                 task_type=self.TASK_TYPE,
                 scheduled_task_id=self.id,
             ),
-            on_success=callback_save_job,
-            on_failure=callback_save_job,
+            on_success=success_callback,
+            on_failure=failure_callback,
             job_id=self._next_job_id(),
         )
         if self.at_front:
@@ -150,37 +165,31 @@ class BaseTask(models.Model):
 
     @property
     def rqueue(self) -> DjangoQueue:
-        """Returns django-queue for job
-        """
+        """Returns redis-queue for job"""
         return get_queue(self.queue)
 
     def ready_for_schedule(self) -> bool:
-        """Is task ready to be scheduled?
+        """Is the task ready to be scheduled?
 
-        If task is already scheduled or disabled, then it is not
+        If the task is already scheduled or disabled, then it is not
         ready to be scheduled.
 
-        :returns: True if task is ready to be scheduled.
+        :returns: True if the task is ready to be scheduled.
         """
         if self.is_scheduled():
-            logger.debug(f'Job {self.name} already scheduled')
+            logger.debug(f'Task {self.name} already scheduled')
             return False
         if not self.enabled:
-            logger.debug(f'Job {str(self)} disabled, enable job before scheduling')
+            logger.debug(f'Task {str(self)} disabled, enable task before scheduling')
             return False
         return True
 
     def schedule(self) -> bool:
-        """Schedule job to run.
-        :returns: True if job was scheduled, False otherwise.
+        """Schedule the next execution for the task to run.
+        :returns: True if a job was scheduled, False otherwise.
         """
         if not self.ready_for_schedule():
             return False
-        self.force_schedule()
-        return True
-
-    def force_schedule(self):
-        """Schedule task regardless of its current status"""
         schedule_time = self._schedule_time()
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue_at(
@@ -190,6 +199,7 @@ class BaseTask(models.Model):
             **kwargs, )
         self.job_id = job.id
         super(BaseTask, self).save()
+        return True
 
     def enqueue_to_run(self) -> bool:
         """Enqueue job to run now."""
@@ -218,7 +228,7 @@ class BaseTask(models.Model):
         return True
 
     def _schedule_time(self):
-        return utc(self.scheduled_time)
+        return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
 
     def to_dict(self) -> Dict:
         """Export model to dictionary, so it can be saved as external file backup"""
@@ -258,10 +268,10 @@ class BaseTask(models.Model):
         update_fields = kwargs.get('update_fields', None)
         if update_fields:
             kwargs['update_fields'] = set(update_fields).union({'modified'})
-        super(BaseTask, self).save(**kwargs)
         if schedule_job:
-            self.schedule()
-            super(BaseTask, self).save()
+            self.schedule()  # schedule() already calls save()
+        else:
+            super(BaseTask, self).save(**kwargs)
 
     def delete(self, **kwargs):
         self.unschedule()
@@ -371,16 +381,20 @@ class RepeatableTask(ScheduledTimeMixin, BaseTask):
         res['meta']['interval'] = self.interval_seconds()
         return res
 
+    def _schedule_time(self):
+        _now = timezone.now()
+        if self.scheduled_time >= _now:
+            return super()._schedule_time()
+        gap = math.ceil((_now.timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
+        if self.repeat is None or self.repeat >= gap:
+            self.scheduled_time += timedelta(seconds=self.interval_seconds() * gap)
+            self.repeat = (self.repeat - gap) if self.repeat is not None else None
+        return super()._schedule_time()
+
     def ready_for_schedule(self):
         if super(RepeatableTask, self).ready_for_schedule() is False:
             return False
-        if self.scheduled_time < timezone.now():
-            gap = math.ceil((timezone.now().timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
-            if self.repeat is None or self.repeat >= gap:
-                self.scheduled_time += timedelta(seconds=self.interval_seconds() * gap)
-                self.repeat = (self.repeat - gap) if self.repeat is not None else None
-
-        if self.scheduled_time < timezone.now():
+        if self._schedule_time() < timezone.now():
             return False
         return True
 
@@ -411,7 +425,8 @@ class CronTask(BaseTask):
             raise ValidationError({'cron_string': ValidationError(_(str(e)), code='invalid')})
 
     def _schedule_time(self):
-        return tools.get_next_cron_time(self.cron_string)
+        self.scheduled_time = tools.get_next_cron_time(self.cron_string)
+        return super()._schedule_time()
 
     class Meta:
         verbose_name = _('Cron Task')

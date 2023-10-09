@@ -614,6 +614,20 @@ TOMLi = {version = "*", markers = "python_version < \"3.11\""}
 dev = ["pyTest", "pyTest-cov"]
 
 [[package]]
+name = "freezegun"
+version = "1.2.2"
+description = "Let your Python tests travel through time"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "freezegun-1.2.2-py3-none-any.whl", hash = "sha256:ea1b963b993cb9ea195adbd893a48d573fda951b0da64f60883d7e988b606c9f"},
+    {file = "freezegun-1.2.2.tar.gz", hash = "sha256:cd22d1ba06941384410cd967d8a99d5ae2442f57dfafeff2fda5de8dc5c05446"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.7"
+
+[[package]]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -1650,4 +1664,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6ac3a167c2371ce7471fc66bcd84f3e06414c7f5f33b634615b5ee573e3b0bd1"
+content-hash = "82fb3c854442f33ecbdaf854ab16109ceeb73dab20445919bb8fc4afef3a966a"
