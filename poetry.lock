@@ -381,17 +381,18 @@ files = [
 
 [[package]]
 name = "croniter"
-version = "1.4.1"
+version = "2.0.0"
 description = "croniter provides iteration for datetime object with cron like format"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
-    {file = "croniter-1.4.1-py2.py3-none-any.whl", hash = "sha256:9595da48af37ea06ec3a9f899738f1b2c1c13da3c38cea606ef7cd03ea421128"},
-    {file = "croniter-1.4.1.tar.gz", hash = "sha256:1a6df60eacec3b7a0aa52a8f2ef251ae3dd2a7c7c8b9874e73e791636d55a361"},
+    {file = "croniter-2.0.0-py2.py3-none-any.whl", hash = "sha256:137ea3b0748f615eb3344462de3e185d3d7900a7388d07c2950110ec76bfe20b"},
+    {file = "croniter-2.0.0.tar.gz", hash = "sha256:92319e69477c467a9b3da615264c02fb183c1daf7ac8ea9790ca8f7a77ded69c"},
 ]
 
 [package.dependencies]
 python-dateutil = "*"
+pytz = ">2021.1"
 
 [[package]]
 name = "cryptography"
@@ -1146,6 +1147,17 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "pytz"
+version = "2023.3.post1"
+description = "World timezone definitions, modern and historical"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytz-2023.3.post1-py2.py3-none-any.whl", hash = "sha256:ce42d816b81b68506614c11e8937d3aa9e41007ceb50bfdcb0749b921bf646c7"},
+    {file = "pytz-2023.3.post1.tar.gz", hash = "sha256:7b4fddbeb94a1eba4b557da24f19fdf9db575192544270a9101d8509f9f43d7b"},
+]
+
+[[package]]
 name = "pywin32-ctypes"
 version = "0.2.2"
 description = "A (partial) reimplementation of pywin32 using ctypes/cffi"
@@ -1664,4 +1676,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "b24d1443ac6c33dfc446e9875750288b12906b2f956333c74d1c94a31bb7a7c2"
+content-hash = "29a6cdfc22fd124822f643ecc30fd3f1f79564a86178cd6b8f2ad43aa3b2b1f0"
