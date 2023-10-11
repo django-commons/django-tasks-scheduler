@@ -381,13 +381,13 @@ files = [
 
 [[package]]
 name = "croniter"
-version = "2.0.0"
+version = "2.0.1"
 description = "croniter provides iteration for datetime object with cron like format"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
-    {file = "croniter-2.0.0-py2.py3-none-any.whl", hash = "sha256:137ea3b0748f615eb3344462de3e185d3d7900a7388d07c2950110ec76bfe20b"},
-    {file = "croniter-2.0.0.tar.gz", hash = "sha256:92319e69477c467a9b3da615264c02fb183c1daf7ac8ea9790ca8f7a77ded69c"},
+    {file = "croniter-2.0.1-py2.py3-none-any.whl", hash = "sha256:4cb064ce2d8f695b3b078be36ff50115cf8ac306c10a7e8653ee2a5b534673d7"},
+    {file = "croniter-2.0.1.tar.gz", hash = "sha256:d199b2ec3ea5e82988d1f72022433c5f9302b3b3ea9e6bfd6a1518f6ea5e700a"},
 ]
 
 [package.dependencies]
