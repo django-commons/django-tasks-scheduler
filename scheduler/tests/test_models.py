@@ -628,7 +628,7 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
         self.assertNotEquals(task.job_id, first_run_id)
 
     def test_check_rescheduled_after_execution_failed_job(self):
-        task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job', 
+        task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job',
                             scheduled_time=timezone.now() + timedelta(seconds=1))
         queue = task.rqueue
         first_run_id = task.job_id

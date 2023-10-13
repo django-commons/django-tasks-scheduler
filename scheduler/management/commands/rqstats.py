@@ -2,6 +2,7 @@ import time
 
 import click
 from django.core.management.base import BaseCommand
+
 from scheduler.views import get_statistics
 
 ANSI_LIGHT_GREEN = "\033[1;32m"
