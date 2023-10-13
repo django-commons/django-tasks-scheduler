@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.3 🌈
+
+### 🐛 Bug Fixes
+
+- Fix When a job fails it becomes unscheduled #45
+
 ## v1.2.1 🌈
 
 ### 🐛 Bug Fixes
