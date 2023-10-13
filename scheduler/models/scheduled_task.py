@@ -28,14 +28,16 @@ SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL']
 
 def failure_callback(job, connection, result, *args, **kwargs):
     model_name = job.meta.get('task_type', None)
-    scheduled_task_id = job.meta.get('scheduled_task_id', None)
-    if model_name is None or scheduled_task_id:
+    if model_name is None:
         return
     model = apps.get_model(app_label='scheduler', model_name=model_name)
-    task = model.objects.filter(id=scheduled_task_id).first()
+    task = model.objects.filter(job_id=job.id).first()
     mail_admins(f'Task {task.id}/{task.name} has failed',
                 'See django-admin for logs', )
-    pass
+    if task is None:
+        return
+    task.job_id = None
+    task.save(schedule_job=True)
 
 
 def success_callback(job, connection, result, *args, **kwargs):
