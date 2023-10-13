@@ -26,12 +26,12 @@ def sequence_gen():
 seq = sequence_gen()
 
 
-def task_factory(cls, instance_only=False, **kwargs):
+def task_factory(cls, callable_name: str = 'scheduler.tests.jobs.test_job', instance_only=False, **kwargs):
     values = dict(
         name='Scheduled Job %d' % next(seq),
         job_id=None,
         queue=list(settings.QUEUES.keys())[0],
-        callable='scheduler.tests.jobs.test_job',
+        callable=callable_name,
         enabled=True,
         timeout=None)
     if cls == ScheduledTask:
