@@ -410,7 +410,7 @@ class BaseTestCases:
             # assert
             self.assertEqual(200, res.status_code)
             self.assertEqual(prev_count, self.TaskModelClass.objects.count())
-            self.assertEquals(prev - 1, len(_get_executions(task)))
+            self.assertEqual(prev - 1, len(_get_executions(task)))
 
         def test_admin_delete_selected(self):
             # arrange
@@ -625,7 +625,7 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
         queue.run_sync(entry)
         task.refresh_from_db()
         self.assertTrue(task.is_scheduled())
-        self.assertNotEquals(task.job_id, first_run_id)
+        self.assertNotEqual(task.job_id, first_run_id)
 
     def test_check_rescheduled_after_execution_failed_job(self):
         task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job',
@@ -636,7 +636,7 @@ class TestRepeatableJob(BaseTestCases.TestSchedulableJob):
         queue.run_sync(entry)
         task.refresh_from_db()
         self.assertTrue(task.is_scheduled())
-        self.assertNotEquals(task.job_id, first_run_id)
+        self.assertNotEqual(task.job_id, first_run_id)
 
 
 class TestCronJob(BaseTestCases.TestBaseJob):
@@ -670,4 +670,4 @@ class TestCronJob(BaseTestCases.TestBaseJob):
         queue.run_sync(entry)
         task.refresh_from_db()
         self.assertTrue(task.is_scheduled())
-        self.assertNotEquals(task.job_id, first_run_id)
+        self.assertNotEqual(task.job_id, first_run_id)
