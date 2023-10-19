@@ -13,7 +13,7 @@ register = template.Library()
 def show_func_name(rq_job: JobExecution) -> str:
     try:
         res = rq_job.func_name
-        if res == 'scheduler.tools.run_job':
+        if res == 'scheduler.tools.run_task':
             task = get_scheduled_task(*rq_job.args)
             res = task.function_string()
         return mark_safe(res)
