@@ -546,13 +546,13 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fakeredis"
-version = "2.19.0"
+version = "2.20.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "fakeredis-2.19.0-py3-none-any.whl", hash = "sha256:83dbf922d07244d114103843d8d4e760fa25119a5fc88cfc21b4548ea2d6353c"},
-    {file = "fakeredis-2.19.0.tar.gz", hash = "sha256:e136cd13bddd7e7f71270cc7c4693d14f975d929135eb0f8625ef55f204eee25"},
+    {file = "fakeredis-2.20.0-py3-none-any.whl", hash = "sha256:c9baf3c7fd2ebf40db50db4c642c7c76b712b1eed25d91efcc175bba9bc40ca3"},
+    {file = "fakeredis-2.20.0.tar.gz", hash = "sha256:69987928d719d1ae1665ae8ebb16199d22a5ebae0b7d0d0d6586fc3a1a67428c"},
 ]
 
 [package.dependencies]
@@ -1503,13 +1503,13 @@ files = [
 
 [[package]]
 name = "trove-classifiers"
-version = "2023.10.17"
+version = "2023.10.18"
 description = "Canonical source for classifiers on PyPI (pypi.org)."
 optional = false
 python-versions = "*"
 files = [
-    {file = "trove-classifiers-2023.10.17.tar.gz", hash = "sha256:0ee4ec20b07a109ba6dd390b0336f9317ca8b58abcb51248c0ff72c641035f09"},
-    {file = "trove_classifiers-2023.10.17-py3-none-any.whl", hash = "sha256:37b89a6806b20b1c3411af705ce3b1f590360782f0dba99949cce94ae71f354b"},
+    {file = "trove-classifiers-2023.10.18.tar.gz", hash = "sha256:2cdfcc7f31f7ffdd57666a9957296089ac72daad4d11ab5005060e5cd7e29939"},
+    {file = "trove_classifiers-2023.10.18-py3-none-any.whl", hash = "sha256:20a3da8e3cb65587cc9f5d5b837bf74edeb480bba9bd8cd4f03ab056d6b06c4c"},
 ]
 
 [[package]]
