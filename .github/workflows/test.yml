@@ -38,11 +38,11 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.9', '3.10', '3.11' ]
-        django-version: [ '3.2.19', '4.2.1' ]
+        django-version: [ '3.2.22', '4.2.6' ]
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -79,10 +79,10 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.9', '3.10', '3.11' ]
-        django-version: [ '3.2.19', '4.2.1' ]
+        django-version: [ '3.2.22', '4.2.6' ]
         include:
           - python-version: '3.11'
-            django-version: '4.2.1'
+            django-version: '4.2.6'
             coverage: yes
     services:
       redis:
@@ -97,7 +97,7 @@ jobs:
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -136,7 +136,7 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Create coverage badge
         if: ${{ matrix.coverage == 'yes' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@v1.6.0
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: b756396efb895f0e34558c980f1ca0c7
