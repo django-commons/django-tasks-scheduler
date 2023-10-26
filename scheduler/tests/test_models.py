@@ -671,3 +671,21 @@ class TestCronJob(BaseTestCases.TestBaseJob):
         task.refresh_from_db()
         self.assertTrue(task.is_scheduled())
         self.assertNotEqual(task.job_id, first_run_id)
+
+    def test_cron_task_enqueuing_jobs(self):
+        queue = get_queue()
+        prev_queued = len(queue.scheduled_job_registry)
+        prev_finished = len(queue.finished_job_registry)
+        task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.enqueue_jobs')
+        self.assertEqual(prev_queued + 1, len(queue.scheduled_job_registry))
+        first_run_id = task.job_id
+        entry = queue.fetch_job(first_run_id)
+        queue.run_sync(entry)
+        self.assertEqual(20, len(queue))
+        self.assertEqual(prev_finished + 1, len(queue.finished_job_registry))
+        worker = create_worker('default', fork_job_execution=False, )
+        worker.work(burst=True)
+        self.assertEqual(prev_finished + 21, len(queue.finished_job_registry))
+        worker.refresh()
+        self.assertEqual(20, worker.successful_job_count)
+        self.assertEqual(0, worker.failed_job_count)

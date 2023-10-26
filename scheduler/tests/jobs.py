@@ -1,5 +1,7 @@
 from time import sleep
 
+from scheduler.queues import get_queue
+
 _counter = 0
 
 
@@ -29,3 +31,9 @@ def failing_job():
 
 def test_job():
     return 1 + 1
+
+
+def enqueue_jobs():
+    queue = get_queue()
+    for i in range(20):
+        queue.enqueue(test_job, job_id=f"job_{i}", args=())
