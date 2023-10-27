@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         queue = get_queue(options.get('queue', 'default'))
         job_ids = queue.failed_job_registry.get_job_ids()
-        jobs = [JobExecution.fetch(job_id, connection=queue.connection) for job_id in job_ids]
+        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
         func_name = options.get('func', None)
         if func_name is not None:
             jobs = [job for job in jobs if job.func_name == func_name]

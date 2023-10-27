@@ -1,5 +1,4 @@
 from html import escape
-from math import ceil
 from typing import Tuple, Optional
 
 import redis
@@ -12,6 +11,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.views.decorators.cache import never_cache
+from math import ceil
 from redis.exceptions import ResponseError
 
 from .queues import get_all_workers, get_connection, logger, QueueNotFoundError
@@ -307,9 +307,11 @@ def requeue_all(request, queue_name, registry_name):
     if request.method == 'POST':
         count = 0
         # Confirmation received
-        for job_id in job_ids:
+        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
+        for job in jobs:
+            if job is None:
+                continue
             try:
-                job = JobExecution.fetch(job_id, connection=queue.connection)
                 job.requeue()
                 count += 1
             except Exception:
@@ -377,22 +379,28 @@ def actions(request, queue_name):
         return redirect(next_url)
     job_ids = request.POST.getlist('job_ids')
     if action == 'delete':
-        for job_id in job_ids:
-            job = JobExecution.fetch(job_id, connection=queue.connection)
+        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
+        for job in jobs:
+            if job is None:
+                continue
             # Remove job id from queue and delete the actual job
             queue.remove_job_id(job.id)
             job.delete()
         messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
     elif action == 'requeue':
-        for job_id in job_ids:
-            job = JobExecution.fetch(job_id, connection=queue.connection)
+        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
+        for job in jobs:
+            if job is None:
+                continue
             job.requeue()
         messages.info(request, f'You have successfully re-queued {len(job_ids)}  jobs!')
     elif action == 'stop':
         cancelled_jobs = 0
-        for job_id in job_ids:
+        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
+        for job in jobs:
+            if job is None:
+                continue
             try:
-                job = JobExecution.fetch(job_id, connection=queue.connection)
                 job.stop_execution(queue.connection)
                 job.cancel()
                 cancelled_jobs += 1
