@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.4 🌈
+
+### 🐛 Bug Fixes
+
+- Fix for non-existent task @gabriels1234 (#62)
+
+### 🧰 Maintenance
+
+- Use rq `fetch_many`
+
 ## v1.2.3 🌈
 
 ### 🐛 Bug Fixes
