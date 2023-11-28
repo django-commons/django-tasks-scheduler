@@ -32,10 +32,11 @@ def failure_callback(job, connection, result, *args, **kwargs):
         return
     model = apps.get_model(app_label='scheduler', model_name=model_name)
     task = model.objects.filter(job_id=job.id).first()
+    if task is None:
+        logger.warn(f'Could not find {model_name} task for job {job.id}')
+        return
     mail_admins(f'Task {task.id}/{task.name} has failed',
                 'See django-admin for logs', )
-    if task is None:
-        return
     task.job_id = None
     task.save(schedule_job=True)
 
