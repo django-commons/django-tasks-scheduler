@@ -15,7 +15,7 @@ jobs:
     name: "flake8 on code"
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Setup Python 
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
