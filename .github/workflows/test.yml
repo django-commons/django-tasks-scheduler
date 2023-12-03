@@ -31,50 +31,6 @@ jobs:
         run: |
           poetry run flake8 scheduler/
 
-  testFakeRedis:
-    needs: [ 'flake8' ]
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 6
-      matrix:
-        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
-        django-version: [ '3.2.22', '4.2.7' ]
-        exclude:
-          - python-version: '3.12'
-            django-version: '3.2.22'
-    outputs:
-      version: ${{ steps.getVersion.outputs.VERSION }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache-dependency-path: poetry.lock
-      - name: Install poetry and dependencies
-        shell: bash
-        run: |
-          python -m pip --quiet install poetry
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry install -E yaml
-          poetry run pip install django==${{ matrix.django-version }}
-
-      - name: Get version
-        id: getVersion
-        shell: bash
-        run: |
-          VERSION=$(poetry version -s --no-ansi -n)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-      - name: Check for missing migrations
-        run: |
-          cd testproject
-          poetry run python manage.py makemigrations --check
-      - name: Run Tests without coverage
-        run: |
-          cd testproject
-          export FAKEREDIS=True
-          poetry run python manage.py test scheduler
-
   testRedis:
     needs: [ 'flake8' ]
     runs-on: ubuntu-latest
@@ -87,9 +43,6 @@ jobs:
           - python-version: '3.11'
             django-version: '4.2.7'
             coverage: yes
-        exclude:
-          - python-version: '3.12'
-            django-version: '3.2.22'
     services:
       redis:
         image: redis:7.2.0
@@ -166,3 +119,45 @@ jobs:
       - uses: release-drafter/release-drafter@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  testFakeRedis:
+    needs: [ 'flake8' ]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 6
+      matrix:
+        python-version: [ '3.9', '3.10', '3.11' ]
+        django-version: [ '3.2.22', '4.2.7' ]
+    outputs:
+      version: ${{ steps.getVersion.outputs.VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-path: poetry.lock
+      - name: Install poetry and dependencies
+        shell: bash
+        run: |
+          python -m pip --quiet install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry install -E yaml
+          poetry run pip install django==${{ matrix.django-version }}
+
+      - name: Get version
+        id: getVersion
+        shell: bash
+        run: |
+          VERSION=$(poetry version -s --no-ansi -n)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check for missing migrations
+        run: |
+          cd testproject
+          poetry run python manage.py makemigrations --check
+      - name: Run Tests without coverage
+        run: |
+          cd testproject
+          export FAKEREDIS=True
+          poetry run python manage.py test scheduler
