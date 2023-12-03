@@ -15,7 +15,7 @@ jobs:
     name: "flake8 on code"
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Python 
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
@@ -81,12 +81,15 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.9', '3.10', '3.11' ]
-        django-version: [ '3.2.22', '4.2.6' ]
+        python-version: [ '3.9', '3.10', '3.11', '3.11' ]
+        django-version: [ '3.2.22', '4.2.7' ]
         include:
           - python-version: '3.11'
-            django-version: '4.2.6'
+            django-version: '4.2.7'
             coverage: yes
+        exclude:
+          - python-version: '3.12'
+            django-version: '3.2.22'
     services:
       redis:
         image: redis:7.2.0
