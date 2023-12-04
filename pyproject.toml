@@ -37,7 +37,7 @@ classifiers = [
     'Framework :: Django :: 3',
     'Framework :: Django :: 3.2',
 ]
-homepage = "https://github.com/dsoftwareinc/django-redis-scheduler"
+homepage = "https://github.com/dsoftwareinc/django-tasks-scheduler"
 documentation = "https://django-tasks-scheduler.readthedocs.io/en/latest/"
 
 [tool.poetry.urls]
