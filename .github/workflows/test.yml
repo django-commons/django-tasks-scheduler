@@ -38,10 +38,10 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.9', '3.10', '3.11', '3.11' ]
-        django-version: [ '3.2.22', '4.2.7' ]
+        django-version: [ '3.2.22', '4.2.8' ]
         include:
           - python-version: '3.11'
-            django-version: '4.2.7'
+            django-version: '4.2.8'
             coverage: yes
     services:
       redis:
@@ -128,7 +128,7 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.9', '3.10', '3.11' ]
-        django-version: [ '3.2.22', '4.2.7' ]
+        django-version: [ '3.2.22', '4.2.8' ]
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
     steps:
