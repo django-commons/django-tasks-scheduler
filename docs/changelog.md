@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.5 🌈
+
+### 🧰 Maintenance
+
+- Support for django 5.0
+
 ## v1.2.4 🌈
 
 ### 🐛 Bug Fixes
