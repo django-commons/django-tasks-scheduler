@@ -1,4 +1,5 @@
 from html import escape
+from math import ceil
 from typing import Tuple, Optional
 
 import redis
@@ -11,13 +12,12 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.views.decorators.cache import never_cache
-from math import ceil
 from redis.exceptions import ResponseError
 
-from .queues import get_all_workers, get_connection, logger, QueueNotFoundError
+from .queues import get_all_workers, get_connection, QueueNotFoundError
 from .queues import get_queue as get_queue_base
 from .rq_classes import JobExecution, DjangoWorker, DjangoQueue, InvalidJobOperation
-from .settings import SCHEDULER_CONFIG
+from .settings import SCHEDULER_CONFIG, logger
 
 
 def get_queue(queue_name: str) -> DjangoQueue:

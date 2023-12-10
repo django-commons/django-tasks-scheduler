@@ -20,8 +20,7 @@ def callable_func(callable_str: str):
 
 
 def get_next_cron_time(cron_string) -> timezone.datetime:
-    """Calculate the next scheduled time by creating a crontab object
-    with a cron string"""
+    """Calculate the next scheduled time by creating a crontab object with a cron string"""
     now = timezone.now()
     itr = croniter.croniter(cron_string, now)
     next_itr = itr.get_next(timezone.datetime)

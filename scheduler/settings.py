@@ -3,7 +3,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-logger = logging.getLogger("scheduler")
+logger = logging.getLogger(__package__)
 
 QUEUES = dict()
 SCHEDULER_CONFIG = dict()

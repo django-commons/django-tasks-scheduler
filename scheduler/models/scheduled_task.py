@@ -20,8 +20,9 @@ from django.utils.translation import gettext_lazy as _
 from scheduler import settings
 from scheduler import tools
 from scheduler.models.args import TaskArg, TaskKwarg
-from scheduler.queues import get_queue, logger
+from scheduler.queues import get_queue
 from scheduler.rq_classes import DjangoQueue
+from scheduler.settings import logger
 
 SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL']
 

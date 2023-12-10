@@ -8,8 +8,7 @@ def job(*args, **kwargs):
     The same as rq package's job decorator, but it automatically works out
     the ``connection`` argument from SCHEDULER_QUEUES.
 
-    And also, it allows simplified ``@job`` syntax to put job into
-    default queue.
+    And also, it allows simplified ``@job`` syntax to put a job into the default queue.
 
     """
     if len(args) == 0:
