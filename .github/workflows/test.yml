@@ -141,7 +141,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@5v
+        uses: actions/setup-python@5
         with:
           python-version: ${{ matrix.python-version }}
           cache-dependency-path: poetry.lock
