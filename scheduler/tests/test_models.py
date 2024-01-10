@@ -643,14 +643,14 @@ class TestCronJob(BaseTestCases.TestBaseJob):
     TaskModelClass = CronTask
 
     def test_clean(self):
-        task = task_factory(self.TaskModelClass)
+        task = task_factory(CronTask)
         task.cron_string = '* * * * *'
         task.queue = list(settings.QUEUES)[0]
         task.callable = 'scheduler.tests.jobs.test_job'
         self.assertIsNone(task.clean())
 
     def test_clean_cron_string_invalid(self):
-        task = task_factory(self.TaskModelClass)
+        task = task_factory(CronTask)
         task.cron_string = 'not-a-cron-string'
         task.queue = list(settings.QUEUES)[0]
         task.callable = 'scheduler.tests.jobs.test_job'
@@ -658,12 +658,22 @@ class TestCronJob(BaseTestCases.TestBaseJob):
             task.clean_cron_string()
 
     def test_repeat(self):
-        task = task_factory(self.TaskModelClass, repeat=10)
+        task = task_factory(CronTask, repeat=10)
         entry = _get_job_from_scheduled_registry(task)
         self.assertEqual(entry.meta['repeat'], 10)
 
     def test_check_rescheduled_after_execution(self):
-        task = task_factory(self.TaskModelClass, )
+        task = task_factory(CronTask, )
+        queue = task.rqueue
+        first_run_id = task.job_id
+        entry = queue.fetch_job(first_run_id)
+        queue.run_sync(entry)
+        task.refresh_from_db()
+        self.assertTrue(task.is_scheduled())
+        self.assertNotEqual(task.job_id, first_run_id)
+
+    def test_check_rescheduled_after_failed_execution(self):
+        task = task_factory(CronTask, callable_name="scheduler.tests.jobs.scheduler.tests.jobs.test_job", )
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
@@ -676,7 +686,7 @@ class TestCronJob(BaseTestCases.TestBaseJob):
         queue = get_queue()
         prev_queued = len(queue.scheduled_job_registry)
         prev_finished = len(queue.finished_job_registry)
-        task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.enqueue_jobs')
+        task = task_factory(CronTask, callable_name='scheduler.tests.jobs.enqueue_jobs')
         self.assertEqual(prev_queued + 1, len(queue.scheduled_job_registry))
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
