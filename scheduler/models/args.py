@@ -18,7 +18,7 @@ ARG_TYPE_TYPES_DICT = {
 }
 
 
-class BaseJobArg(models.Model):
+class BaseTaskArg(models.Model):
     class ArgType(models.TextChoices):
         STR = 'str', _('string')
         INT = 'int', _('int')
@@ -57,11 +57,11 @@ class BaseJobArg(models.Model):
             })
 
     def save(self, **kwargs):
-        super(BaseJobArg, self).save(**kwargs)
+        super(BaseTaskArg, self).save(**kwargs)
         self.content_object.save()
 
     def delete(self, **kwargs):
-        super(BaseJobArg, self).delete(**kwargs)
+        super(BaseTaskArg, self).delete(**kwargs)
         self.content_object.save()
 
     def value(self):
@@ -80,17 +80,17 @@ class BaseJobArg(models.Model):
         ordering = ['id']
 
 
-class TaskArg(BaseJobArg):
+class TaskArg(BaseTaskArg):
     def __str__(self):
-        return f'JobArg[arg_type={self.arg_type},value={self.value()}]'
+        return f'TaskArg[arg_type={self.arg_type},value={self.value()}]'
 
 
-class TaskKwarg(BaseJobArg):
+class TaskKwarg(BaseTaskArg):
     key = models.CharField(max_length=255)
 
     def __str__(self):
         key, value = self.value()
-        return f'JobKwarg[key={key},arg_type={self.arg_type},value={self.val}]'
+        return f'TaskKwarg[key={key},arg_type={self.arg_type},value={self.val}]'
 
     def value(self):
         return self.key, super(TaskKwarg, self).value()
