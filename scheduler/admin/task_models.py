@@ -34,19 +34,24 @@ class JobKwargInline(HiddenMixin, GenericStackedInline):
     )
 
 
+_LIST_DISPLAY_EXTRA = dict(
+    CronTask=('cron_string', 'next_run',),
+    ScheduledTask=('scheduled_time',),
+    RepeatableTask=('scheduled_time', 'interval_display',),
+)
+_FIELDSET_EXTRA = dict(
+    CronTask=('cron_string', 'repeat', 'timeout', 'result_ttl',),
+    ScheduledTask=('scheduled_time', 'timeout', 'result_ttl'),
+    RepeatableTask=('scheduled_time', ('interval', 'interval_unit',), 'repeat', 'timeout', 'result_ttl',),
+)
+
+
 @admin.register(CronTask, ScheduledTask, RepeatableTask)
-class JobAdmin(admin.ModelAdmin):
-    LIST_DISPLAY_EXTRA = dict(
-        CronTask=('cron_string', 'next_run',),
-        ScheduledTask=('scheduled_time',),
-        RepeatableTask=('scheduled_time', 'interval_display'),
-    )
-    FIELDSET_EXTRA = dict(
-        CronTask=('cron_string', 'repeat', 'timeout', 'result_ttl',),
-        ScheduledTask=('scheduled_time', 'timeout', 'result_ttl'),
-        RepeatableTask=('scheduled_time', ('interval', 'interval_unit',), 'repeat', 'timeout', 'result_ttl',),
-    )
-    """BaseJob admin class"""
+class TaskAdmin(admin.ModelAdmin):
+    """TaskAdmin admin view for all task models.
+    Using the _LIST_DISPLAY_EXTRA and _FIELDSET_EXTRA additional data for each model.
+    """
+
     save_on_top = True
     change_form_template = 'admin/scheduler/change_form.html'
     actions = ['disable_selected', 'enable_selected', 'enqueue_job_now', ]
@@ -65,15 +70,15 @@ class JobAdmin(admin.ModelAdmin):
     )
 
     def get_list_display(self, request):
-        if self.model.__name__ not in JobAdmin.LIST_DISPLAY_EXTRA:
+        if self.model.__name__ not in _LIST_DISPLAY_EXTRA:
             raise ValueError(f'Unrecognized model {self.model}')
-        return JobAdmin.list_display + JobAdmin.LIST_DISPLAY_EXTRA[self.model.__name__]
+        return TaskAdmin.list_display + _LIST_DISPLAY_EXTRA[self.model.__name__]
 
     def get_fieldsets(self, request, obj=None):
-        if self.model.__name__ not in JobAdmin.FIELDSET_EXTRA:
+        if self.model.__name__ not in _FIELDSET_EXTRA:
             raise ValueError(f'Unrecognized model {self.model}')
-        return JobAdmin.fieldsets + ((_('Scheduling'), {
-            'fields': JobAdmin.FIELDSET_EXTRA[self.model.__name__],
+        return TaskAdmin.fieldsets + ((_('Scheduling'), {
+            'fields': _FIELDSET_EXTRA[self.model.__name__],
         }),)
 
     @admin.display(description='Next run')
@@ -100,17 +105,17 @@ class JobAdmin(admin.ModelAdmin):
             'page_var': 'p',
         })
 
-        return super(JobAdmin, self).change_view(
+        return super(TaskAdmin, self).change_view(
             request, object_id, form_url, extra_context=extra)
 
     def delete_queryset(self, request, queryset):
         for job in queryset:
             job.unschedule()
-        super(JobAdmin, self).delete_queryset(request, queryset)
+        super(TaskAdmin, self).delete_queryset(request, queryset)
 
     def delete_model(self, request, obj):
         obj.unschedule()
-        super(JobAdmin, self).delete_model(request, obj)
+        super(TaskAdmin, self).delete_model(request, obj)
 
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=('change',))
     def disable_selected(self, request, queryset):
