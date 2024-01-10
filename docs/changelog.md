@@ -9,6 +9,7 @@
 ### 🧰 Maintenance
 
 - Support for django 5.0
+- Update homepage url @dirkmueller (#65)
 
 ## v1.2.4 🌈
 
