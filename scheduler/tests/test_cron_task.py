@@ -4,8 +4,7 @@ from scheduler import settings
 from scheduler.models import CronTask
 from scheduler.tools import create_worker
 from .test_models import BaseTestCases
-from .testtools import (
-    task_factory, _get_job_from_scheduled_registry)
+from .testtools import task_factory
 from ..queues import get_queue
 
 
