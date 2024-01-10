@@ -153,22 +153,49 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
         self.assertTrue(job.is_scheduled())
 
     def test_check_rescheduled_after_execution(self):
-        task = task_factory(self.TaskModelClass, scheduled_time=timezone.now() + timedelta(seconds=1))
+        task = task_factory(self.TaskModelClass, scheduled_time=timezone.now() + timedelta(seconds=1), repeat=10)
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
         task.refresh_from_db()
+        self.assertEqual(task.failed_runs, 0)
+        self.assertIsNone(task.last_failed_run)
+        self.assertEqual(task.successful_runs, 1)
+        self.assertIsNotNone(task.last_successful_run)
         self.assertTrue(task.is_scheduled())
         self.assertNotEqual(task.job_id, first_run_id)
 
     def test_check_rescheduled_after_execution_failed_job(self):
-        task = task_factory(self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job',
-                            scheduled_time=timezone.now() + timedelta(seconds=1))
+        task = task_factory(
+            self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job',
+            scheduled_time=timezone.now() + timedelta(seconds=1),
+            repeat=10, )
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
         task.refresh_from_db()
+        self.assertEqual(task.failed_runs, 1)
+        self.assertIsNotNone(task.last_failed_run)
+        self.assertEqual(task.successful_runs, 0)
+        self.assertIsNone(task.last_successful_run)
         self.assertTrue(task.is_scheduled())
+        self.assertNotEqual(task.job_id, first_run_id)
+
+    def test_check_not_rescheduled_after_last_repeat(self):
+        task = task_factory(
+            self.TaskModelClass,
+            scheduled_time=timezone.now() + timedelta(seconds=1),
+            repeat=1,
+        )
+        queue = task.rqueue
+        first_run_id = task.job_id
+        entry = queue.fetch_job(first_run_id)
+        queue.run_sync(entry)
+        task.refresh_from_db()
+        self.assertEqual(task.failed_runs, 0)
+        self.assertIsNone(task.last_failed_run)
+        self.assertEqual(task.successful_runs, 1)
+        self.assertIsNotNone(task.last_successful_run)
         self.assertNotEqual(task.job_id, first_run_id)

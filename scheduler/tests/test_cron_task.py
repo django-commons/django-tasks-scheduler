@@ -27,11 +27,6 @@ class TestCronTask(BaseTestCases.TestBaseTask):
         with self.assertRaises(ValidationError):
             task.clean_cron_string()
 
-    def test_repeat(self):
-        task = task_factory(CronTask, repeat=10)
-        entry = _get_job_from_scheduled_registry(task)
-        self.assertEqual(entry.meta['repeat'], 10)
-
     def test_check_rescheduled_after_execution(self):
         task = task_factory(CronTask, )
         queue = task.rqueue
@@ -39,16 +34,27 @@ class TestCronTask(BaseTestCases.TestBaseTask):
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
         task.refresh_from_db()
+        self.assertEqual(task.failed_runs, 0)
+        self.assertIsNone(task.last_failed_run)
+        self.assertEqual(task.successful_runs, 1)
+        self.assertIsNotNone(task.last_successful_run)
         self.assertTrue(task.is_scheduled())
         self.assertNotEqual(task.job_id, first_run_id)
 
     def test_check_rescheduled_after_failed_execution(self):
-        task = task_factory(CronTask, callable_name="scheduler.tests.jobs.scheduler.tests.jobs.test_job", )
+        task = task_factory(
+            CronTask,
+            callable_name="scheduler.tests.jobs.scheduler.tests.jobs.test_job",
+        )
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
         task.refresh_from_db()
+        self.assertEqual(task.failed_runs, 1)
+        self.assertIsNotNone(task.last_failed_run)
+        self.assertEqual(task.successful_runs, 0)
+        self.assertIsNone(task.last_successful_run)
         self.assertTrue(task.is_scheduled())
         self.assertNotEqual(task.job_id, first_run_id)
 

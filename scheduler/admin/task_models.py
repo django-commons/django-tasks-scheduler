@@ -35,14 +35,26 @@ class JobKwargInline(HiddenMixin, GenericStackedInline):
 
 
 _LIST_DISPLAY_EXTRA = dict(
-    CronTask=('cron_string', 'next_run',),
+    CronTask=('cron_string', 'next_run', 'successful_runs', 'last_successful_run', 'failed_runs', 'last_failed_run',),
     ScheduledTask=('scheduled_time',),
-    RepeatableTask=('scheduled_time', 'interval_display',),
+    RepeatableTask=(
+        'scheduled_time', 'interval_display', 'successful_runs', 'last_successful_run', 'failed_runs',
+        'last_failed_run',),
 )
 _FIELDSET_EXTRA = dict(
-    CronTask=('cron_string', 'repeat', 'timeout', 'result_ttl',),
+    CronTask=(
+        'cron_string', 'timeout', 'result_ttl',
+        ('successful_runs', 'last_successful_run',),
+        ('failed_runs', 'last_failed_run',),
+    ),
     ScheduledTask=('scheduled_time', 'timeout', 'result_ttl'),
-    RepeatableTask=('scheduled_time', ('interval', 'interval_unit',), 'repeat', 'timeout', 'result_ttl',),
+    RepeatableTask=(
+        'scheduled_time',
+        ('interval', 'interval_unit',),
+        'repeat', 'timeout', 'result_ttl',
+        ('successful_runs', 'last_successful_run',),
+        ('failed_runs', 'last_failed_run',),
+    ),
 )
 
 

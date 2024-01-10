@@ -46,7 +46,7 @@ def task_factory(cls, callable_name: str = 'scheduler.tests.jobs.test_job', inst
             repeat=None,
             scheduled_time=timezone.now() + timedelta(days=1), ))
     elif cls == CronTask:
-        values.update(dict(cron_string="0 0 * * *", repeat=None, ))
+        values.update(dict(cron_string="0 0 * * *", ))
     values.update(kwargs)
     if instance_only:
         instance = cls(**values)
@@ -73,10 +73,10 @@ def taskarg_factory(cls, **kwargs):
     return instance
 
 
-def _get_job_from_scheduled_registry(django_job: BaseTask):
-    jobs_to_schedule = django_job.rqueue.scheduled_job_registry.get_job_ids()
-    entry = next(i for i in jobs_to_schedule if i == django_job.job_id)
-    return django_job.rqueue.fetch_job(entry)
+def _get_job_from_scheduled_registry(django_task: BaseTask):
+    jobs_to_schedule = django_task.rqueue.scheduled_job_registry.get_job_ids()
+    entry = next(i for i in jobs_to_schedule if i == django_task.job_id)
+    return django_task.rqueue.fetch_job(entry)
 
 
 def _get_executions(django_job: BaseTask):

@@ -39,6 +39,9 @@ def failure_callback(job, connection, result, *args, **kwargs):
     mail_admins(f'Task {task.id}/{task.name} has failed',
                 'See django-admin for logs', )
     task.job_id = None
+    if isinstance(task, (CronTask, RepeatableTask)):
+        task.failed_runs += 1
+        task.last_failed_run = timezone.now()
     task.save(schedule_job=True)
 
 
@@ -51,6 +54,9 @@ def success_callback(job, connection, result, *args, **kwargs):
     if task is None:
         return
     task.job_id = None
+    if isinstance(task, (CronTask, RepeatableTask)):
+        task.successful_runs += 1
+        task.last_successful_run = timezone.now()
     task.save(schedule_job=True)
 
 
@@ -76,9 +82,6 @@ class BaseTask(models.Model):
     job_id = models.CharField(
         _('job id'), max_length=128, editable=False, blank=True, null=True,
         help_text=_('Current job_id on queue'))
-    repeat = models.PositiveIntegerField(
-        _('repeat'), blank=True, null=True,
-        help_text=_('Number of times to run the job. Leaving this blank means it will run forever.'), )
     at_front = models.BooleanField(
         _('At front'), default=False, blank=True, null=True,
         help_text=_('When queuing the job, add it in the front of the queue'), )
@@ -104,14 +107,14 @@ class BaseTask(models.Model):
         """Check whether a next job for this task is queued/scheduled to be executed"""
         if self.job_id is None:  # no job_id => is not scheduled
             return False
-        # check whether job_id is in scheduled/enqueued/active jobs
+        # check whether job_id is in scheduled/queued/active jobs
         scheduled_jobs = self.rqueue.scheduled_job_registry.get_job_ids()
         enqueued_jobs = self.rqueue.get_job_ids()
         active_jobs = self.rqueue.started_job_registry.get_job_ids()
         res = ((self.job_id in scheduled_jobs)
                or (self.job_id in enqueued_jobs)
                or (self.job_id in active_jobs))
-        # If the job_id is not scheduled/enqueued/started,
+        # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
             self.job_id = None
@@ -152,7 +155,6 @@ class BaseTask(models.Model):
         """
         res = dict(
             meta=dict(
-                repeat=self.repeat,
                 task_type=self.TASK_TYPE,
                 scheduled_task_id=self.id,
             ),
@@ -249,7 +251,7 @@ class BaseTask(models.Model):
                 for arg in self.callable_kwargs.all()],
             enabled=self.enabled,
             queue=self.queue,
-            repeat=self.repeat,
+            repeat=getattr(self, 'repeat', None),
             at_front=self.at_front,
             timeout=self.timeout,
             result_ttl=self.result_ttl,
@@ -257,6 +259,10 @@ class BaseTask(models.Model):
             scheduled_time=self._schedule_time().isoformat(),
             interval=getattr(self, 'interval', None),
             interval_unit=getattr(self, 'interval_unit', None),
+            successful_runs=getattr(self, 'successful_runs', None),
+            failed_runs=getattr(self, 'failed_runs', None),
+            last_successful_run=getattr(self, 'last_successful_run', None),
+            last_failed_run=getattr(self, 'last_failed_run', None),
         )
         return res
 
@@ -315,8 +321,25 @@ class ScheduledTimeMixin(models.Model):
         abstract = True
 
 
+class RepeatableMixin(models.Model):
+    failed_runs = models.PositiveIntegerField(
+        _('failed runs'), default=0,
+        help_text=_('Number of times the task has failed'), )
+    successful_runs = models.PositiveIntegerField(
+        _('successful runs'), default=0,
+        help_text=_('Number of times the task has succeeded'), )
+    last_successful_run = models.DateTimeField(
+        _('last successful run'), blank=True, null=True,
+        help_text=_('Last time the task has succeeded'), )
+    last_failed_run = models.DateTimeField(
+        _('last failed run'), blank=True, null=True,
+        help_text=_('Last time the task has failed'), )
+
+    class Meta:
+        abstract = True
+
+
 class ScheduledTask(ScheduledTimeMixin, BaseTask):
-    repeat = None
     TASK_TYPE = 'ScheduledTask'
 
     def ready_for_schedule(self) -> bool:
@@ -330,7 +353,7 @@ class ScheduledTask(ScheduledTimeMixin, BaseTask):
         ordering = ('name',)
 
 
-class RepeatableTask(ScheduledTimeMixin, BaseTask):
+class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
     class TimeUnits(models.TextChoices):
         SECONDS = 'seconds', _('seconds')
         MINUTES = 'minutes', _('minutes')
@@ -342,6 +365,9 @@ class RepeatableTask(ScheduledTimeMixin, BaseTask):
     interval_unit = models.CharField(
         _('interval unit'), max_length=12, choices=TimeUnits.choices, default=TimeUnits.HOURS
     )
+    repeat = models.PositiveIntegerField(
+        _('repeat'), blank=True, null=True,
+        help_text=_('Number of times to run the job. Leaving this blank means it will run forever.'), )
     TASK_TYPE = 'RepeatableTask'
 
     def clean(self):
@@ -384,6 +410,7 @@ class RepeatableTask(ScheduledTimeMixin, BaseTask):
     def _enqueue_args(self):
         res = super(RepeatableTask, self)._enqueue_args()
         res['meta']['interval'] = self.interval_seconds()
+        res['meta']['repeat'] = self.repeat
         return res
 
     def _schedule_time(self):
@@ -409,7 +436,7 @@ class RepeatableTask(ScheduledTimeMixin, BaseTask):
         ordering = ('name',)
 
 
-class CronTask(BaseTask):
+class CronTask(RepeatableMixin, BaseTask):
     TASK_TYPE = 'CronTask'
 
     cron_string = models.CharField(

@@ -1,6 +1,10 @@
 # Changelog
 
-## v1.2.5 🌈
+## v1.3.0 🌈
+
+### 🚀 Features
+
+- Add to CronTask and RepeatableTask counters for successful/failed runs.
 
 ### 🧰 Maintenance
 
