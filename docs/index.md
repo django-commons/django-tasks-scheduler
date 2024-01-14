@@ -29,17 +29,16 @@ executed.
 A process listening to one or more queues for **jobs to be scheduled for execution**, and schedule them
 to be executed by a worker.
 
-This is a sub-process of worker.
+This is a subprocess of worker.
 
 ### Queued Job Execution
 
-Once a worker listening to the queue becomes available,
-the job will be executed
+Once a worker listening to the queue becomes available, the job will be executed
 
 ### Scheduled Task Execution
 
-A scheduler checking the queue periodically will check
-whether the time the job should be executed has come, and if so, it will queue it.
+A scheduler checking the queue periodically will check whether the time the job should be executed has come, and if so,
+it will queue it.
 
 * A job is considered scheduled if it is queued to be executed, or scheduled to be executed.
 * If there is no scheduler, the job will not be queued to run.
@@ -49,7 +48,7 @@ whether the time the job should be executed has come, and if so, it will queue i
 django models storing information about jobs. So it is possible to schedule using
 django-admin and track their status.
 
-There are 3 types of scheduled task.
+There are three types of ScheduledTask.
 
 * `Scheduled Task` - Run a job once, on a specific time (can be immediate).
 * `Repeatable Task` - Run a job multiple times (limited number of times or infinite times) based on an interval
