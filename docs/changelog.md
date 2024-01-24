@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.1 🌈
+
+### 🧰 Maintenance
+
+- Removes psycopg2 dependency (#78)
+
 ## v1.3.0 🌈
 
 ### 🚀 Features
