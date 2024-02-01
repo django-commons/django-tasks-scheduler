@@ -146,8 +146,11 @@ class DjangoWorker(Worker):
         connection = pipeline if pipeline is not None else self.connection
         return as_text(connection.hget(self.key, prop_name))
 
-    def scheduler_pid(self) -> int:
-        pid = self.connection.get(RQScheduler.get_locking_key(self.queues[0].name))
+    def scheduler_pid(self) -> Optional[int]:
+        if len(self.queues) == 0:
+            logger.warning("No queues to get scheduler pid from")
+            return None
+        pid = self.connection.get(DjangoScheduler.get_locking_key(self.queues[0].name))
         return int(pid.decode()) if pid is not None else None
 
 

@@ -2,6 +2,10 @@
 
 ## v1.3.1 🌈
 
+### 🐛 Bug Fixes
+
+- Fix workers' page when there are no queues #83
+
 ### 🧰 Maintenance
 
 - Removes psycopg2 dependency (#78)

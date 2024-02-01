@@ -42,12 +42,12 @@
                     </a>
                 </td>
                 <td>{{ worker.get_state }}</td>
-                <td>{{ worker.birth_date|date:"Y-m-d, H:i:s" }}</td>
+                <td>{{ worker.birth_date | date:"Y-m-d, H:i:s" }}</td>
                 <td>{{ worker.hostname }}</td>
-                <td>{{ worker.pid|unlocalize }}</td>
-                <td>{{ worker.total_working_time|default:0|floatformat }}secs</td>
-                <td>{{ worker.successful_job_count|default:0 }}</td>
-                <td>{{ worker.failed_job_count|default:0 }}</td>
+                <td>{{ worker.pid | unlocalize }}</td>
+                <td>{{ worker.total_working_time | default:0 | floatformat }}secs</td>
+                <td>{{ worker.successful_job_count | default:0 }}</td>
+                <td>{{ worker.failed_job_count | default:0 }}</td>
                 <td>{{ worker | worker_scheduler_pid }}</td>
             </tr>
         {% endfor %}
