@@ -8,7 +8,7 @@
 
 ### 🧰 Maintenance
 
-- Removes psycopg2 dependency (#78)
+- Removes psycopg2 dependency from pyproject.toml @mbi (#78)
 
 ## v1.3.0 🌈
 
