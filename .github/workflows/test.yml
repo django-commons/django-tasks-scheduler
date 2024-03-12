@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "flake8 on code"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -38,13 +38,13 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.9', '3.10', '3.11', '3.12' ]
-        django-version: [ '3.2.22', '4.2.8', '5.0' ]
+        django-version: [ '3.2.25', '4.2.11', '5.0.3' ]
         exclude:
           - python-version: '3.9'
-            django-version: '5.0'
+            django-version: '5.0.3'
         include:
           - python-version: '3.11'
-            django-version: '4.2.8'
+            django-version: '4.2.11'
             coverage: yes
     services:
       redis:
@@ -119,7 +119,7 @@ jobs:
     needs: testRedis
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v5
+      - uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -130,11 +130,15 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.9', '3.10', '3.11' ]
-        django-version: [ '3.2.22', '4.2.8', '5.0' ]
+        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
+        django-version: [ '3.2.25', '4.2.11', '5.0.3' ]
         exclude:
           - python-version: '3.9'
-            django-version: '5.0'
+            django-version: '5.0.3'
+        include:
+          - python-version: '3.11'
+            django-version: '4.2.11'
+            coverage: yes
 
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
