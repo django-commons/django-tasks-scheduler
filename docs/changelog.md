@@ -2,7 +2,8 @@
 
 ## v1.3.2 🌈
 
-- Fix issue with job_details template on python3.12 @cyber237 #87 
+- Fix issue with job_details template on python3.12 @cyber237 #87
+
 ## v1.3.1 🌈
 
 ### 🐛 Bug Fixes
