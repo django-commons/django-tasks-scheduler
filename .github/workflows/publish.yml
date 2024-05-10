@@ -13,8 +13,11 @@ on:
     types: [published]
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -22,14 +25,16 @@ jobs:
       with:
         python-version: '3.11'
         cache-dependency-path: poetry.lock
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install build
+
     - name: Build package
       run: python -m build
-    - name: Publish package
+
+    - name: Publish package to pypi
       uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        print_hash: true
