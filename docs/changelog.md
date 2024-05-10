@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.3 🌈
+
+### 🐛 Bug Fixes
+
+- Fix issue of django generating a new migration when settings.SCHEDULER_QUEUES is changed #119
+
 ## v1.3.2 🌈
 
 - Fix issue with job_details template on python3.12 @cyber237 #87
