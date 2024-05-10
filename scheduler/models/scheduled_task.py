@@ -63,7 +63,7 @@ def success_callback(job, connection, result, *args, **kwargs):
 class BaseTask(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    QUEUES = [(key, key) for key in settings.QUEUES.keys()]
+    QUEUES = [("default", "default"), ("low", "low"), ("high", "high")]
     TASK_TYPE = 'BaseTask'
     name = models.CharField(
         _('name'), max_length=128, unique=True,

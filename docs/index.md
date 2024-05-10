@@ -1,13 +1,12 @@
 # Django tasks Scheduler
 
-[![Django CI](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml/badge.svg)](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json)
-[![badge](https://img.shields.io/pypi/dm/django-tasks-scheduler)](https://pypi.org/project/django-tasks-scheduler/)
-[![Open Source Helpers](https://www.codetriage.com/dsoftwareinc/django-tasks-scheduler/badges/users.svg)](https://www.codetriage.com/dsoftwareinc/django-tasks-scheduler)
+[![Django CI][1]][2]
+![badge][3]
+[![badge][4]][5]
 
 ---
 
-A database backed async tasks scheduler for django.
+A database backed asynchronous tasks scheduler for django.
 This allows remembering scheduled tasks, their parameters, etc.
 
 ## Terminology
@@ -66,19 +65,19 @@ sequenceDiagram
     end
     box DB
         participant db as Database
-        
+
     end
     box Redis queue
         participant queue as Queue
         participant schedule as Queue scheduled tasks
-    end    
+    end
     loop Scheduler process - loop forever
-        note over scheduler,schedule: Database interaction
+        note over scheduler, schedule: Database interaction
         scheduler ->> db: Check for enabled tasks that should be scheduled
         critical There are tasks to be scheduled
             scheduler ->> schedule: Create a job for task that should be scheduled
         end
-        note over scheduler,schedule: Redis queues interaction
+        note over scheduler, schedule: Redis queues interaction
         scheduler ->> schedule: check whether there are scheduled tasks that should be executed
         critical there are jobs that are scheduled to be executed
             scheduler ->> schedule: remove jobs to be scheduled
@@ -100,10 +99,10 @@ sequenceDiagram
         participant queue as Queue
         participant finished as Queue finished jobs
         participant failed as Queue failed jobs
-    end    
+    end
     loop Worker process - loop forever
         worker ->>+ queue: get the first job to be executed
-        queue -->>- worker: A job to be executed or nothing 
+        queue -->>- worker: A job to be executed or nothing
         critical There is a job to be executed
             worker ->> queue: Remove job from queue
             worker ->> worker: Execute job
@@ -113,8 +112,8 @@ sequenceDiagram
                 worker ->> failed: Write job result
             end
         option No job to be executed
-            worker ->> worker: sleep 
-        end       
+            worker ->> worker: sleep
+        end
     end
 ```
 
@@ -129,3 +128,9 @@ Please report issues via [GitHub Issues](https://github.com/dsoftwareinc/django-
 ## Acknowledgements
 
 A lot of django-admin views and their tests were adopted from [django-rq](https://github.com/rq/django-rq).
+
+[1]:https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml/badge.svg
+[2]:https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml
+[3]:https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json
+[4]:https://img.shields.io/pypi/dm/django-tasks-scheduler
+[5]:https://pypi.org/project/django-tasks-scheduler/

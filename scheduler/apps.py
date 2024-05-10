@@ -8,4 +8,7 @@ class SchedulerConfig(AppConfig):
     verbose_name = _('Tasks Scheduler')
 
     def ready(self):
-        pass
+        from scheduler.models import BaseTask
+        from scheduler.settings import QUEUES
+
+        BaseTask.QUEUES = [(queue, queue) for queue in QUEUES.keys()]
