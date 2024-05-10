@@ -445,13 +445,13 @@ files = [
 
 [[package]]
 name = "django"
-version = "4.2.12"
+version = "4.2.13"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.12-py3-none-any.whl", hash = "sha256:7640e86835d44ae118c2916a803d8081f40e214ee18a5a92a0202994ca60a4b4"},
-    {file = "Django-4.2.12.tar.gz", hash = "sha256:6a6b4aff8a2db2dc7dcc5650cb2c7a7a0d1eb38e2aa2335fdf001e41801e9797"},
+    {file = "Django-4.2.13-py3-none-any.whl", hash = "sha256:a17fcba2aad3fc7d46fdb23215095dbbd64e6174bf4589171e732b18b07e426a"},
+    {file = "Django-4.2.13.tar.gz", hash = "sha256:837e3cf1f6c31347a1396a3f6b65688f2b4bb4a11c580dcb628b5afe527b68a5"},
 ]
 
 [package.dependencies]
@@ -987,13 +987,13 @@ type = ["mypy (>=1.8)"]
 
 [[package]]
 name = "poetry"
-version = "1.8.2"
+version = "1.8.3"
 description = "Python dependency management and packaging made easy."
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "poetry-1.8.2-py3-none-any.whl", hash = "sha256:b42b400d9a803af6e788a30a6f3e9998020b77860e28df20647eb10b6f414910"},
-    {file = "poetry-1.8.2.tar.gz", hash = "sha256:49cceb3838104647c3e1021f3a4f13c6053704cc18d33f849a90fe687a29cb73"},
+    {file = "poetry-1.8.3-py3-none-any.whl", hash = "sha256:88191c69b08d06f9db671b793d68f40048e8904c0718404b63dcc2b5aec62d13"},
+    {file = "poetry-1.8.3.tar.gz", hash = "sha256:67f4eb68288eab41e841cc71a00d26cf6bdda9533022d0189a145a34d0a35f48"},
 ]
 
 [package.dependencies]
@@ -1008,7 +1008,7 @@ installer = ">=0.7.0,<0.8.0"
 keyring = ">=24.0.0,<25.0.0"
 packaging = ">=23.1"
 pexpect = ">=4.7.0,<5.0.0"
-pkginfo = ">=1.9.4,<2.0.0"
+pkginfo = ">=1.10,<2.0"
 platformdirs = ">=3.0.0,<5"
 poetry-core = "1.9.0"
 poetry-plugin-export = ">=1.6.0,<2.0.0"
@@ -1445,13 +1445,13 @@ files = [
 
 [[package]]
 name = "tomlkit"
-version = "0.12.4"
+version = "0.12.5"
 description = "Style preserving TOML library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tomlkit-0.12.4-py3-none-any.whl", hash = "sha256:5cd82d48a3dd89dee1f9d64420aa20ae65cfbd00668d6f094d7578a78efbb77b"},
-    {file = "tomlkit-0.12.4.tar.gz", hash = "sha256:7ca1cfc12232806517a8515047ba66a19369e71edf2439d0f5824f91032b6cc3"},
+    {file = "tomlkit-0.12.5-py3-none-any.whl", hash = "sha256:af914f5a9c59ed9d0762c7b64d3b5d5df007448eb9cd2edc8a46b1eafead172f"},
+    {file = "tomlkit-0.12.5.tar.gz", hash = "sha256:eef34fba39834d4d6b73c9ba7f3e4d1c417a4e56f89a7e96e090dd0d24b8fb3c"},
 ]
 
 [[package]]
@@ -1618,4 +1618,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "0d63b07fc0173871de246479983068c9d79ef4f9a50f7b8062981a09b4ac0e7a"
+content-hash = "90a492ad0961418c67e004d276075c279e3696e2b9e83c8994b5c19ec82bf7d9"
