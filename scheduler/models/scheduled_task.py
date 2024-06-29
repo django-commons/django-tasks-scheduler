@@ -22,6 +22,7 @@ from scheduler import tools
 from scheduler.models.args import TaskArg, TaskKwarg
 from scheduler.queues import get_queue
 from scheduler.rq_classes import DjangoQueue
+from scheduler.settings import QUEUES
 from scheduler.settings import logger
 
 SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL']
@@ -60,10 +61,13 @@ def success_callback(job, connection, result, *args, **kwargs):
     task.save(schedule_job=True)
 
 
+def get_queue_choices():
+    return [(queue, queue) for queue in QUEUES.keys()]
+
+
 class BaseTask(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    QUEUES = [("default", "default"), ("low", "low"), ("high", "high")]
     TASK_TYPE = 'BaseTask'
     name = models.CharField(
         _('name'), max_length=128, unique=True,
@@ -77,7 +81,7 @@ class BaseTask(models.Model):
                     'past jobs that should no longer be scheduled'),
     )
     queue = models.CharField(
-        _('queue'), max_length=255, choices=QUEUES,
+        _('queue'), max_length=255, choices=get_queue_choices,
         help_text=_('Queue name'), )
     job_id = models.CharField(
         _('job id'), max_length=128, editable=False, blank=True, null=True,

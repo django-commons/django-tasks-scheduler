@@ -15,21 +15,17 @@ jobs:
     name: "flake8 on code"
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
+
+      - name: "Setup Python, Poetry and Dependencies"
+        uses: dsoftwareinc/setup-python-poetry-action@v1
         with:
-          python-version: "3.11"
-          cache-dependency-path: poetry.lock
-      - name: Install poetry and dependencies
-        shell: bash
-        run: |
-          python -m pip --quiet install poetry
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry install
+          python-version: "3.12"
+          poetry-version: "1.8.3"
+
       - name: Run flake8
         shell: bash
         run: |
-          poetry run flake8 scheduler/
+          poetry run flake8
 
   testRedis:
     needs: [ 'flake8' ]
@@ -37,14 +33,11 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
-        django-version: [ '4.2.13', '5.0.6' ]
-        exclude:
-          - python-version: '3.9'
-            django-version: '5.0.6'
+        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+        django-version: [ '5.0.6', '5.1b1' ]
         include:
-          - python-version: '3.11'
-            django-version: '4.2.13'
+          - python-version: '3.12'
+            django-version: '5.0.6'
             coverage: yes
     services:
       redis:
@@ -60,12 +53,15 @@ jobs:
       version: ${{ steps.getVersion.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+
+      - name: "Setup Python, Poetry and Dependencies"
+        uses: dsoftwareinc/setup-python-poetry-action@v1
         with:
-          python-version: ${{ matrix.python-version }}
-          cache-dependency-path: poetry.lock
-      - name: Install poetry and dependencies
+          python-version: "${{ matrix.python-version }}"
+          poetry-version: "1.8.3"
+          poetry-install-additional-args: "-E yaml"
+
+      - name: Install django version
         shell: bash
         run: |
           python -m pip --quiet install poetry
@@ -79,6 +75,7 @@ jobs:
         run: |
           VERSION=$(poetry version -s --no-ansi -n)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Check for missing migrations
         run: |
           cd testproject
@@ -130,32 +127,20 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.9', '3.10', '3.11', '3.12' ]
-        django-version: [ '4.2.13', '5.0.6' ]
-        exclude:
-          - python-version: '3.9'
-            django-version: '5.0.6'
-        include:
-          - python-version: '3.11'
-            django-version: '4.2.13'
-            coverage: yes
+        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+        django-version: [ '5.0.6', '5.1b1' ]
 
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+
+      - name: "Setup Python, Poetry and Dependencies"
+        uses: dsoftwareinc/setup-python-poetry-action@v1
         with:
-          python-version: ${{ matrix.python-version }}
-          cache-dependency-path: poetry.lock
-      - name: Install poetry and dependencies
-        shell: bash
-        run: |
-          python -m pip --quiet install poetry
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry install -E yaml
-          poetry run pip install django==${{ matrix.django-version }}
+          python-version: "${{ matrix.python-version }}"
+          poetry-version: "1.8.3"
+          poetry-install-additional-args: "-E yaml"
 
       - name: Get version
         id: getVersion
@@ -167,6 +152,7 @@ jobs:
         run: |
           cd testproject
           poetry run python manage.py makemigrations --check
+
       - name: Run Tests without coverage
         run: |
           cd testproject

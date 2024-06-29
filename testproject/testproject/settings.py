@@ -127,6 +127,9 @@ SCHEDULER_QUEUES = {
     'medium': {
         'URL': 'redis://localhost:6379/1',
     },
+    'another': {
+        'URL': 'redis://localhost:6379/1',
+    },
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
