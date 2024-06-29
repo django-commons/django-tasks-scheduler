@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.4 🌈
+
+### 🧰 Maintenance
+
+- Update dependencies to latest versions
+
 ## v1.3.3 🌈
 
 ### 🐛 Bug Fixes
