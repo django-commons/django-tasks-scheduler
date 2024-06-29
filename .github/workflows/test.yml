@@ -142,6 +142,15 @@ jobs:
           poetry-version: "1.8.3"
           poetry-install-additional-args: "-E yaml"
 
+
+      - name: Install django version
+        shell: bash
+        run: |
+          python -m pip --quiet install poetry
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+          poetry install -E yaml
+          poetry run pip install django==${{ matrix.django-version }}
+
       - name: Get version
         id: getVersion
         shell: bash
