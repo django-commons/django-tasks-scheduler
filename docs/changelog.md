@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.0 🌈
+
+### Breaking Changes
+
+- Remove support for django 3.* and 4.*. Only support django 5.0 and above.
+
 ## v1.3.4 🌈
 
 ### 🧰 Maintenance
