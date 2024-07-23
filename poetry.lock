@@ -365,13 +365,13 @@ files = [
 
 [[package]]
 name = "croniter"
-version = "2.0.5"
+version = "3.0.0"
 description = "croniter provides iteration for datetime object with cron like format"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.6"
 files = [
-    {file = "croniter-2.0.5-py2.py3-none-any.whl", hash = "sha256:fdbb44920944045cc323db54599b321325141d82d14fa7453bc0699826bbe9ed"},
-    {file = "croniter-2.0.5.tar.gz", hash = "sha256:f1f8ca0af64212fbe99b1bee125ee5a1b53a9c1b433968d8bca8817b79d237f3"},
+    {file = "croniter-3.0.0-py2.py3-none-any.whl", hash = "sha256:92fcad6a4eb9749fa9cad2bba18916520b49408f6282a02aeac0dcda0586f7df"},
+    {file = "croniter-3.0.0.tar.gz", hash = "sha256:745b22960bb21ead6d79b25c0e849fffd2fe65215a944def6b235d4c72688b98"},
 ]
 
 [package.dependencies]
@@ -1620,4 +1620,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e0a71408465a9f4f1f99ba6b0c1929eb19acec5f881a5ec601294cf08bd217dc"
+content-hash = "603fdccfefe42fffb4a025cae5d36bd240f39212a1622183926e33cdf001b3bd"
