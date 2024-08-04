@@ -39,6 +39,7 @@ jobs:
           - python-version: '3.12'
             django-version: '5.0.7'
             coverage: yes
+
     services:
       redis:
         image: redis:7.2.2
@@ -49,8 +50,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -80,11 +83,13 @@ jobs:
         run: |
           cd testproject
           poetry run python manage.py makemigrations --check
+
       - name: Run Tests without coverage
         if: ${{ matrix.coverage != 'yes' }}
         run: |
           cd testproject
           poetry run python manage.py test scheduler
+
       # Steps for coverage check
       - name: Run tests with coverage
         uses: ./.github/actions/test-coverage
@@ -142,7 +147,6 @@ jobs:
           poetry-version: "1.8.3"
           poetry-install-additional-args: "-E yaml"
 
-
       - name: Install django version
         shell: bash
         run: |
@@ -157,6 +161,7 @@ jobs:
         run: |
           VERSION=$(poetry version -s --no-ansi -n)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Check for missing migrations
         run: |
           cd testproject

@@ -1,6 +1,6 @@
 Django Tasks Scheduler
 ===================
-[![Django CI](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml/badge.svg)](https://github.com/dsoftwareinc/django-tasks-scheduler/actions/workflows/test.yml)
+[![Django CI](https://github.com/django-commons/django-tasks-scheduler/actions/workflows/test.yml/badge.svg)](https://github.com/django-commons/django-tasks-scheduler/actions/workflows/test.yml)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json)
 [![badge](https://img.shields.io/pypi/dm/django-tasks-scheduler)](https://pypi.org/project/django-tasks-scheduler/)
 

@@ -5,7 +5,7 @@ site_description: >-
   Documentation for django-tasks-scheduler django library
 # Repository
 repo_name: dsoftwareinc/django-tasks-scheduler
-repo_url: https://github.com/dsoftwareinc/django-tasks-scheduler
+repo_url: https://github.com/django-commons/django-tasks-scheduler
 
 # Copyright
 copyright: Copyright &copy; 2022 - 2023 Daniel Moran
