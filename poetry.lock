@@ -582,13 +582,13 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fakeredis"
-version = "2.23.5"
+version = "2.24.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = "<4.0,>=3.7"
 files = [
-    {file = "fakeredis-2.23.5-py3-none-any.whl", hash = "sha256:4d85b1b6b3a80cbbb3a8967f8686f7bf6ddf5bd7cd5ac7ac90b3561d8c3a7ddb"},
-    {file = "fakeredis-2.23.5.tar.gz", hash = "sha256:edffc79fdce0f1d83cbb20b52694a9cba4a5fe5beb627c11722a42aa0fa44f52"},
+    {file = "fakeredis-2.24.0-py3-none-any.whl", hash = "sha256:2f538be80ef5884ac9acbb5f96d8b010697cb9c02380a3a6f29795f106970f52"},
+    {file = "fakeredis-2.24.0.tar.gz", hash = "sha256:bd798c2e53600c009f60e6cc8efb77751c9df713ecb47aa88fa1001c6ab8452a"},
 ]
 
 [package.dependencies]
@@ -683,13 +683,13 @@ python-dateutil = ">=2.7"
 
 [[package]]
 name = "idna"
-version = "3.7"
+version = "3.8"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 files = [
-    {file = "idna-3.7-py3-none-any.whl", hash = "sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0"},
-    {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
+    {file = "idna-3.8-py3-none-any.whl", hash = "sha256:050b4e5baadcd44d760cedbd2b8e639f2ff89bbc7a5730fcc662954303377aac"},
+    {file = "idna-3.8.tar.gz", hash = "sha256:d838c2c0ed6fced7693d5e8ab8e734d5f8fda53a039c0164afb0b82e771e3603"},
 ]
 
 [[package]]
