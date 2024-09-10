@@ -27,17 +27,20 @@ jobs:
         run: |
           poetry run flake8
 
-  testRedis:
+  test:
     needs: [ 'flake8' ]
     runs-on: ubuntu-latest
+    name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.fake-redis }}"
     strategy:
       max-parallel: 6
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
-        django-version: [ '5.0.7', '5.1b1' ]
+        django-version: [ '5.0.7', '5.1.1' ]
+        fake-redis: ['True', 'False']
         include:
           - python-version: '3.12'
-            django-version: '5.0.7'
+            django-version: '5.1.1'
+            fake-redis: 'False'
             coverage: yes
 
     services:
@@ -88,6 +91,7 @@ jobs:
         if: ${{ matrix.coverage != 'yes' }}
         run: |
           cd testproject
+          export FAKEREDIS=${{ matrix.fake-redis }}
           poetry run python manage.py test scheduler
 
       # Steps for coverage check
@@ -118,57 +122,9 @@ jobs:
       # write permission is required for auto-labeler
       # otherwise, read permission is required at least
       pull-requests: write
-    needs: testRedis
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-  testFakeRedis:
-    needs: [ 'flake8' ]
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 6
-      matrix:
-        python-version: [ '3.10', '3.11', '3.12' ]
-        django-version: [ '5.0.7', '5.1b1' ]
-
-    outputs:
-      version: ${{ steps.getVersion.outputs.VERSION }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: "Setup Python, Poetry and Dependencies"
-        uses: dsoftwareinc/setup-python-poetry-action@v1
-        with:
-          python-version: "${{ matrix.python-version }}"
-          poetry-version: "1.8.3"
-          poetry-install-additional-args: "-E yaml"
-
-      - name: Install django version
-        shell: bash
-        run: |
-          python -m pip --quiet install poetry
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry install -E yaml
-          poetry run pip install django==${{ matrix.django-version }}
-
-      - name: Get version
-        id: getVersion
-        shell: bash
-        run: |
-          VERSION=$(poetry version -s --no-ansi -n)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check for missing migrations
-        run: |
-          cd testproject
-          poetry run python manage.py makemigrations --check
-
-      - name: Run Tests without coverage
-        run: |
-          cd testproject
-          export FAKEREDIS=True
-          poetry run python manage.py test scheduler
