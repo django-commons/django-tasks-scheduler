@@ -41,8 +41,12 @@ class TestWorker(SchedulerBaseCase):
         self.assertEqual(worker.scheduler.interval, 1)
         settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL'] = prev
 
-    def test_get_worker_custom_classes(self):
+    def test_get_worker_with_custom_job_class(self):
         # Test with string representation of job_class
         worker = create_worker('default', job_class='rq.job.Job')
         self.assertTrue(issubclass(worker.job_class, Job))
+        self.assertTrue(issubclass(worker.job_class, JobExecution))
+
+    def test_get_worker_without_custom_job_class(self):
+        worker = create_worker('default')
         self.assertTrue(issubclass(worker.job_class, JobExecution))
