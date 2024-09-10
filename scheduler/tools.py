@@ -4,6 +4,7 @@ import os
 import croniter
 from django.apps import apps
 from django.utils import timezone
+from django.utils.module_loading import import_string
 
 from scheduler.queues import get_queues, logger, get_queue
 from scheduler.rq_classes import DjangoWorker, MODEL_NAMES
@@ -71,6 +72,11 @@ def create_worker(*queue_names, **kwargs):
         kwargs['name'] = _calc_worker_name(existing_worker_names)
 
     kwargs['name'] = kwargs['name'].replace('/', '.')
+
+    # Handle job_class if provided
+    if 'job_class' in kwargs and isinstance(kwargs['job_class'], str):
+        kwargs['job_class'] = import_string(kwargs['job_class'])
+
     worker = DjangoWorker(queues, connection=queues[0].connection, **kwargs)
     return worker
 
