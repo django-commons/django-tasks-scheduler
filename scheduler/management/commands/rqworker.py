@@ -5,7 +5,6 @@ import sys
 import click
 from django.core.management.base import BaseCommand
 from django.db import connections
-from django.template.defaultfilters import default
 from redis.exceptions import ConnectionError
 from rq.logutils import setup_loghandlers
 

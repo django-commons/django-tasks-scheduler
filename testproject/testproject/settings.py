@@ -111,22 +111,23 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
+BROKER_PORT = os.getenv("BROKER_PORT", "6379")
 STATIC_URL = "/static/"
 SCHEDULER_QUEUES = {
     "default": {
-        "URL": "redis://localhost:6379/0",
+        "URL": f"redis://localhost:${BROKER_PORT}/0",
     },
     "low": {
-        "URL": "redis://localhost:6379/0",
+        "URL": f"redis://localhost:${BROKER_PORT}/0",
     },
     "high": {
-        "URL": "redis://localhost:6379/1",
+        "URL": f"redis://localhost:${BROKER_PORT}/1",
     },
     "medium": {
-        "URL": "redis://localhost:6379/1",
+        "URL": f"redis://localhost:${BROKER_PORT}/1",
     },
     "another": {
-        "URL": "redis://localhost:6379/1",
+        "URL": f"redis://localhost:${BROKER_PORT}/1",
     },
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

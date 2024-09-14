@@ -30,17 +30,17 @@ jobs:
   test:
     needs: [ 'flake8' ]
     runs-on: ubuntu-latest
-    name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.fake-redis }}"
+    name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.broker }}"
     strategy:
       max-parallel: 6
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
         django-version: [ '5.0.7', '5.1.1' ]
-        fake-redis: ['True', 'False']
+        broker: [ 'redis', 'fakeredis' ]
         include:
           - python-version: '3.12'
             django-version: '5.1.1'
-            fake-redis: 'False'
+            broker: 'redis'
             coverage: yes
 
     services:
@@ -48,11 +48,21 @@ jobs:
         image: redis:7.2.2
         ports:
           - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        healthcheck:
+          test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+          interval: 1s
+          timeout: 3s
+          retries: 5
+
+      valkey:
+        image: valkey/valkey:8.0
+        ports:
+          - 6380:6379
+        healthcheck:
+          test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+          interval: 1s
+          timeout: 3s
+          retries: 5
 
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
@@ -91,7 +101,12 @@ jobs:
         if: ${{ matrix.coverage != 'yes' }}
         run: |
           cd testproject
-          export FAKEREDIS=${{ matrix.fake-redis }}
+          export FAKEREDIS=${{ matrix.broker == 'fakeredis' }}
+          if [ ${{ matrix.broker == 'valkey' }} == true ]; then
+            export BROKER_PORT=6380
+          else
+            export BROKER_PORT=6379
+          fi
           poetry run python manage.py test scheduler
 
       # Steps for coverage check
@@ -102,6 +117,7 @@ jobs:
           pythonVer: ${{ matrix.python-version }}
           djangoVer: ${{ matrix.django-version }}
           repoToken: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create coverage badge
         if: ${{ matrix.coverage == 'yes' && github.event_name == 'push' }}
         uses: schneegans/dynamic-badges-action@v1.7.0
