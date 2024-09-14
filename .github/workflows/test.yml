@@ -48,21 +48,21 @@ jobs:
         image: redis:7.2.2
         ports:
           - 6379:6379
-        healthcheck:
-          test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-          interval: 1s
-          timeout: 3s
-          retries: 5
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
       valkey:
         image: valkey/valkey:8.0
         ports:
           - 6380:6379
-        healthcheck:
-          test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-          interval: 1s
-          timeout: 3s
-          retries: 5
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     outputs:
       version: ${{ steps.getVersion.outputs.VERSION }}
