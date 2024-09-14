@@ -31,6 +31,12 @@ ExecutionStatus = JobStatus
 InvalidJobOperation = InvalidJobOperation
 
 
+def register_sentry(sentry_dsn, **opts):
+    from rq.contrib.sentry import register_sentry as rq_register_sentry
+
+    rq_register_sentry(sentry_dsn, **opts)
+
+
 def as_text(v: Union[bytes, str]) -> Optional[str]:
     """Converts a bytes value to a string using `utf-8`.
 
@@ -66,8 +72,8 @@ class JobExecution(Job):
 
     def is_execution_of(self, scheduled_job):
         return (
-                self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
-                and self.meta.get("scheduled_task_id", None) == scheduled_job.id
+            self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
+            and self.meta.get("scheduled_task_id", None) == scheduled_job.id
         )
 
     def stop_execution(self, connection: ConnectionType):
@@ -96,11 +102,11 @@ class DjangoWorker(Worker):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-            self,
-            burst: bool = False,
-            logging_level: str = "INFO",
-            date_format: str = "%H:%M:%S",
-            log_format: str = "%(asctime)s %(message)s",
+        self,
+        burst: bool = False,
+        logging_level: str = "INFO",
+        date_format: str = "%H:%M:%S",
+        log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.

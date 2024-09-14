@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand
 from django.db import connections
 from rq.logutils import setup_loghandlers
 
+from scheduler.rq_classes import register_sentry
 from scheduler.tools import create_worker
 
 VERBOSITY_TO_LOG_LEVEL = {
@@ -74,6 +75,9 @@ class Command(BaseCommand):
             type=str,
             help="The queues to work on, separated by space, all queues should be using the same redis",
         )
+        parser.add_argument("--sentry-dsn", action="store", dest="sentry_dsn", help="Sentry DSN to use")
+        parser.add_argument("--sentry-debug", action="store_true", dest="sentry_debug", help="Enable Sentry debug mode")
+        parser.add_argument("--sentry-ca-certs", action="store", dest="sentry_ca_certs", help="Path to CA certs file")
 
     def handle(self, **options):
         queues = options.get("queues", [])
@@ -104,6 +108,11 @@ class Command(BaseCommand):
 
             # Close any opened DB connection before any fork
             reset_db_connections()
+
+            # Check whether sentry is enabled
+            if options.get("sentry_dsn") is not None:
+                sentry_opts = dict(ca_certs=options.get("sentry_ca_certs"), debug=options.get("sentry_debug"))
+                register_sentry(options.get("sentry_dsn"), **sentry_opts)
 
             w.work(
                 burst=options.get("burst", False),

@@ -37,9 +37,7 @@ class JobDecoratorTest(TestCase):
     def test_job_decorator_no_params(self):
         test_job.delay()
         config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props(
-            "default", test_job, config.DEFAULT_RESULT_TTL, config.DEFAULT_TIMEOUT
-        )
+        self._assert_job_with_func_and_props("default", test_job, config.DEFAULT_RESULT_TTL, config.DEFAULT_TIMEOUT)
 
     def test_job_decorator_timeout(self):
         test_job_timeout.delay()

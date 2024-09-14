@@ -8,15 +8,17 @@ If no queues are specified, will run on default queue only.
 All queues must have the same redis settings on `SCHEDULER_QUEUES`.
 
 ```shell
-usage: manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker-ttl WORKER_TTL] [--max-jobs MAX_JOBS] [--fork-job-execution FORK_JOB_EXECUTION]
-                          [--job-class JOB_CLASS] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
-                          [--skip-checks]
+usage: manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker-ttl WORKER_TTL] [--max-jobs MAX_JOBS]
+                          [--fork-job-execution FORK_JOB_EXECUTION] [--job-class JOB_CLASS] [--sentry-dsn SENTRY_DSN] [--sentry-debug]
+                          [--sentry-ca-certs SENTRY_CA_CERTS] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH]
+                          [--traceback] [--no-color] [--force-color] [--skip-checks]
                           [queues ...]
 
 positional arguments:
   queues                The queues to work on, separated by space, all queues should be using the same redis
 
 options:
+  -h, --help            show this help message and exit
   --pid PIDFILE         file to write the worker`s pid into
   --burst               Run worker in burst mode
   --name NAME           Name of the worker
@@ -27,10 +29,16 @@ options:
                         Fork job execution to another process
   --job-class JOB_CLASS
                         Jobs class to use
+  --sentry-dsn SENTRY_DSN
+                        Sentry DSN to use
+  --sentry-debug        Enable Sentry debug mode
+  --sentry-ca-certs SENTRY_CA_CERTS
+                        Path to CA certs file
   --version             Show program's version number and exit.
   -v {0,1,2,3}, --verbosity {0,1,2,3}
                         Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
-  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
+  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the
+                        DJANGO_SETTINGS_MODULE environment variable will be used.
   --pythonpath PYTHONPATH
                         A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
   --traceback           Raise on CommandError exceptions.
