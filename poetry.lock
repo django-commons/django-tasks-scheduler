@@ -1637,6 +1637,17 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "valkey-py"
+version = "0.0.1"
+description = "Python interface for valkey key-value store"
+optional = true
+python-versions = ">=3.7"
+files = [
+    {file = "valkey-py-0.0.1.tar.gz", hash = "sha256:7a9e9e60975f7a474682537388be245baa78a6b522b789886470301860b3aaa8"},
+    {file = "valkey_py-0.0.1-py3-none-any.whl", hash = "sha256:125fe45bbdd8b75192e2bcac665962ec1cf9a3451fa48cfda0a25b1a8678f130"},
+]
+
+[[package]]
 name = "virtualenv"
 version = "20.26.4"
 description = "Virtual Python Environment builder"
@@ -1754,4 +1765,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "33d7331de286cd2fbcb0f316f1e4a7fa5810ae3293002809ce55a17c89e420f4"
+content-hash = "e6909a84bf45075e96b1180df40a5287771a71eecfd982576d0a9430d7e8b375"

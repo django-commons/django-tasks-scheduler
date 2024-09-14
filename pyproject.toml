@@ -47,6 +47,7 @@ croniter = ">=2.0"
 click = "^8.1"
 rq = "^1.16"
 pyyaml = { version = "^6.0", optional = true }
+valkey-py = { version = "^0.0.1", optional = true }
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.8.3"
@@ -62,7 +63,7 @@ freezegun = "^1.5"
 yaml = ["pyyaml"]
 
 [tool.flake8]
-max-line-length = 119
+max-line-length = 120
 exclude = [
     'scheduler/migrations',
     'testproject',
