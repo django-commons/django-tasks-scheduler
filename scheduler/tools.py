@@ -12,8 +12,8 @@ from scheduler.settings import get_config
 
 
 def callable_func(callable_str: str):
-    path = callable_str.split('.')
-    module = importlib.import_module('.'.join(path[:-1]))
+    path = callable_str.split(".")
+    module = importlib.import_module(".".join(path[:-1]))
     func = getattr(module, path[-1])
     if callable(func) is False:
         raise TypeError("'{}' is not callable".format(callable_str))
@@ -30,19 +30,18 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
 
 def get_scheduled_task(task_model: str, task_id: int):
     if task_model not in MODEL_NAMES:
-        raise ValueError(f'Job Model {task_model} does not exist, choices are {MODEL_NAMES}')
-    model = apps.get_model(app_label='scheduler', model_name=task_model)
+        raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
+    model = apps.get_model(app_label="scheduler", model_name=task_model)
     task = model.objects.filter(id=task_id).first()
     if task is None:
-        raise ValueError(f'Job {task_model}:{task_id} does not exit')
+        raise ValueError(f"Job {task_model}:{task_id} does not exit")
     return task
 
 
 def run_task(task_model: str, task_id: int):
-    """Run a scheduled job
-    """
+    """Run a scheduled job"""
     scheduled_task = get_scheduled_task(task_model, task_id)
-    logger.debug(f'Running task {str(scheduled_task)}')
+    logger.debug(f"Running task {str(scheduled_task)}")
     args = scheduled_task.parse_args()
     kwargs = scheduled_task.parse_kwargs()
     res = scheduled_task.callable_func()(*args, **kwargs)
@@ -52,10 +51,10 @@ def run_task(task_model: str, task_id: int):
 def _calc_worker_name(existing_worker_names):
     hostname = os.uname()[1]
     c = 1
-    worker_name = f'{hostname}-worker.{c}'
+    worker_name = f"{hostname}-worker.{c}"
     while worker_name in existing_worker_names:
         c += 1
-        worker_name = f'{hostname}-worker.{c}'
+        worker_name = f"{hostname}-worker.{c}"
     return worker_name
 
 
@@ -67,17 +66,17 @@ def create_worker(*queue_names, **kwargs):
     queues = get_queues(*queue_names)
     existing_workers = DjangoWorker.all(connection=queues[0].connection)
     existing_worker_names = set(map(lambda w: w.name, existing_workers))
-    kwargs['fork_job_execution'] = not get_config('FAKEREDIS')
-    if kwargs.get('name', None) is None:
-        kwargs['name'] = _calc_worker_name(existing_worker_names)
+    kwargs["fork_job_execution"] = not get_config("FAKEREDIS")
+    if kwargs.get("name", None) is None:
+        kwargs["name"] = _calc_worker_name(existing_worker_names)
 
-    kwargs['name'] = kwargs['name'].replace('/', '.')
+    kwargs["name"] = kwargs["name"].replace("/", ".")
 
     # Handle job_class if provided
-    if 'job_class' not in kwargs or kwargs["job_class"] is None:
-        kwargs['job_class'] = 'scheduler.rq_classes.JobExecution'
+    if "job_class" not in kwargs or kwargs["job_class"] is None:
+        kwargs["job_class"] = "scheduler.rq_classes.JobExecution"
     try:
-        kwargs['job_class'] = import_string(kwargs['job_class'])
+        kwargs["job_class"] = import_string(kwargs["job_class"])
     except ImportError:
         raise ImportError(f"Could not import job class {kwargs['job_class']}")
 

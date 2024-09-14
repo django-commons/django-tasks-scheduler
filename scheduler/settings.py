@@ -17,22 +17,22 @@ def conf_settings():
     global QUEUES
     global SCHEDULER_CONFIG
 
-    QUEUES = getattr(settings, 'SCHEDULER_QUEUES', None)
+    QUEUES = getattr(settings, "SCHEDULER_QUEUES", None)
     if QUEUES is None:
-        logger.warning('Configuration using RQ_QUEUES is deprecated. Use SCHEDULER_QUEUES instead')
-        QUEUES = getattr(settings, 'RQ_QUEUES', None)
+        logger.warning("Configuration using RQ_QUEUES is deprecated. Use SCHEDULER_QUEUES instead")
+        QUEUES = getattr(settings, "RQ_QUEUES", None)
     if QUEUES is None:
         raise ImproperlyConfigured("You have to define SCHEDULER_QUEUES in settings.py")
 
     SCHEDULER_CONFIG = {
-        'EXECUTIONS_IN_PAGE': 20,
-        'DEFAULT_RESULT_TTL': 600,  # 10 minutes
-        'DEFAULT_TIMEOUT': 300,  # 5 minutes
-        'SCHEDULER_INTERVAL': 10,  # 10 seconds
-        'FAKEREDIS': False,  # For testing purposes
-        'TOKEN_VALIDATION_METHOD': _token_validation,  # Access stats from another application using API tokens
+        "EXECUTIONS_IN_PAGE": 20,
+        "DEFAULT_RESULT_TTL": 600,  # 10 minutes
+        "DEFAULT_TIMEOUT": 300,  # 5 minutes
+        "SCHEDULER_INTERVAL": 10,  # 10 seconds
+        "FAKEREDIS": False,  # For testing purposes
+        "TOKEN_VALIDATION_METHOD": _token_validation,  # Access stats from another application using API tokens
     }
-    user_settings = getattr(settings, 'SCHEDULER_CONFIG', {})
+    user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     SCHEDULER_CONFIG.update(user_settings)
 
 

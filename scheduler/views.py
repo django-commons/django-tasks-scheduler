@@ -42,14 +42,13 @@ def get_worker_executions(worker):
 @staff_member_required
 def stats(request):
     context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
-    return render(request, 'admin/scheduler/stats.html', context_data)
+    return render(request, "admin/scheduler/stats.html", context_data)
 
 
 def stats_json(request):
-    auth_token = request.headers.get('Authorization')
-    token_validation_func = SCHEDULER_CONFIG.get('TOKEN_VALIDATION_METHOD')
-    if (request.user.is_staff or
-            (token_validation_func and auth_token and token_validation_func(auth_token))):
+    auth_token = request.headers.get("Authorization")
+    token_validation_func = SCHEDULER_CONFIG.get("TOKEN_VALIDATION_METHOD")
+    if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):
         return JsonResponse(get_statistics())
 
     return HttpResponseNotFound()
@@ -57,6 +56,7 @@ def stats_json(request):
 
 def get_statistics(run_maintenance_tasks=False):
     from scheduler.settings import QUEUES
+
     queues = []
     if run_maintenance_tasks:
         workers = get_all_workers()
@@ -77,15 +77,15 @@ def get_statistics(run_maintenance_tasks=False):
             # Ideally rq should supports Queue.oldest_job
 
             last_job_id = queue.last_job_id()
-            last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
+            last_job = queue.fetch_job(last_job_id.decode("utf-8")) if last_job_id else None
             if last_job and last_job.enqueued_at:
-                oldest_job_timestamp = last_job.enqueued_at.strftime('%Y-%m-%d, %H:%M:%S')
+                oldest_job_timestamp = last_job.enqueued_at.strftime("%Y-%m-%d, %H:%M:%S")
             else:
                 oldest_job_timestamp = "-"
 
             # parse_class and connection_pool are not needed and not JSON serializable
-            connection_kwargs.pop('parser_class', None)
-            connection_kwargs.pop('connection_pool', None)
+            connection_kwargs.pop("parser_class", None)
+            connection_kwargs.pop("connection_pool", None)
 
             queue_data = dict(
                 name=queue.name,
@@ -103,14 +103,14 @@ def get_statistics(run_maintenance_tasks=False):
             )
             queues.append(queue_data)
         except redis.ConnectionError as e:
-            logger.error(f'Could not connect for queue {queue_name}: {e}')
+            logger.error(f"Could not connect for queue {queue_name}: {e}")
             continue
 
-    return {'queues': queues}
+    return {"queues": queues}
 
 
 def _get_registry_job_list(queue, registry, page):
-    items_per_page = SCHEDULER_CONFIG['EXECUTIONS_IN_PAGE']
+    items_per_page = SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"]
     num_jobs = len(registry)
     job_list = []
 
@@ -139,21 +139,21 @@ def jobs_view(request, queue_name: str, registry_name: str):
     if registry is None:
         return HttpResponseNotFound()
     title = registry_name.capitalize()
-    page = int(request.GET.get('page', 1))
+    page = int(request.GET.get("page", 1))
     job_list, num_jobs, page_range = _get_registry_job_list(queue, registry, page)
 
     context_data = {
         **admin.site.each_context(request),
-        'queue': queue,
-        'registry_name': registry_name,
-        'registry': registry,
-        'jobs': job_list,
-        'num_jobs': num_jobs,
-        'page': page,
-        'page_range': page_range,
-        'job_status': title,
+        "queue": queue,
+        "registry_name": registry_name,
+        "registry": registry,
+        "jobs": job_list,
+        "num_jobs": num_jobs,
+        "page": page,
+        "page_range": page_range,
+        "job_status": title,
     }
-    return render(request, 'admin/scheduler/jobs.html', context_data)
+    return render(request, "admin/scheduler/jobs.html", context_data)
 
 
 @never_cache
@@ -167,10 +167,10 @@ def queue_workers(request, queue_name):
 
     context_data = {
         **admin.site.each_context(request),
-        'queue': queue,
-        'workers': worker_list,
+        "queue": queue,
+        "workers": worker_list,
     }
-    return render(request, 'admin/scheduler/queue_workers.html', context_data)
+    return render(request, "admin/scheduler/queue_workers.html", context_data)
 
 
 @never_cache
@@ -181,9 +181,9 @@ def workers(request):
 
     context_data = {
         **admin.site.each_context(request),
-        'workers': worker_list,
+        "workers": worker_list,
     }
-    return render(request, 'admin/scheduler/workers.html', context_data)
+    return render(request, "admin/scheduler/workers.html", context_data)
 
 
 @never_cache
@@ -199,22 +199,22 @@ def worker_details(request, name):
     worker.total_working_time = worker.total_working_time / 1000
 
     execution_list = get_worker_executions(worker)
-    paginator = Paginator(execution_list, SCHEDULER_CONFIG['EXECUTIONS_IN_PAGE'])
-    page_number = request.GET.get('p', 1)
+    paginator = Paginator(execution_list, SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"])
+    page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
     page_range = paginator.get_elided_page_range(page_obj.number)
     context_data = {
         **admin.site.each_context(request),
-        'queue': queue,
-        'worker': worker,
-        'queue_names': ', '.join(worker.queue_names()),
-        'job': worker.get_current_job(),
-        'total_working_time': worker.total_working_time * 1000,
-        'executions': page_obj,
-        'page_range': page_range,
-        'page_var': 'p',
+        "queue": queue,
+        "worker": worker,
+        "queue_names": ", ".join(worker.queue_names()),
+        "job": worker.get_current_job(),
+        "total_working_time": worker.total_working_time * 1000,
+        "executions": page_obj,
+        "page_range": page_range,
+        "page_var": "p",
     }
-    return render(request, 'admin/scheduler/worker_details.html', context_data)
+    return render(request, "admin/scheduler/worker_details.html", context_data)
 
 
 def _find_job(job_id: str) -> Tuple[Optional[DjangoQueue], Optional[JobExecution]]:
@@ -236,7 +236,7 @@ def _find_job(job_id: str) -> Tuple[Optional[DjangoQueue], Optional[JobExecution
 def job_detail(request, job_id: str):
     queue, job = _find_job(job_id)
     if job is None:
-        return HttpResponseBadRequest(f'Job {escape(job_id)} does not exist, maybe its TTL has passed')
+        return HttpResponseBadRequest(f"Job {escape(job_id)} does not exist, maybe its TTL has passed")
     try:
         job.func_name
         data_is_valid = True
@@ -250,13 +250,13 @@ def job_detail(request, job_id: str):
 
     context_data = {
         **admin.site.each_context(request),
-        'job': job,
-        'dependency_id': job._dependency_id,
-        'queue': queue,
-        'data_is_valid': data_is_valid,
-        'exc_info': exc_info,
+        "job": job,
+        "dependency_id": job._dependency_id,
+        "queue": queue,
+        "data_is_valid": data_is_valid,
+        "exc_info": exc_info,
     }
-    return render(request, 'admin/scheduler/job_detail.html', context_data)
+    return render(request, "admin/scheduler/job_detail.html", context_data)
 
 
 @never_cache
@@ -267,8 +267,8 @@ def clear_queue_registry(request, queue_name, registry_name):
     if registry is None:
         return HttpResponseNotFound()
 
-    next_url = request.META.get('HTTP_REFERER') or reverse('queue_registry_jobs', args=[queue_name, registry_name])
-    if request.method == 'POST':
+    next_url = request.META.get("HTTP_REFERER") or reverse("queue_registry_jobs", args=[queue_name, registry_name])
+    if request.method == "POST":
         try:
             if registry is queue:
                 queue.empty()
@@ -276,23 +276,32 @@ def clear_queue_registry(request, queue_name, registry_name):
                 job_ids = registry.get_job_ids()
                 for job_id in job_ids:
                     registry.remove(job_id, delete_job=True)
-            messages.info(request, f'You have successfully cleared the {registry_name} jobs in queue {queue.name}')
+            messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
         except ResponseError as e:
-            messages.error(request, f'error: {e}', )
+            messages.error(
+                request,
+                f"error: {e}",
+            )
             raise e
-        return redirect('queue_registry_jobs', queue_name, registry_name)
+        return redirect("queue_registry_jobs", queue_name, registry_name)
     job_ids = registry.get_job_ids()
     job_list = JobExecution.fetch_many(job_ids, connection=queue.connection)
     context_data = {
         **admin.site.each_context(request),
-        'queue': queue,
-        'total_jobs': len(registry),
-        'action': 'empty',
-        'jobs': job_list,
-        'next_url': next_url,
-        'action_url': reverse('queue_clear', args=[queue_name, registry_name, ])
+        "queue": queue,
+        "total_jobs": len(registry),
+        "action": "empty",
+        "jobs": job_list,
+        "next_url": next_url,
+        "action_url": reverse(
+            "queue_clear",
+            args=[
+                queue_name,
+                registry_name,
+            ],
+        ),
     }
-    return render(request, 'admin/scheduler/confirm_action.html', context_data)
+    return render(request, "admin/scheduler/confirm_action.html", context_data)
 
 
 @never_cache
@@ -302,9 +311,9 @@ def requeue_all(request, queue_name, registry_name):
     registry = queue.get_registry(registry_name)
     if registry is None:
         return HttpResponseNotFound()
-    next_url = request.META.get('HTTP_REFERER') or reverse('queue_registry_jobs', args=[queue_name, registry_name])
+    next_url = request.META.get("HTTP_REFERER") or reverse("queue_registry_jobs", args=[queue_name, registry_name])
     job_ids = registry.get_job_ids()
-    if request.method == 'POST':
+    if request.method == "POST":
         count = 0
         # Confirmation received
         jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
@@ -317,47 +326,52 @@ def requeue_all(request, queue_name, registry_name):
             except Exception:
                 pass
 
-        messages.info(request, f'You have successfully re-queued {count} jobs!')
-        return redirect('queue_registry_jobs', queue_name, registry_name)
+        messages.info(request, f"You have successfully re-queued {count} jobs!")
+        return redirect("queue_registry_jobs", queue_name, registry_name)
 
     context_data = {
         **admin.site.each_context(request),
-        'queue': queue,
-        'total_jobs': len(queue.failed_job_registry),
-        'action': 'requeue',
-        'jobs': [queue.fetch_job(job_id) for job_id in job_ids],
-        'next_url': next_url,
-        'action_url': reverse('queue_requeue_all', args=[queue_name, registry_name])
+        "queue": queue,
+        "total_jobs": len(queue.failed_job_registry),
+        "action": "requeue",
+        "jobs": [queue.fetch_job(job_id) for job_id in job_ids],
+        "next_url": next_url,
+        "action_url": reverse("queue_requeue_all", args=[queue_name, registry_name]),
     }
 
-    return render(request, 'admin/scheduler/confirm_action.html', context_data)
+    return render(request, "admin/scheduler/confirm_action.html", context_data)
 
 
 @never_cache
 @staff_member_required
 def confirm_action(request, queue_name):
     queue = get_queue(queue_name)
-    next_url = request.META.get('HTTP_REFERER') or reverse('queue_registry_jobs', args=[queue_name, 'queued'])
+    next_url = request.META.get("HTTP_REFERER") or reverse("queue_registry_jobs", args=[queue_name, "queued"])
     try:
         resolve(next_url)
     except Exception:
-        messages.warning(request, 'Bad followup URL')
-        next_url = reverse('queue_registry_jobs', args=[queue_name, 'queued'])
+        messages.warning(request, "Bad followup URL")
+        next_url = reverse("queue_registry_jobs", args=[queue_name, "queued"])
 
-    if request.method == 'POST' and request.POST.get('action', False):
+    if request.method == "POST" and request.POST.get("action", False):
         # confirm action
-        if request.POST.get('_selected_action', False):
-            job_id_list = request.POST.getlist('_selected_action')
+        if request.POST.get("_selected_action", False):
+            job_id_list = request.POST.getlist("_selected_action")
             context_data = {
                 **admin.site.each_context(request),
-                'action': request.POST['action'],
-                'jobs': [queue.fetch_job(job_id) for job_id in job_id_list],
-                'total_jobs': len(job_id_list),
-                'queue': queue,
-                'next_url': next_url,
-                'action_url': reverse('queue_actions', args=[queue_name, ]),
+                "action": request.POST["action"],
+                "jobs": [queue.fetch_job(job_id) for job_id in job_id_list],
+                "total_jobs": len(job_id_list),
+                "queue": queue,
+                "next_url": next_url,
+                "action_url": reverse(
+                    "queue_actions",
+                    args=[
+                        queue_name,
+                    ],
+                ),
             }
-            return render(request, 'admin/scheduler/confirm_action.html', context_data)
+            return render(request, "admin/scheduler/confirm_action.html", context_data)
 
     return redirect(next_url)
 
@@ -366,19 +380,19 @@ def confirm_action(request, queue_name):
 @staff_member_required
 def actions(request, queue_name):
     queue = get_queue(queue_name)
-    next_url = request.POST.get('next_url') or reverse('queue_registry_jobs', args=[queue_name, 'queued'])
+    next_url = request.POST.get("next_url") or reverse("queue_registry_jobs", args=[queue_name, "queued"])
     try:
         resolve(next_url)
     except Exception:
-        messages.warning(request, 'Bad followup URL')
-        next_url = reverse('queue_registry_jobs', args=[queue_name, 'queued'])
+        messages.warning(request, "Bad followup URL")
+        next_url = reverse("queue_registry_jobs", args=[queue_name, "queued"])
 
-    action = request.POST.get('action', False)
-    job_ids = request.POST.get('job_ids', False)
-    if request.method != 'POST' or not action or not job_ids:
+    action = request.POST.get("action", False)
+    job_ids = request.POST.get("job_ids", False)
+    if request.method != "POST" or not action or not job_ids:
         return redirect(next_url)
-    job_ids = request.POST.getlist('job_ids')
-    if action == 'delete':
+    job_ids = request.POST.getlist("job_ids")
+    if action == "delete":
         jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
         for job in jobs:
             if job is None:
@@ -386,15 +400,15 @@ def actions(request, queue_name):
             # Remove job id from queue and delete the actual job
             queue.remove_job_id(job.id)
             job.delete()
-        messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
-    elif action == 'requeue':
+        messages.info(request, f"You have successfully deleted {len(job_ids)} jobs!")
+    elif action == "requeue":
         jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
         for job in jobs:
             if job is None:
                 continue
             job.requeue()
-        messages.info(request, f'You have successfully re-queued {len(job_ids)}  jobs!')
-    elif action == 'stop':
+        messages.info(request, f"You have successfully re-queued {len(job_ids)}  jobs!")
+    elif action == "stop":
         cancelled_jobs = 0
         jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
         for job in jobs:
@@ -405,13 +419,13 @@ def actions(request, queue_name):
                 job.cancel()
                 cancelled_jobs += 1
             except Exception as e:
-                logger.warning(f'Could not stop job: {e}')
+                logger.warning(f"Could not stop job: {e}")
                 pass
-        messages.info(request, f'You have successfully stopped {cancelled_jobs}  jobs!')
+        messages.info(request, f"You have successfully stopped {cancelled_jobs}  jobs!")
     return redirect(next_url)
 
 
-SUPPORTED_JOB_ACTIONS = {'requeue', 'delete', 'enqueue', 'cancel'}
+SUPPORTED_JOB_ACTIONS = {"requeue", "delete", "enqueue", "cancel"}
 
 
 @never_cache
@@ -419,40 +433,40 @@ SUPPORTED_JOB_ACTIONS = {'requeue', 'delete', 'enqueue', 'cancel'}
 def job_action(request, job_id: str, action: str):
     queue, job = _find_job(job_id)
     if job is None:
-        return HttpResponseBadRequest(f'Job {escape(job_id)} does not exist, maybe its TTL has passed')
+        return HttpResponseBadRequest(f"Job {escape(job_id)} does not exist, maybe its TTL has passed")
     if action not in SUPPORTED_JOB_ACTIONS:
         return HttpResponseNotFound()
 
-    if request.method != 'POST':
+    if request.method != "POST":
         context_data = {
             **admin.site.each_context(request),
-            'job': job,
-            'queue': queue,
-            'action': action,
+            "job": job,
+            "queue": queue,
+            "action": action,
         }
-        return render(request, 'admin/scheduler/single_job_action.html', context_data)
+        return render(request, "admin/scheduler/single_job_action.html", context_data)
 
     try:
-        if action == 'requeue':
+        if action == "requeue":
             job.requeue()
-            messages.info(request, f'You have successfully re-queued {job.id}')
-            return redirect('job_details', job_id)
-        elif action == 'delete':
+            messages.info(request, f"You have successfully re-queued {job.id}")
+            return redirect("job_details", job_id)
+        elif action == "delete":
             # Remove job id from queue and delete the actual job
             queue.remove_job_id(job.id)
             job.delete()
-            messages.info(request, 'You have successfully deleted %s' % job.id)
-            return redirect('queue_registry_jobs', queue.name, 'queued')
-        elif action == 'enqueue':
+            messages.info(request, "You have successfully deleted %s" % job.id)
+            return redirect("queue_registry_jobs", queue.name, "queued")
+        elif action == "enqueue":
             job.delete(remove_from_queue=False)
             queue._enqueue_job(job)
-            messages.info(request, 'You have successfully enqueued %s' % job.id)
-            return redirect('job_details', job_id)
-        elif action == 'cancel':
+            messages.info(request, "You have successfully enqueued %s" % job.id)
+            return redirect("job_details", job_id)
+        elif action == "cancel":
             job.cancel()
-            messages.info(request, 'You have successfully enqueued %s' % job.id)
-            return redirect('job_details', job_id)
+            messages.info(request, "You have successfully enqueued %s" % job.id)
+            return redirect("job_details", job_id)
     except InvalidJobOperation as e:
-        logger.warning(f'Could not perform action: {e}')
-        messages.warning(request, f'Could not perform action: {e}')
-    return redirect('job_details', job_id)
+        logger.warning(f"Could not perform action: {e}")
+        messages.warning(request, f"Could not perform action: {e}")
+    return redirect("job_details", job_id)

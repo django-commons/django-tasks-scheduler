@@ -14,15 +14,15 @@ def arg_callable():
 def test_args_kwargs(*args, **kwargs):
     func = "test_args_kwargs({})"
     args_list = [repr(arg) for arg in args]
-    kwargs_list = [f'{k}={v}' for (k, v) in kwargs.items()]
-    return func.format(', '.join(args_list + kwargs_list))
+    kwargs_list = [f"{k}={v}" for (k, v) in kwargs.items()]
+    return func.format(", ".join(args_list + kwargs_list))
 
 
 def long_job():
     sleep(10)
 
 
-test_non_callable = 'I am a teapot'
+test_non_callable = "I am a teapot"
 
 
 def failing_job():

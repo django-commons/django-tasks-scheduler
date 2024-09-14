@@ -12,15 +12,20 @@ from rq.job import Job, JobStatus
 from rq.job import get_current_job  # noqa
 from rq.queue import Queue, logger
 from rq.registry import (
-    DeferredJobRegistry, FailedJobRegistry, FinishedJobRegistry,
-    ScheduledJobRegistry, StartedJobRegistry, CanceledJobRegistry, BaseRegistry,
+    DeferredJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
+    ScheduledJobRegistry,
+    StartedJobRegistry,
+    CanceledJobRegistry,
+    BaseRegistry,
 )
 from rq.scheduler import RQScheduler
 from rq.worker import WorkerStatus
 
 from scheduler import settings
 
-MODEL_NAMES = ['ScheduledTask', 'RepeatableTask', 'CronTask']
+MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
 
 rq_job_decorator = job
 ExecutionStatus = JobStatus
@@ -37,11 +42,11 @@ def as_text(v: Union[bytes, str]) -> Optional[str]:
     if v is None:
         return None
     elif isinstance(v, bytes):
-        return v.decode('utf-8')
+        return v.decode("utf-8")
     elif isinstance(v, str):
         return v
     else:
-        raise ValueError('Unknown type %r' % type(v))
+        raise ValueError("Unknown type %r" % type(v))
 
 
 def compact(lst: List[Any]) -> List[Any]:
@@ -58,11 +63,13 @@ class JobExecution(Job):
 
     @property
     def is_scheduled_task(self):
-        return self.meta.get('scheduled_task_id', None) is not None
+        return self.meta.get("scheduled_task_id", None) is not None
 
     def is_execution_of(self, scheduled_job):
-        return (self.meta.get('task_type', None) == scheduled_job.TASK_TYPE
-                and self.meta.get('scheduled_task_id', None) == scheduled_job.id)
+        return (
+            self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
+            and self.meta.get("scheduled_task_id", None) == scheduled_job.id
+        )
 
     def stop_execution(self, connection: Redis):
         send_stop_job_command(connection, self.id)
@@ -81,22 +88,20 @@ class DjangoWorker(Worker):
         super(DjangoWorker, self).__init__(*args, **kwargs)
 
     def __eq__(self, other):
-        return (isinstance(other, Worker)
-                and self.key == other.key
-                and self.name == other.name)
+        return isinstance(other, Worker) and self.key == other.key and self.name == other.name
 
     def __hash__(self):
-        return hash((self.name, self.key, ','.join(self.queue_names())))
+        return hash((self.name, self.key, ",".join(self.queue_names())))
 
     def __str__(self):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-            self,
-            burst: bool = False,
-            logging_level: str = "INFO",
-            date_format: str = '%H:%M:%S',
-            log_format: str = '%(asctime)s %(message)s',
+        self,
+        burst: bool = False,
+        logging_level: str = "INFO",
+        date_format: str = "%H:%M:%S",
+        log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.
@@ -126,9 +131,9 @@ class DjangoWorker(Worker):
                 self.scheduler.release_locks()
             else:
                 proc = self.scheduler.start()
-                self._set_property('scheduler_pid', proc.pid)
+                self._set_property("scheduler_pid", proc.pid)
 
-    def execute_job(self, job: 'Job', queue: 'Queue'):
+    def execute_job(self, job: "Job", queue: "Queue"):
         if self.fork_job_execution:
             super(DjangoWorker, self).execute_job(job, queue)
         else:
@@ -137,7 +142,7 @@ class DjangoWorker(Worker):
             self.set_state(WorkerStatus.IDLE)
 
     def work(self, **kwargs) -> bool:
-        kwargs.setdefault('with_scheduler', True)
+        kwargs.setdefault("with_scheduler", True)
         return super(DjangoWorker, self).work(**kwargs)
 
     def _set_property(self, prop_name: str, val, pipeline: Optional[Pipeline] = None):
@@ -161,12 +166,12 @@ class DjangoWorker(Worker):
 
 class DjangoQueue(Queue):
     REGISTRIES = dict(
-        finished='finished_job_registry',
-        failed='failed_job_registry',
-        scheduled='scheduled_job_registry',
-        started='started_job_registry',
-        deferred='deferred_job_registry',
-        canceled='canceled_job_registry',
+        finished="finished_job_registry",
+        failed="failed_job_registry",
+        scheduled="scheduled_job_registry",
+        started="started_job_registry",
+        deferred="deferred_job_registry",
+        canceled="canceled_job_registry",
     )
     """
     A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be
@@ -174,12 +179,12 @@ class DjangoQueue(Queue):
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs['job_class'] = JobExecution
+        kwargs["job_class"] = JobExecution
         super(DjangoQueue, self).__init__(*args, **kwargs)
 
-    def get_registry(self, name: str) -> Union[None, BaseRegistry, 'DjangoQueue']:
+    def get_registry(self, name: str) -> Union[None, BaseRegistry, "DjangoQueue"]:
         name = name.lower()
-        if name == 'queued':
+        if name == "queued":
             return self
         elif name in DjangoQueue.REGISTRIES:
             return getattr(self, DjangoQueue.REGISTRIES[name])
@@ -191,23 +196,43 @@ class DjangoQueue(Queue):
 
     @property
     def started_job_registry(self):
-        return StartedJobRegistry(self.name, self.connection, job_class=JobExecution, )
+        return StartedJobRegistry(
+            self.name,
+            self.connection,
+            job_class=JobExecution,
+        )
 
     @property
     def deferred_job_registry(self):
-        return DeferredJobRegistry(self.name, self.connection, job_class=JobExecution, )
+        return DeferredJobRegistry(
+            self.name,
+            self.connection,
+            job_class=JobExecution,
+        )
 
     @property
     def failed_job_registry(self):
-        return FailedJobRegistry(self.name, self.connection, job_class=JobExecution, )
+        return FailedJobRegistry(
+            self.name,
+            self.connection,
+            job_class=JobExecution,
+        )
 
     @property
     def scheduled_job_registry(self):
-        return ScheduledJobRegistry(self.name, self.connection, job_class=JobExecution, )
+        return ScheduledJobRegistry(
+            self.name,
+            self.connection,
+            job_class=JobExecution,
+        )
 
     @property
     def canceled_job_registry(self):
-        return CanceledJobRegistry(self.name, self.connection, job_class=JobExecution, )
+        return CanceledJobRegistry(
+            self.name,
+            self.connection,
+            job_class=JobExecution,
+        )
 
     def get_all_job_ids(self) -> List[str]:
         res = list()
@@ -238,13 +263,13 @@ class DjangoQueue(Queue):
 
 class DjangoScheduler(RQScheduler):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('interval', settings.SCHEDULER_CONFIG['SCHEDULER_INTERVAL'])
+        kwargs.setdefault("interval", settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"])
         super(DjangoScheduler, self).__init__(*args, **kwargs)
 
     @staticmethod
     def reschedule_all_jobs():
         for model_name in MODEL_NAMES:
-            model = apps.get_model(app_label='scheduler', model_name=model_name)
+            model = apps.get_model(app_label="scheduler", model_name=model_name)
             enabled_jobs = model.objects.filter(enabled=True)
             unscheduled_jobs = filter(lambda j: j.ready_for_schedule(), enabled_jobs)
             for item in unscheduled_jobs:

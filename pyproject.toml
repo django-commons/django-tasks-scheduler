@@ -94,6 +94,8 @@ exclude = '''
     | buck-out
     | build
     | dist
+    | scheduler/migrations
+    | scheduler/templates
   )/
   | .*/__pycache__/.*
 )

@@ -13,11 +13,11 @@ def job(*args, **kwargs):
     """
     if len(args) == 0:
         func = None
-        queue = 'default'
+        queue = "default"
     else:
         if callable(args[0]):
             func = args[0]
-            queue = 'default'
+            queue = "default"
         else:
             func = None
             queue = args[0]
@@ -26,15 +26,15 @@ def job(*args, **kwargs):
     if isinstance(queue, str):
         try:
             queue = get_queue(queue)
-            if 'connection' not in kwargs:
-                kwargs['connection'] = queue.connection
+            if "connection" not in kwargs:
+                kwargs["connection"] = queue.connection
         except KeyError:
-            raise QueueNotFoundError(f'Queue {queue} does not exist')
+            raise QueueNotFoundError(f"Queue {queue} does not exist")
 
     config = settings.SCHEDULER_CONFIG
 
-    kwargs.setdefault('result_ttl', config.get('DEFAULT_RESULT_TTL'))
-    kwargs.setdefault('timeout', config.get('DEFAULT_TIMEOUT'))
+    kwargs.setdefault("result_ttl", config.get("DEFAULT_RESULT_TTL"))
+    kwargs.setdefault("timeout", config.get("DEFAULT_TIMEOUT"))
 
     decorator = rq_job_decorator(queue, *args, **kwargs)
     if func:

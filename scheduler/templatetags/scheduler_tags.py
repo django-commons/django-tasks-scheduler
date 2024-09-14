@@ -13,7 +13,7 @@ register = template.Library()
 def show_func_name(rq_job: JobExecution) -> str:
     try:
         res = rq_job.func_name
-        if res == 'scheduler.tools.run_task':
+        if res == "scheduler.tools.run_task":
             task = get_scheduled_task(*rq_job.args)
             res = task.function_string()
         return mark_safe(res)
@@ -54,7 +54,7 @@ def job_runtime(job: JobExecution):
     ended_at = job.ended_at
     if ended_at:
         runtime = job.ended_at - job.started_at
-        return f'{int(runtime.microseconds / 1000)}ms'
+        return f"{int(runtime.microseconds / 1000)}ms"
     elif job.started_at:
         return "Still running"
     else:

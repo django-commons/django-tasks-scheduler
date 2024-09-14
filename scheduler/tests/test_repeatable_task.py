@@ -7,8 +7,7 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.models import RepeatableTask
 from scheduler.tests.test_models import BaseTestCases
-from .testtools import (
-    task_factory, _get_job_from_scheduled_registry)
+from .testtools import task_factory, _get_job_from_scheduled_registry
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
@@ -26,7 +25,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
     def test_clean(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 1
         job.result_ttl = -1
         self.assertIsNone(job.clean())
@@ -34,42 +33,44 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
     def test_clean_seconds(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 60
         job.result_ttl = -1
-        job.interval_unit = 'seconds'
+        job.interval_unit = "seconds"
         self.assertIsNone(job.clean())
 
-    @override_settings(SCHEDULER_CONFIG={
-        'SCHEDULER_INTERVAL': 10,
-    })
+    @override_settings(
+        SCHEDULER_CONFIG={
+            "SCHEDULER_INTERVAL": 10,
+        }
+    )
     def test_clean_too_frequent(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 2  # Smaller than 10
         job.result_ttl = -1
-        job.interval_unit = 'seconds'
+        job.interval_unit = "seconds"
         with self.assertRaises(ValidationError):
             job.clean_interval_unit()
 
     def test_clean_not_multiple(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 121
-        job.interval_unit = 'seconds'
+        job.interval_unit = "seconds"
         with self.assertRaises(ValidationError):
             job.clean_interval_unit()
 
     def test_clean_short_result_ttl(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 1
         job.repeat = 1
         job.result_ttl = 3599
-        job.interval_unit = 'hours'
+        job.interval_unit = "hours"
         job.repeat = 42
         with self.assertRaises(ValidationError):
             job.clean_result_ttl()
@@ -77,53 +78,55 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
     def test_clean_indefinite_result_ttl(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 1
         job.result_ttl = -1
-        job.interval_unit = 'hours'
+        job.interval_unit = "hours"
         job.clean_result_ttl()
 
     def test_clean_undefined_result_ttl(self):
         job = task_factory(self.TaskModelClass)
         job.queue = list(settings.QUEUES)[0]
-        job.callable = 'scheduler.tests.jobs.test_job'
+        job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 1
-        job.interval_unit = 'hours'
+        job.interval_unit = "hours"
         job.clean_result_ttl()
 
     def test_interval_seconds_weeks(self):
-        job = task_factory(self.TaskModelClass, interval=2, interval_unit='weeks')
+        job = task_factory(self.TaskModelClass, interval=2, interval_unit="weeks")
         self.assertEqual(1209600.0, job.interval_seconds())
 
     def test_interval_seconds_days(self):
-        job = task_factory(self.TaskModelClass, interval=2, interval_unit='days')
+        job = task_factory(self.TaskModelClass, interval=2, interval_unit="days")
         self.assertEqual(172800.0, job.interval_seconds())
 
     def test_interval_seconds_hours(self):
-        job = task_factory(self.TaskModelClass, interval=2, interval_unit='hours')
+        job = task_factory(self.TaskModelClass, interval=2, interval_unit="hours")
         self.assertEqual(7200.0, job.interval_seconds())
 
     def test_interval_seconds_minutes(self):
-        job = task_factory(self.TaskModelClass, interval=15, interval_unit='minutes')
+        job = task_factory(self.TaskModelClass, interval=15, interval_unit="minutes")
         self.assertEqual(900.0, job.interval_seconds())
 
     def test_interval_seconds_seconds(self):
-        job = RepeatableTask(interval=15, interval_unit='seconds')
+        job = RepeatableTask(interval=15, interval_unit="seconds")
         self.assertEqual(15.0, job.interval_seconds())
 
     def test_interval_display(self):
-        job = task_factory(self.TaskModelClass, interval=15, interval_unit='minutes')
-        self.assertEqual(job.interval_display(), '15 minutes')
+        job = task_factory(self.TaskModelClass, interval=15, interval_unit="minutes")
+        self.assertEqual(job.interval_display(), "15 minutes")
 
     def test_result_interval(self):
-        job = task_factory(self.TaskModelClass, )
+        job = task_factory(
+            self.TaskModelClass,
+        )
         entry = _get_job_from_scheduled_registry(job)
-        self.assertEqual(entry.meta['interval'], 3600)
+        self.assertEqual(entry.meta["interval"], 3600)
 
     def test_repeat(self):
         job = task_factory(self.TaskModelClass, repeat=10)
         entry = _get_job_from_scheduled_registry(job)
-        self.assertEqual(entry.meta['repeat'], 10)
+        self.assertEqual(entry.meta["repeat"], 10)
 
     def test_repeat_old_job_exhausted(self):
         base_time = timezone.now()
@@ -147,7 +150,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
         base_time = timezone.now()
         job = task_factory(self.TaskModelClass, scheduled_time=base_time - timedelta(minutes=29), repeat=None)
         job.interval = 120
-        job.interval_unit = 'seconds'
+        job.interval_unit = "seconds"
         job.schedule()
         self.assertTrue(job.scheduled_time > base_time)
         self.assertTrue(job.is_scheduled())
@@ -168,9 +171,11 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
 
     def test_check_rescheduled_after_execution_failed_job(self):
         task = task_factory(
-            self.TaskModelClass, callable_name='scheduler.tests.jobs.failing_job',
+            self.TaskModelClass,
+            callable_name="scheduler.tests.jobs.failing_job",
             scheduled_time=timezone.now() + timedelta(seconds=1),
-            repeat=10, )
+            repeat=10,
+        )
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
