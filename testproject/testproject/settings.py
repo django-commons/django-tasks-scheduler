@@ -39,16 +39,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "testproject.urls"
-if django.VERSION > (4, 0):
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": [
-                "redis://127.0.0.1:6379",  # leader
-            ],
-            "OPTIONS": {"connection_class": FakeConnection},
-        }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": [
+            "redis://127.0.0.1:6379",  # leader
+        ],
+        "OPTIONS": {"connection_class": FakeConnection},
     }
+}
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
