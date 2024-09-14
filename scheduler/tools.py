@@ -74,8 +74,12 @@ def create_worker(*queue_names, **kwargs):
     kwargs['name'] = kwargs['name'].replace('/', '.')
 
     # Handle job_class if provided
-    if 'job_class' in kwargs and isinstance(kwargs['job_class'], str):
+    if 'job_class' not in kwargs or kwargs["job_class"] is None:
+        kwargs['job_class'] = 'scheduler.rq_classes.JobExecution'
+    try:
         kwargs['job_class'] = import_string(kwargs['job_class'])
+    except ImportError:
+        raise ImportError(f"Could not import job class {kwargs['job_class']}")
 
     worker = DjangoWorker(queues, connection=queues[0].connection, **kwargs)
     return worker

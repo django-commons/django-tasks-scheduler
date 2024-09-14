@@ -36,6 +36,39 @@ class RqworkerTestCase(TestCase):
         for job in jobs:
             self.assertTrue(job.is_failed)
 
+    def test_rqworker__job_class_param__green(self):
+        queue = get_queue('default')
+
+        # enqueue some jobs that will fail
+        jobs = []
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(failing_job)
+            jobs.append(job)
+            job_ids.append(job.id)
+
+        # Create a worker to execute these jobs
+        call_command('rqworker', '--job-class', 'scheduler.rq_classes.JobExecution', fork_job_execution=False, burst=True)
+
+        # check if all jobs are really failed
+        for job in jobs:
+            self.assertTrue(job.is_failed)
+
+    def test_rqworker__bad_job_class__fail(self):
+        queue = get_queue('default')
+
+        # enqueue some jobs that will fail
+        jobs = []
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(failing_job)
+            jobs.append(job)
+            job_ids.append(job.id)
+
+        # Create a worker to execute these jobs
+        with self.assertRaises(ImportError):
+            call_command('rqworker', '--job-class', 'rq.badclass', fork_job_execution=False, burst=True)
+
     def test_rqworker__run_jobs(self):
         queue = get_queue('default')
 

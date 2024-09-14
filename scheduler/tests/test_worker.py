@@ -43,7 +43,7 @@ class TestWorker(SchedulerBaseCase):
 
     def test_get_worker_with_custom_job_class(self):
         # Test with string representation of job_class
-        worker = create_worker('default', job_class='rq.job.Job')
+        worker = create_worker('default', job_class='scheduler.rq_classes.JobExecution')
         self.assertTrue(issubclass(worker.job_class, Job))
         self.assertTrue(issubclass(worker.job_class, JobExecution))
 
