@@ -5,6 +5,7 @@ import sys
 import click
 from django.core.management.base import BaseCommand
 from django.db import connections
+from django.template.defaultfilters import default
 from redis.exceptions import ConnectionError
 from rq.logutils import setup_loghandlers
 
@@ -47,6 +48,8 @@ class Command(BaseCommand):
                             help='Maximum number of jobs to execute before terminating worker')
         parser.add_argument('--fork-job-execution', action='store', default=True, dest='fork_job_execution', type=bool,
                             help='Fork job execution to another process')
+        parser.add_argument('--job-class', action='store', dest='job_class',
+                            help='Jobs class to use')
         parser.add_argument(
             'queues', nargs='*', type=str,
             help='The queues to work on, separated by space, all queues should be using the same redis')
@@ -71,6 +74,7 @@ class Command(BaseCommand):
             w = create_worker(
                 *queues,
                 name=options['name'],
+                job_class=options.get('job_class'),
                 default_worker_ttl=options['worker_ttl'],
                 fork_job_execution=options['fork_job_execution'], )
 

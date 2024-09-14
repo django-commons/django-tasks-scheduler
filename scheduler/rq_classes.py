@@ -70,9 +70,14 @@ class JobExecution(Job):
 
 class DjangoWorker(Worker):
     def __init__(self, *args, **kwargs):
-        self.fork_job_execution = kwargs.pop('fork_job_execution', True)
-        kwargs['job_class'] = JobExecution
-        kwargs['queue_class'] = DjangoQueue
+        self.fork_job_execution = kwargs.pop("fork_job_execution", True)
+        job_class = kwargs.get("job_class") or JobExecution
+        if not isinstance(job_class, type) or not issubclass(job_class, JobExecution):
+            raise ValueError("job_class must be a subclass of JobExecution")
+
+        # Update kwargs with the potentially modified job_class
+        kwargs["job_class"] = job_class
+        kwargs["queue_class"] = DjangoQueue
         super(DjangoWorker, self).__init__(*args, **kwargs)
 
     def __eq__(self, other):
