@@ -8,9 +8,38 @@ If no queues are specified, will run on default queue only.
 All queues must have the same redis settings on `SCHEDULER_QUEUES`.
 
 ```shell
-python manage.py rqworker queue1 queue2 queue3
+usage: manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker-ttl WORKER_TTL] [--max-jobs MAX_JOBS] [--fork-job-execution FORK_JOB_EXECUTION]
+                          [--job-class JOB_CLASS] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+                          [--skip-checks]
+                          [queues ...]
 
+positional arguments:
+  queues                The queues to work on, separated by space, all queues should be using the same redis
+
+options:
+  --pid PIDFILE         file to write the worker`s pid into
+  --burst               Run worker in burst mode
+  --name NAME           Name of the worker
+  --worker-ttl WORKER_TTL
+                        Default worker timeout to be used
+  --max-jobs MAX_JOBS   Maximum number of jobs to execute before terminating worker
+  --fork-job-execution FORK_JOB_EXECUTION
+                        Fork job execution to another process
+  --job-class JOB_CLASS
+                        Jobs class to use
+  --version             Show program's version number and exit.
+  -v {0,1,2,3}, --verbosity {0,1,2,3}
+                        Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
+  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
+  --pythonpath PYTHONPATH
+                        A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
+  --traceback           Raise on CommandError exceptions.
+  --no-color            Don't colorize the command output.
+  --force-color         Force colorization of the command output.
+  --skip-checks         Skip system checks.
 ```
+
+
 
 ## export
 

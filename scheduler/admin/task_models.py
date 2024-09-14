@@ -5,7 +5,6 @@ from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
-from scheduler.connection_types import ConnectionErrorType
 from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions
@@ -187,7 +186,7 @@ class TaskAdmin(admin.ModelAdmin):
         obj = self.get_object(request, object_id)
         try:
             execution_list = get_job_executions(obj.queue, obj)
-        except (redis.ConnectionError, valkey.ConnectionError)  as e:
+        except (redis.ConnectionError, valkey.ConnectionError) as e:
             logger.warn(f"Could not get job executions: {e}")
             execution_list = list()
         paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)

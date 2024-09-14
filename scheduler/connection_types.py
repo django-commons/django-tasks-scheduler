@@ -10,7 +10,7 @@ ConnectionType = Union[redis.Redis, valkey.Valkey]
 PipelineType = Union[redis.client.Pipeline, valkey.client.Pipeline]
 RedisSentinel = redis.sentinel.Sentinel
 
-BrokerConnectionClass: Dict[Tuple[Broker,bool], Type] = {
+BrokerConnectionClass: Dict[Tuple[Broker, bool], Type] = {
     # Map of (Broker, Strict flag) => Connection Class
     (Broker.REDIS, False): redis.Redis,
     (Broker.VALKEY, False): valkey.Valkey,

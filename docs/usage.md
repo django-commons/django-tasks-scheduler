@@ -43,7 +43,7 @@ You can set in `settings.py` a default value for `DEFAULT_RESULT_TTL` and `DEFAU
 
 ```python
 # settings.py
-RQ = {
+SCHEDULER_CONFIG = {
     'DEFAULT_RESULT_TTL': 360,
     'DEFAULT_TIMEOUT': 60,
 }
@@ -51,8 +51,7 @@ RQ = {
 
 ## Scheduling a job Through django-admin
 
-* Sign in to the Django Admin site (e.g., http://localhost:8000/admin/) and locate the  
-  **Tasks Scheduler** section.
+* Sign in to the Django Admin site (e.g., http://localhost:8000/admin/) and locate the `Tasks Scheduler` section.
 * Click on the **Add** link for the type of job you want to add (`Scheduled Task` - run once, `Repeatable Task` - run
   multiple times, `Cron Task` - Run based on cron schedule).
 * Enter a unique name for the job in the **Name** field.
@@ -83,49 +82,28 @@ calculated in runtime.
 
 ![](media/add-args.jpg)
 
-### Scheduled Task - run once
+### Scheduled Task: run once
 
-No additional steps required.
+No additional steps are required.
 
-### Repeatable Task - Run a job multiple time based on interval
+### Repeatable Task: Run a job multiple time based on interval
 
-Additional fields required:
-
-* Enter an **Interval**, and choose the **Interval unit**. This will calculate the time before the function is called  
-  again.
-* In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will  
-  be scheduled to run forever.
-
-### Cron Task - Run a job multiple time based on cron
-
-Additional fields required:
-
-* In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will be
-  scheduled to run forever.
-* In the **cron string** field, enter a cron string describing how often the job should run.
-
-### Scheduled Task - run once
-
-No additional steps required.
-
-### Repeatable Task - Run a job multiple time based on interval
-
-Additional fields required:
+These additional fields are required:
 
 * Enter an **Interval**, and choose the **Interval unit**. This will calculate the time before the function is called  
   again.
 * In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will  
   be scheduled to run forever.
 
-### Cron Task - Run a job multiple time based on cron
+### Cron Task: Run a job multiple times based on cron
 
-Additional fields required:
+These additional fields are required:
 
 * In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will be
   scheduled to run forever.
 * In the **cron string** field, enter a cron string describing how often the job should run.
 
-## Enqueue jobs through command line
+## Enqueue jobs using the command line
 
 It is possible to queue a job to be executed from the command line
 using django management command:
@@ -134,18 +112,24 @@ using django management command:
 python manage.py run_job -q {queue} -t {timeout} -r {result_ttl} {callable} {args}
 ```
 
-## Running a worker
+## Running a worker to process queued jobs in the background
 
 Create a worker to execute queued jobs on specific queues using:
 
 ```shell
-python manage.py rqworker [queues ...]
+python manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker-ttl WORKER_TTL] [--max-jobs MAX_JOBS] [--fork-job-execution FORK_JOB_EXECUTION]
+                          [--job-class JOB_CLASS] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+                          [--skip-checks]
+                          [queues ...]
+
 ```
+
+More information about the different parameters can be found in the [commands documentation](commands.md). 
 
 ### Running multiple workers as unix/linux services using systemd
 
 You can have multiple workers running as system services.
-In order to have multiple rqworkers, edit the `/etc/systemd/system/rqworker@.service`
+To have multiple rqworkers, edit the `/etc/systemd/system/rqworker@.service`
 file, make sure it ends with `@.service`, the following is example:
 
 ```ini
