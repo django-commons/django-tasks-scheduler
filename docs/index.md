@@ -121,16 +121,24 @@ sequenceDiagram
 
 ## Reporting issues or Features requests
 
-Please report issues via [GitHub Issues](https://github.com/django-commons/django-tasks-scheduler/issues) .
+Please report issues via [GitHub Issues][6] .
 
 ---
 
 ## Acknowledgements
 
-A lot of django-admin views and their tests were adopted from [django-rq](https://github.com/rq/django-rq).
+A lot of django-admin views and their tests were adopted from [django-rq][7].
 
 [1]:https://github.com/django-commons/django-tasks-scheduler/actions/workflows/test.yml/badge.svg
+
 [2]:https://github.com/django-commons/django-tasks-scheduler/actions/workflows/test.yml
+
 [3]:https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json
+
 [4]:https://img.shields.io/pypi/dm/django-tasks-scheduler
+
 [5]:https://pypi.org/project/django-tasks-scheduler/
+
+[6]:https://github.com/django-commons/django-tasks-scheduler/issues
+
+[7]:https://github.com/rq/django-rq

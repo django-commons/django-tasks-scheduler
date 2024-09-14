@@ -11,48 +11,53 @@ class Command(BaseCommand):
     """
     Export all scheduled jobs
     """
+
     help = __doc__
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '-o', '--output',
-            action='store',
-            choices=['json', 'yaml'],
-            default='json',
-            dest='format',
-            help='format of output',
+            "-o",
+            "--output",
+            action="store",
+            choices=["json", "yaml"],
+            default="json",
+            dest="format",
+            help="format of output",
         )
 
         parser.add_argument(
-            '-e', '--enabled',
-            action='store_true',
-            dest='enabled',
-            help='Export only enabled jobs',
+            "-e",
+            "--enabled",
+            action="store_true",
+            dest="enabled",
+            help="Export only enabled jobs",
         )
         parser.add_argument(
-            '-f', '--filename',
-            action='store',
-            dest='filename',
-            help='File name to load (otherwise writes to standard output)',
+            "-f",
+            "--filename",
+            action="store",
+            dest="filename",
+            help="File name to load (otherwise writes to standard output)",
         )
 
     def handle(self, *args, **options):
-        file = open(options.get('filename'), 'w') if options.get("filename") else sys.stdout
+        file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
         res = list()
         for model_name in MODEL_NAMES:
-            model = apps.get_model(app_label='scheduler', model_name=model_name)
+            model = apps.get_model(app_label="scheduler", model_name=model_name)
             jobs = model.objects.all()
-            if options.get('enabled'):
+            if options.get("enabled"):
                 jobs = jobs.filter(enabled=True)
             for job in jobs:
                 res.append(job.to_dict())
 
-        if options.get("format") == 'json':
+        if options.get("format") == "json":
             import json
+
             click.echo(json.dumps(res, indent=2), file=file)
             return
 
-        if options.get("format") == 'yaml':
+        if options.get("format") == "yaml":
             try:
                 import yaml
             except ImportError:

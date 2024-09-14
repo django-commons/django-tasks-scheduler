@@ -13,21 +13,23 @@ class TestCronTask(BaseTestCases.TestBaseTask):
 
     def test_clean(self):
         task = task_factory(CronTask)
-        task.cron_string = '* * * * *'
+        task.cron_string = "* * * * *"
         task.queue = list(settings.QUEUES)[0]
-        task.callable = 'scheduler.tests.jobs.test_job'
+        task.callable = "scheduler.tests.jobs.test_job"
         self.assertIsNone(task.clean())
 
     def test_clean_cron_string_invalid(self):
         task = task_factory(CronTask)
-        task.cron_string = 'not-a-cron-string'
+        task.cron_string = "not-a-cron-string"
         task.queue = list(settings.QUEUES)[0]
-        task.callable = 'scheduler.tests.jobs.test_job'
+        task.callable = "scheduler.tests.jobs.test_job"
         with self.assertRaises(ValidationError):
             task.clean_cron_string()
 
     def test_check_rescheduled_after_execution(self):
-        task = task_factory(CronTask, )
+        task = task_factory(
+            CronTask,
+        )
         queue = task.rqueue
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
@@ -61,14 +63,17 @@ class TestCronTask(BaseTestCases.TestBaseTask):
         queue = get_queue()
         prev_queued = len(queue.scheduled_job_registry)
         prev_finished = len(queue.finished_job_registry)
-        task = task_factory(CronTask, callable_name='scheduler.tests.jobs.enqueue_jobs')
+        task = task_factory(CronTask, callable_name="scheduler.tests.jobs.enqueue_jobs")
         self.assertEqual(prev_queued + 1, len(queue.scheduled_job_registry))
         first_run_id = task.job_id
         entry = queue.fetch_job(first_run_id)
         queue.run_sync(entry)
         self.assertEqual(20, len(queue))
         self.assertEqual(prev_finished + 1, len(queue.finished_job_registry))
-        worker = create_worker('default', fork_job_execution=False, )
+        worker = create_worker(
+            "default",
+            fork_job_execution=False,
+        )
         worker.work(burst=True)
         self.assertEqual(prev_finished + 21, len(queue.finished_job_registry))
         worker.refresh()

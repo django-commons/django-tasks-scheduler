@@ -66,6 +66,7 @@
     'DEFAULT_RESULT_TTL': 500,
     'DEFAULT_TIMEOUT': 300,  # 5 minutes
     'SCHEDULER_INTERVAL': 10,  # 10 seconds
+    'BROKER': 'redis', # 
    }
    ```
    

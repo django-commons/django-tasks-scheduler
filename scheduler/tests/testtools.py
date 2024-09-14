@@ -26,27 +26,38 @@ def sequence_gen():
 seq = sequence_gen()
 
 
-def task_factory(cls, callable_name: str = 'scheduler.tests.jobs.test_job', instance_only=False, **kwargs):
+def task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs):
     values = dict(
-        name='Scheduled Job %d' % next(seq),
+        name="Scheduled Job %d" % next(seq),
         job_id=None,
         queue=list(settings.QUEUES.keys())[0],
         callable=callable_name,
         enabled=True,
-        timeout=None)
+        timeout=None,
+    )
     if cls == ScheduledTask:
-        values.update(dict(
-            result_ttl=None,
-            scheduled_time=timezone.now() + timedelta(days=1), ))
+        values.update(
+            dict(
+                result_ttl=None,
+                scheduled_time=timezone.now() + timedelta(days=1),
+            )
+        )
     elif cls == RepeatableTask:
-        values.update(dict(
-            result_ttl=None,
-            interval=1,
-            interval_unit='hours',
-            repeat=None,
-            scheduled_time=timezone.now() + timedelta(days=1), ))
+        values.update(
+            dict(
+                result_ttl=None,
+                interval=1,
+                interval_unit="hours",
+                repeat=None,
+                scheduled_time=timezone.now() + timedelta(days=1),
+            )
+        )
     elif cls == CronTask:
-        values.update(dict(cron_string="0 0 * * *", ))
+        values.update(
+            dict(
+                cron_string="0 0 * * *",
+            )
+        )
     values.update(kwargs)
     if instance_only:
         instance = cls(**values)
@@ -56,18 +67,18 @@ def task_factory(cls, callable_name: str = 'scheduler.tests.jobs.test_job', inst
 
 
 def taskarg_factory(cls, **kwargs):
-    content_object = kwargs.pop('content_object', None)
+    content_object = kwargs.pop("content_object", None)
     if content_object is None:
         content_object = task_factory(ScheduledTask)
     values = dict(
-        arg_type='str',
-        val='',
+        arg_type="str",
+        val="",
         object_id=content_object.id,
         content_type=ContentType.objects.get_for_model(content_object),
         content_object=content_object,
     )
     if cls == TaskKwarg:
-        values['key'] = 'key%d' % next(seq),
+        values["key"] = ("key%d" % next(seq),)
     values.update(kwargs)
     instance = cls.objects.create(**values)
     return instance
@@ -81,9 +92,9 @@ def _get_job_from_scheduled_registry(django_task: BaseTask):
 
 def _get_executions(django_job: BaseTask):
     job_ids = django_job.rqueue.get_all_job_ids()
-    return list(filter(
-        lambda j: j.is_execution_of(django_job),
-        map(lambda jid: django_job.rqueue.fetch_job(jid), job_ids)))
+    return list(
+        filter(lambda j: j.is_execution_of(django_job), map(lambda jid: django_job.rqueue.fetch_job(jid), job_ids))
+    )
 
 
 class SchedulerBaseCase(TestCase):
@@ -91,23 +102,23 @@ class SchedulerBaseCase(TestCase):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
         try:
-            User.objects.create_superuser('admin', 'admin@a.com', 'admin')
+            User.objects.create_superuser("admin", "admin@a.com", "admin")
         except Exception:
             pass
         cls.client = Client()
 
     def setUp(self) -> None:
         super(SchedulerBaseCase, self).setUp()
-        queue = get_queue('default')
+        queue = get_queue("default")
         queue.empty()
 
     def tearDown(self) -> None:
         super(SchedulerBaseCase, self).setUp()
-        queue = get_queue('default')
+        queue = get_queue("default")
         queue.empty()
 
     @classmethod
     def setUpClass(cls):
         super(SchedulerBaseCase, cls).setUpClass()
-        queue = get_queue('default')
+        queue = get_queue("default")
         queue.connection.flushall()

@@ -14,4 +14,4 @@ class TestInternals(SchedulerBaseCase):
         with self.assertRaises(ValueError):
             get_scheduled_task(task.TASK_TYPE, task.id + 1)
         with self.assertRaises(ValueError):
-            get_scheduled_task('UNKNOWN_JOBTYPE', task.id)
+            get_scheduled_task("UNKNOWN_JOBTYPE", task.id)
