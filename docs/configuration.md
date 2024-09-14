@@ -10,6 +10,7 @@ SCHEDULER_CONFIG = {
     'DEFAULT_RESULT_TTL': 500,
     'DEFAULT_TIMEOUT': 300,  # 5 minutes
     'SCHEDULER_INTERVAL': 10,  # 10 seconds
+    'BROKER': 'redis',
 }
 SCHEDULER_QUEUES = {
     'default': {
@@ -66,6 +67,12 @@ Method to validate request `Authorization` header with.
 Enables checking stats using API token.
 
 Default: no tokens allowed.
+
+### SCHEDULER_CONFIG: `BROKER`
+
+Broker driver to use for the scheduler. Can be `redis` or `valkey` or `fakeredis`.
+
+Default: `redis`.
 
 ### `SCHEDULER_QUEUES`
 

@@ -3,7 +3,15 @@
 ## v2.1.0 🌈
 
 ### 🚀 Features
-- Support for custom `job-class`
+
+- Support for custom job-class for every worker, using `--job-class` option in `rqworker` command.
+- Support for integrating with sentry, using `--sentry-dsn`, `--sentry-debug`, and `--sentry-ca-certs` options in
+  `rqworker` command.
+- Support for using ValKey as broker instead of redis.
+
+### 🧰 Maintenance
+
+- Refactor settings module.
 
 ## v2.0.0 🌈
 
