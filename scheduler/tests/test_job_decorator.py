@@ -38,18 +38,18 @@ class JobDecoratorTest(TestCase):
         test_job.delay()
         config = settings.SCHEDULER_CONFIG
         self._assert_job_with_func_and_props(
-            "default", test_job, config.get("DEFAULT_RESULT_TTL"), config.get("DEFAULT_TIMEOUT")
+            "default", test_job, config.DEFAULT_RESULT_TTL, config.DEFAULT_TIMEOUT
         )
 
     def test_job_decorator_timeout(self):
         test_job_timeout.delay()
         config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props("default", test_job_timeout, config.get("DEFAULT_RESULT_TTL"), 1)
+        self._assert_job_with_func_and_props("default", test_job_timeout, config.DEFAULT_RESULT_TTL, 1)
 
     def test_job_decorator_result_ttl(self):
         test_job_result_ttl.delay()
         config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props("default", test_job_result_ttl, 1, config.get("DEFAULT_TIMEOUT"))
+        self._assert_job_with_func_and_props("default", test_job_result_ttl, 1, config.DEFAULT_TIMEOUT)
 
     def test_job_decorator_different_queue(self):
         test_job_diff_queue.delay()
@@ -57,8 +57,8 @@ class JobDecoratorTest(TestCase):
         self._assert_job_with_func_and_props(
             "django_tasks_scheduler_test",
             test_job_diff_queue,
-            config.get("DEFAULT_RESULT_TTL"),
-            config.get("DEFAULT_TIMEOUT"),
+            config.DEFAULT_RESULT_TTL,
+            config.DEFAULT_TIMEOUT,
         )
 
     def _assert_job_with_func_and_props(self, queue_name, expected_func, expected_result_ttl, expected_timeout):

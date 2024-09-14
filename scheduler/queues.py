@@ -1,11 +1,12 @@
 from typing import List, Dict
 
 import redis
-from redis.sentinel import Sentinel
+import valkey
 
+from .connection_types import RedisSentinel, BrokerConnectionClass
 from .rq_classes import JobExecution, DjangoQueue, DjangoWorker
-from .settings import get_config
-from .settings import logger
+from .settings import SCHEDULER_CONFIG
+from .settings import logger, Broker
 
 _CONNECTION_PARAMS = {
     "URL",
@@ -31,12 +32,12 @@ def _get_redis_connection(config, use_strict_redis=False):
     """
     Returns a redis connection from a connection config
     """
-    if get_config("FAKEREDIS"):
+    if SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS:
         import fakeredis
 
         redis_cls = fakeredis.FakeRedis if use_strict_redis else fakeredis.FakeStrictRedis
     else:
-        redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
+        redis_cls = BrokerConnectionClass[(SCHEDULER_CONFIG.BROKER, use_strict_redis)]
     logger.debug(f"Getting connection for {config}")
     if "URL" in config:
         if config.get("SSL") or config.get("URL").startswith("rediss://"):
@@ -62,7 +63,7 @@ def _get_redis_connection(config, use_strict_redis=False):
         }
         connection_kwargs.update(config.get("CONNECTION_KWARGS", {}))
         sentinel_kwargs = config.get("SENTINEL_KWARGS", {})
-        sentinel = Sentinel(config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
+        sentinel = RedisSentinel(config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
             service_name=config["MASTER_NAME"],
             redis_class=redis_cls,
@@ -86,7 +87,7 @@ def get_connection(queue_settings, use_strict_redis=False):
 
 
 def get_queue(
-    name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
+        name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
 ) -> DjangoQueue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     from .settings import QUEUES
@@ -115,7 +116,7 @@ def get_all_workers():
         try:
             curr_workers = set(DjangoWorker.all(connection=connection))
             workers.update(curr_workers)
-        except redis.ConnectionError as e:
+        except (redis.ConnectionError, valkey.ConnectionError) as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
     return workers
 

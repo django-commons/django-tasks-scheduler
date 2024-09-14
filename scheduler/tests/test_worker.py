@@ -34,12 +34,12 @@ class TestWorker(SchedulerBaseCase):
         self.assertEqual(name.replace("/", "."), worker1.name)
 
     def test_create_worker__scheduler_interval(self):
-        prev = settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"]
-        settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"] = 1
+        prev = settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL
+        settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         worker = create_worker("default")
         worker.work(burst=True)
         self.assertEqual(worker.scheduler.interval, 1)
-        settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"] = prev
+        settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL = prev
 
     def test_get_worker_with_custom_job_class(self):
         # Test with string representation of job_class

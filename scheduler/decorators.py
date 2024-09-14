@@ -31,10 +31,8 @@ def job(*args, **kwargs):
         except KeyError:
             raise QueueNotFoundError(f"Queue {queue} does not exist")
 
-    config = settings.SCHEDULER_CONFIG
-
-    kwargs.setdefault("result_ttl", config.get("DEFAULT_RESULT_TTL"))
-    kwargs.setdefault("timeout", config.get("DEFAULT_TIMEOUT"))
+    kwargs.setdefault("result_ttl", settings.SCHEDULER_CONFIG.DEFAULT_RESULT_TTL)
+    kwargs.setdefault("timeout", settings.SCHEDULER_CONFIG.DEFAULT_TIMEOUT)
 
     decorator = rq_job_decorator(queue, *args, **kwargs)
     if func:

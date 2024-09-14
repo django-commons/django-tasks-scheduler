@@ -1637,15 +1637,22 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
-name = "valkey-py"
-version = "0.0.1"
-description = "Python interface for valkey key-value store"
-optional = true
-python-versions = ">=3.7"
+name = "valkey"
+version = "6.0.1"
+description = "Python client for Valkey forked from redis-py"
+optional = false
+python-versions = ">=3.8"
 files = [
-    {file = "valkey-py-0.0.1.tar.gz", hash = "sha256:7a9e9e60975f7a474682537388be245baa78a6b522b789886470301860b3aaa8"},
-    {file = "valkey_py-0.0.1-py3-none-any.whl", hash = "sha256:125fe45bbdd8b75192e2bcac665962ec1cf9a3451fa48cfda0a25b1a8678f130"},
+    {file = "valkey-6.0.1-py3-none-any.whl", hash = "sha256:6702bf323e88e50ef0be37aad697bcc6334edd40cc66f01259265dd410fa22dc"},
+    {file = "valkey-6.0.1.tar.gz", hash = "sha256:58f4628dc038ab5aa04eea6e75557309c9412a8c45e81ad42d53e42b9a36e7dc"},
 ]
+
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_version < \"3.11\""}
+
+[package.extras]
+libvalkey = ["libvalkey (>=4.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"]
 
 [[package]]
 name = "virtualenv"
@@ -1765,4 +1772,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e6909a84bf45075e96b1180df40a5287771a71eecfd982576d0a9430d7e8b375"
+content-hash = "f6f35ae29aa4944f12e0261def333a8634cf6e83d7d0c4fd662732691c816520"

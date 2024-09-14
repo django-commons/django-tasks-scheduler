@@ -1,9 +1,11 @@
 import redis
+import valkey
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
+from scheduler.connection_types import ConnectionErrorType
 from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions
@@ -185,17 +187,17 @@ class TaskAdmin(admin.ModelAdmin):
         obj = self.get_object(request, object_id)
         try:
             execution_list = get_job_executions(obj.queue, obj)
-        except redis.ConnectionError as e:
+        except (redis.ConnectionError, valkey.ConnectionError)  as e:
             logger.warn(f"Could not get job executions: {e}")
             execution_list = list()
-        paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"])
+        paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)
         page_number = request.GET.get("p", 1)
         page_obj = paginator.get_page(page_number)
         page_range = paginator.get_elided_page_range(page_obj.number)
 
         extra.update(
             {
-                "pagination_required": paginator.count > SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"],
+                "pagination_required": paginator.count > SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE,
                 "executions": page_obj,
                 "page_range": page_range,
                 "page_var": "p",

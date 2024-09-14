@@ -47,7 +47,7 @@ def stats(request):
 
 def stats_json(request):
     auth_token = request.headers.get("Authorization")
-    token_validation_func = SCHEDULER_CONFIG.get("TOKEN_VALIDATION_METHOD")
+    token_validation_func = SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
     if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):
         return JsonResponse(get_statistics())
 
@@ -110,7 +110,7 @@ def get_statistics(run_maintenance_tasks=False):
 
 
 def _get_registry_job_list(queue, registry, page):
-    items_per_page = SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"]
+    items_per_page = SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = len(registry)
     job_list = []
 
@@ -199,7 +199,7 @@ def worker_details(request, name):
     worker.total_working_time = worker.total_working_time / 1000
 
     execution_list = get_worker_executions(worker)
-    paginator = Paginator(execution_list, SCHEDULER_CONFIG["EXECUTIONS_IN_PAGE"])
+    paginator = Paginator(execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
     page_range = paginator.get_elided_page_range(page_obj.number)

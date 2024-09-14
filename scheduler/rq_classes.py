@@ -2,8 +2,6 @@ from typing import List, Any, Optional, Union
 
 import django
 from django.apps import apps
-from redis import Redis
-from redis.client import Pipeline
 from rq import Worker
 from rq.command import send_stop_job_command
 from rq.decorators import job
@@ -24,6 +22,7 @@ from rq.scheduler import RQScheduler
 from rq.worker import WorkerStatus
 
 from scheduler import settings
+from scheduler.connection_types import PipelineType, ConnectionType
 
 MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
 
@@ -67,11 +66,11 @@ class JobExecution(Job):
 
     def is_execution_of(self, scheduled_job):
         return (
-            self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
-            and self.meta.get("scheduled_task_id", None) == scheduled_job.id
+                self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
+                and self.meta.get("scheduled_task_id", None) == scheduled_job.id
         )
 
-    def stop_execution(self, connection: Redis):
+    def stop_execution(self, connection: ConnectionType):
         send_stop_job_command(connection, self.id)
 
 
@@ -97,11 +96,11 @@ class DjangoWorker(Worker):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-        self,
-        burst: bool = False,
-        logging_level: str = "INFO",
-        date_format: str = "%H:%M:%S",
-        log_format: str = "%(asctime)s %(message)s",
+            self,
+            burst: bool = False,
+            logging_level: str = "INFO",
+            date_format: str = "%H:%M:%S",
+            log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.
@@ -145,14 +144,14 @@ class DjangoWorker(Worker):
         kwargs.setdefault("with_scheduler", True)
         return super(DjangoWorker, self).work(**kwargs)
 
-    def _set_property(self, prop_name: str, val, pipeline: Optional[Pipeline] = None):
+    def _set_property(self, prop_name: str, val, pipeline: Optional[PipelineType] = None):
         connection = pipeline if pipeline is not None else self.connection
         if val is None:
             connection.hdel(self.key, prop_name)
         else:
             connection.hset(self.key, prop_name, val)
 
-    def _get_property(self, prop_name: str, pipeline: Optional[Pipeline] = None):
+    def _get_property(self, prop_name: str, pipeline: Optional[PipelineType] = None):
         connection = pipeline if pipeline is not None else self.connection
         return as_text(connection.hget(self.key, prop_name))
 
@@ -263,7 +262,7 @@ class DjangoQueue(Queue):
 
 class DjangoScheduler(RQScheduler):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("interval", settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"])
+        kwargs.setdefault("interval", settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL)
         super(DjangoScheduler, self).__init__(*args, **kwargs)
 
     @staticmethod

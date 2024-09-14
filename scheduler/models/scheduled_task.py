@@ -25,7 +25,7 @@ from scheduler.rq_classes import DjangoQueue
 from scheduler.settings import QUEUES
 from scheduler.settings import logger
 
-SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG["SCHEDULER_INTERVAL"]
+SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL
 
 
 def failure_callback(job, connection, result, *args, **kwargs):
@@ -197,7 +197,7 @@ class BaseTask(models.Model):
 
     @property
     def rqueue(self) -> DjangoQueue:
-        """Returns redis-queue for job"""
+        """Returns django-queue for job"""
         return get_queue(self.queue)
 
     def ready_for_schedule(self) -> bool:
