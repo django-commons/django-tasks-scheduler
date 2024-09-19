@@ -90,6 +90,7 @@ class DjangoWorker(Worker):
         # Update kwargs with the potentially modified job_class
         kwargs["job_class"] = job_class
         kwargs["queue_class"] = DjangoQueue
+        kwargs.pop("worker_class", None)
         super(DjangoWorker, self).__init__(*args, **kwargs)
 
     def __eq__(self, other):
@@ -184,7 +185,8 @@ class DjangoQueue(Queue):
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs["job_class"] = JobExecution
+        kwargs["job_class"] = kwargs.get("job_class") or JobExecution
+        self.job_class = kwargs["job_class"]
         super(DjangoQueue, self).__init__(*args, **kwargs)
 
     def get_registry(self, name: str) -> Union[None, BaseRegistry, "DjangoQueue"]:
@@ -204,7 +206,7 @@ class DjangoQueue(Queue):
         return StartedJobRegistry(
             self.name,
             self.connection,
-            job_class=JobExecution,
+            job_class=self.job_class,
         )
 
     @property
@@ -212,7 +214,7 @@ class DjangoQueue(Queue):
         return DeferredJobRegistry(
             self.name,
             self.connection,
-            job_class=JobExecution,
+            job_class=self.job_class,
         )
 
     @property
@@ -220,7 +222,7 @@ class DjangoQueue(Queue):
         return FailedJobRegistry(
             self.name,
             self.connection,
-            job_class=JobExecution,
+            job_class=self.job_class,
         )
 
     @property
@@ -228,7 +230,7 @@ class DjangoQueue(Queue):
         return ScheduledJobRegistry(
             self.name,
             self.connection,
-            job_class=JobExecution,
+            job_class=self.job_class,
         )
 
     @property
@@ -236,7 +238,7 @@ class DjangoQueue(Queue):
         return CanceledJobRegistry(
             self.name,
             self.connection,
-            job_class=JobExecution,
+            job_class=self.job_class,
         )
 
     def get_all_job_ids(self) -> List[str]:

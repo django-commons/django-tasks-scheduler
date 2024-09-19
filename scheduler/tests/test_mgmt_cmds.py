@@ -17,7 +17,6 @@ from ..tools import create_worker
 
 
 class RqworkerTestCase(TestCase):
-
     def test_rqworker__no_queues_params(self):
         queue = get_queue("default")
 
@@ -49,7 +48,11 @@ class RqworkerTestCase(TestCase):
 
         # Create a worker to execute these jobs
         call_command(
-            "rqworker", "--job-class", "scheduler.rq_classes.JobExecution", fork_job_execution=False, burst=True
+            "rqworker",
+            "--job-class",
+            "scheduler.rq_classes.JobExecution",
+            fork_job_execution=False,
+            burst=True,
         )
 
         # check if all jobs are really failed
@@ -69,7 +72,58 @@ class RqworkerTestCase(TestCase):
 
         # Create a worker to execute these jobs
         with self.assertRaises(ImportError):
-            call_command("rqworker", "--job-class", "rq.badclass", fork_job_execution=False, burst=True)
+            call_command(
+                "rqworker",
+                "--job-class",
+                "rq.badclass",
+                fork_job_execution=False,
+                burst=True,
+            )
+
+    def test_rqworker__worker_class_param__fail(self):
+        queue = get_queue("default")
+
+        # enqueue some jobs that will fail
+        jobs = []
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(failing_job)
+            jobs.append(job)
+            job_ids.append(job.id)
+
+        # Create a worker to execute these jobs with a bad worker class
+        with self.assertRaises(ImportError):
+            call_command(
+                "rqworker",
+                "--worker-class",
+                "scheduler.bad_worker_class",
+                fork_job_execution=False,
+                burst=True,
+            )
+
+    def test_rqworker__worker_class_param__green(self):
+        queue = get_queue("default")
+
+        # enqueue some jobs that will fail
+        jobs = []
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(failing_job)
+            jobs.append(job)
+            job_ids.append(job.id)
+
+        # Create a worker to execute these jobs with a good worker class
+        call_command(
+            "rqworker",
+            "--worker-class",
+            "scheduler.rq_classes.DjangoWorker",
+            fork_job_execution=False,
+            burst=True,
+        )
+
+        # check if all jobs are really failed
+        for job in jobs:
+            self.assertTrue(job.is_failed)
 
     def test_rqworker__run_jobs(self):
         queue = get_queue("default")
@@ -105,7 +159,13 @@ class RqworkerTestCase(TestCase):
         job_ids.append(job.id)
 
         # Create a worker to execute these jobs
-        call_command("rqworker", "default", "django_tasks_scheduler_test", fork_job_execution=False, burst=True)
+        call_command(
+            "rqworker",
+            "default",
+            "django_tasks_scheduler_test",
+            fork_job_execution=False,
+            burst=True,
+        )
 
         # check if all jobs are really failed
         for job in jobs:

@@ -135,7 +135,7 @@ def get_queues(*queue_names, **kwargs) -> List[DjangoQueue]:
     """
     from .settings import QUEUES
 
-    kwargs["job_class"] = JobExecution
+    kwargs["job_class"] = kwargs.get("job_class") or JobExecution
     queue_params = QUEUES[queue_names[0]]
     queues = [get_queue(queue_names[0], **kwargs)]
     # perform consistency checks while building return list

@@ -2,7 +2,8 @@ import os
 import uuid
 
 from rq.job import Job
-from scheduler.rq_classes import JobExecution
+from rq.worker import Worker as RQWorker
+from scheduler.rq_classes import JobExecution, DjangoWorker
 from scheduler.tests.testtools import SchedulerBaseCase
 from scheduler.tools import create_worker
 from . import test_settings  # noqa
@@ -50,3 +51,20 @@ class TestWorker(SchedulerBaseCase):
     def test_get_worker_without_custom_job_class(self):
         worker = create_worker("default")
         self.assertTrue(issubclass(worker.job_class, JobExecution))
+
+    def test_get_worker_with_custom_worker_class(self):
+
+        worker = create_worker("default", worker_class="scheduler.rq_classes.DjangoWorker")
+        self.assertIsInstance(worker, DjangoWorker)
+
+    def test_get_worker_with_bad_custom_worker_class(self):
+        with self.assertRaises(ImportError):
+            create_worker("default", worker_class="scheduler.non_existent_class")
+
+    def test_create_worker_with_rq_worker_class(self):
+        with self.assertRaises(ValueError):
+            create_worker("default", worker_class="rq.Worker")
+
+    def test_get_worker_without_custom_worker_class(self):
+        worker = create_worker("default")
+        self.assertIsInstance(worker, DjangoWorker)

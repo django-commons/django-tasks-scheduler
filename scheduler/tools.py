@@ -75,12 +75,24 @@ def create_worker(*queue_names, **kwargs):
     # Handle job_class if provided
     if "job_class" not in kwargs or kwargs["job_class"] is None:
         kwargs["job_class"] = "scheduler.rq_classes.JobExecution"
+
     try:
         kwargs["job_class"] = import_string(kwargs["job_class"])
     except ImportError:
         raise ImportError(f"Could not import job class {kwargs['job_class']}")
 
-    worker = DjangoWorker(queues, connection=queues[0].connection, **kwargs)
+    # Handle worker_class if provided
+    if "worker_class" in kwargs and kwargs["worker_class"]:
+        try:
+            worker_class = import_string(kwargs["worker_class"])
+            if not issubclass(worker_class, DjangoWorker):
+                raise ValueError("worker_class must be a subclass of DjangoWorker")
+        except ImportError:
+            raise ImportError(f"Could not import worker class {kwargs['worker_class']}")
+    else:
+        worker_class = DjangoWorker
+
+    worker = worker_class(queues, connection=queues[0].connection, **kwargs)
     return worker
 
 

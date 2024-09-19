@@ -69,6 +69,7 @@ class Command(BaseCommand):
             help="Fork job execution to another process",
         )
         parser.add_argument("--job-class", action="store", dest="job_class", help="Jobs class to use")
+        parser.add_argument('--worker-class', action='store', dest='worker_class', help='RQ Worker class to use')
         parser.add_argument(
             "queues",
             nargs="*",
@@ -102,6 +103,7 @@ class Command(BaseCommand):
                 *queues,
                 name=options["name"],
                 job_class=options.get("job_class"),
+                worker_class=options.get("worker_class"),
                 default_worker_ttl=options["worker_ttl"],
                 fork_job_execution=options["fork_job_execution"],
             )
