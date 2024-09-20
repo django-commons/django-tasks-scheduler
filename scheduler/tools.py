@@ -29,7 +29,7 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
     return next_itr
 
 
-def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":
+def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
     if task_model not in MODEL_NAMES:
         raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
     model = apps.get_model(app_label="scheduler", model_name=task_model)

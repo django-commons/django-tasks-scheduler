@@ -61,10 +61,9 @@ class JobExecution(Job):
     def is_scheduled_task(self) -> bool:
         return self.meta.get("scheduled_task_id", None) is not None
 
-    def is_execution_of(self, task: "ScheduledTask") -> bool:
-        return (
-            self.meta.get("task_type", None) == task.TASK_TYPE and self.meta.get("scheduled_task_id", None) == task.id
-        )
+    def is_execution_of(self, task: "ScheduledTask") -> bool:  # noqa: F821
+        return (self.meta.get("task_type", None) == task.TASK_TYPE
+                and self.meta.get("scheduled_task_id", None) == task.id)
 
     def stop_execution(self, connection: ConnectionType):
         send_stop_job_command(connection, self.id)
@@ -92,11 +91,11 @@ class DjangoWorker(Worker):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-        self,
-        burst: bool = False,
-        logging_level: str = "INFO",
-        date_format: str = "%H:%M:%S",
-        log_format: str = "%(asctime)s %(message)s",
+            self,
+            burst: bool = False,
+            logging_level: str = "INFO",
+            date_format: str = "%H:%M:%S",
+            log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.
