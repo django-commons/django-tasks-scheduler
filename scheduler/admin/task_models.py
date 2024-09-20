@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from scheduler import tools
 from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.tools import get_job_executions
+from scheduler.tools import get_job_executions_for_task
 
 
 class HiddenMixin(object):
@@ -185,7 +185,7 @@ class TaskAdmin(admin.ModelAdmin):
         extra = extra_context or {}
         obj = self.get_object(request, object_id)
         try:
-            execution_list = get_job_executions(obj.queue, obj)
+            execution_list = get_job_executions_for_task(obj.queue, obj)
         except (redis.ConnectionError, valkey.ConnectionError) as e:
             logger.warn(f"Could not get job executions: {e}")
             execution_list = list()

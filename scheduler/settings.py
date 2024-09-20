@@ -54,6 +54,7 @@ def conf_settings():
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     if "FAKEREDIS" in user_settings:
+        logger.warning("Configuration using FAKEREDIS is deprecated. Use BROKER='fakeredis' instead")
         user_settings["BROKER"] = Broker.FAKEREDIS if user_settings["FAKEREDIS"] else Broker.REDIS
         user_settings.pop("FAKEREDIS")
     for k in user_settings:
