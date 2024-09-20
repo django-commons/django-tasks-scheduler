@@ -317,7 +317,7 @@ class BaseTask(models.Model):
     def save(self, **kwargs):
         schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
-        if update_fields:
+        if update_fields is not None:
             kwargs["update_fields"] = set(update_fields).union({"modified"})
         super(BaseTask, self).save(**kwargs)
         if schedule_job:

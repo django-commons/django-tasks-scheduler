@@ -38,10 +38,10 @@ def register_sentry(sentry_dsn, **opts):
 
 
 def as_str(v: Union[bytes, str]) -> Optional[str]:
-    """Converts a bytes value to a string using `utf-8`.
+    """Converts a `bytes` value to a string using `utf-8`.
 
     :param v: The value (None/bytes/str)
-    :raises: ValueError: If the value is not bytes or string
+    :raises: ValueError: If the value is not `bytes` or `str`
     :returns: Either the decoded string or None
     """
     if v is None:
@@ -101,9 +101,8 @@ class DjangoWorker(Worker):
         This is specifically designed to be run by the worker when running the `work()` method.
         Instantiates the DjangoScheduler and tries to acquire a lock.
         If the lock is acquired, start scheduler.
-        If worker is on burst mode just enqueues scheduled jobs and quits,
+        If the worker is on burst mode, just enqueues scheduled jobs and quits,
         otherwise, starts the scheduler in a separate process.
-
 
         :param burst (bool, optional): Whether to work on burst mode. Defaults to False.
         :param logging_level (str, optional): Logging level to use. Defaults to "INFO".

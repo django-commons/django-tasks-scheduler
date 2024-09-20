@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 
 import redis
 import valkey
@@ -87,7 +87,7 @@ def get_connection(queue_settings, use_strict_redis=False):
 
 
 def get_queue(
-    name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
+        name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
 ) -> DjangoQueue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     from .settings import QUEUES
@@ -107,18 +107,18 @@ def get_queue(
     )
 
 
-def get_all_workers():
+def get_all_workers() -> Set[DjangoWorker]:
     from .settings import QUEUES
 
-    workers = set()
+    workers_set: Set[DjangoWorker] = set()
     for queue_name in QUEUES:
         connection = get_connection(QUEUES[queue_name])
         try:
-            curr_workers = set(DjangoWorker.all(connection=connection))
-            workers.update(curr_workers)
+            curr_workers: Set[DjangoWorker] = set(DjangoWorker.all(connection=connection))
+            workers_set.update(curr_workers)
         except (redis.ConnectionError, valkey.ConnectionError) as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
-    return workers
+    return workers_set
 
 
 def _queues_share_connection_params(q1_params: Dict, q2_params: Dict):
