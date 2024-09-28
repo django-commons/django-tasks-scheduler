@@ -1,7 +1,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+tags
 *.so
 
 .Python
