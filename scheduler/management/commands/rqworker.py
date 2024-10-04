@@ -19,6 +19,24 @@ VERBOSITY_TO_LOG_LEVEL = {
     3: logging.DEBUG,
 }
 
+WORKER_ARGUMENTS = {
+    "name",
+    "default_result_ttl",
+    "connection",
+    "exc_handler",
+    "exception_handlers",
+    "default_worker_ttl",
+    "maintenance_interval",
+    "job_class",
+    "queue_class",
+    "log_job_description",
+    "job_monitoring_interval",
+    "disable_default_exception_handler",
+    "prepare_for_work",
+    "serializer",
+    "work_horse_killed_handler",
+}
+
 
 def reset_db_connections():
     for c in connections.all():
@@ -80,30 +98,29 @@ class Command(BaseCommand):
         parser.add_argument("--sentry-ca-certs", action="store", dest="sentry_ca_certs", help="Path to CA certs file")
 
     def handle(self, **options):
-        queues = options.get("queues", [])
+        queues = options.pop("queues", [])
         if not queues:
             queues = [
                 "default",
             ]
         click.echo(f"Starting worker for queues {queues}")
-        pidfile = options.get("pidfile")
+        pidfile = options.pop("pidfile")
         if pidfile:
             with open(os.path.expanduser(pidfile), "w") as fp:
                 fp.write(str(os.getpid()))
 
         # Verbosity is defined by default in BaseCommand for all commands
-        verbosity = options.get("verbosity", 1)
+        verbosity = options.pop("verbosity", 1)
         log_level = VERBOSITY_TO_LOG_LEVEL.get(verbosity, logging.INFO)
         setup_loghandlers(log_level)
+
+        init_options = {k: v for k, v in options.items() if k in WORKER_ARGUMENTS}
 
         try:
             # Instantiate a worker
             w = create_worker(
                 *queues,
-                name=options["name"],
-                job_class=options.get("job_class"),
-                default_worker_ttl=options["worker_ttl"],
-                fork_job_execution=options["fork_job_execution"],
+                **init_options
             )
 
             # Close any opened DB connection before any fork

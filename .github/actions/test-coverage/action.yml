@@ -45,6 +45,5 @@ runs:
           ${{ env.REPORT }}
           ```
         repo-token: ${{ inputs.repoToken }}
-        repo-token-user-login: 'github-actions[bot]'
         allow-repeats: true
         update-only: true

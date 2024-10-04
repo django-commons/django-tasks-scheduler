@@ -6,7 +6,7 @@ import redis
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from django.http.response import HttpResponseNotFound, Http404, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -158,7 +158,7 @@ def jobs_view(request, queue_name: str, registry_name: str):
 
 @never_cache
 @staff_member_required
-def queue_workers(request, queue_name):
+def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     all_workers = DjangoWorker.all(queue.connection)
     for w in all_workers:
@@ -175,7 +175,7 @@ def queue_workers(request, queue_name):
 
 @never_cache
 @staff_member_required
-def workers(request):
+def workers(request: HttpRequest) -> HttpResponse:
     all_workers = get_all_workers()
     worker_list = [worker for worker in all_workers]
 
@@ -188,7 +188,7 @@ def workers(request):
 
 @never_cache
 @staff_member_required
-def worker_details(request, name):
+def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     queue, worker = None, None
     workers = get_all_workers()
     worker = next((w for w in workers if w.name == name), None)
@@ -233,7 +233,7 @@ def _find_job(job_id: str) -> Tuple[Optional[DjangoQueue], Optional[JobExecution
 
 @never_cache
 @staff_member_required
-def job_detail(request, job_id: str):
+def job_detail(request: HttpRequest, job_id: str) -> HttpResponse:
     queue, job = _find_job(job_id)
     if job is None:
         return HttpResponseBadRequest(f"Job {escape(job_id)} does not exist, maybe its TTL has passed")
@@ -261,7 +261,7 @@ def job_detail(request, job_id: str):
 
 @never_cache
 @staff_member_required
-def clear_queue_registry(request, queue_name, registry_name):
+def clear_queue_registry(request: HttpRequest, queue_name: str, registry_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     registry = queue.get_registry(registry_name)
     if registry is None:
@@ -306,7 +306,7 @@ def clear_queue_registry(request, queue_name, registry_name):
 
 @never_cache
 @staff_member_required
-def requeue_all(request, queue_name, registry_name):
+def requeue_all(request: HttpRequest, queue_name: str, registry_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     registry = queue.get_registry(registry_name)
     if registry is None:
@@ -344,7 +344,7 @@ def requeue_all(request, queue_name, registry_name):
 
 @never_cache
 @staff_member_required
-def confirm_action(request, queue_name):
+def confirm_action(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = request.META.get("HTTP_REFERER") or reverse("queue_registry_jobs", args=[queue_name, "queued"])
     try:
@@ -378,7 +378,7 @@ def confirm_action(request, queue_name):
 
 @never_cache
 @staff_member_required
-def actions(request, queue_name):
+def actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = request.POST.get("next_url") or reverse("queue_registry_jobs", args=[queue_name, "queued"])
     try:
@@ -430,7 +430,7 @@ SUPPORTED_JOB_ACTIONS = {"requeue", "delete", "enqueue", "cancel"}
 
 @never_cache
 @staff_member_required
-def job_action(request, job_id: str, action: str):
+def job_action(request: HttpRequest, job_id: str, action: str) -> HttpResponse:
     queue, job = _find_job(job_id)
     if job is None:
         return HttpResponseBadRequest(f"Job {escape(job_id)} does not exist, maybe its TTL has passed")

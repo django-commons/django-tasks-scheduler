@@ -1,5 +1,6 @@
 import importlib
 import os
+from typing import List, Any, Callable
 
 import croniter
 from django.apps import apps
@@ -7,11 +8,11 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 
 from scheduler.queues import get_queues, logger, get_queue
-from scheduler.rq_classes import DjangoWorker, MODEL_NAMES
+from scheduler.rq_classes import DjangoWorker, MODEL_NAMES, JobExecution
 from scheduler.settings import SCHEDULER_CONFIG, Broker
 
 
-def callable_func(callable_str: str):
+def callable_func(callable_str: str) -> Callable:
     path = callable_str.split(".")
     module = importlib.import_module(".".join(path[:-1]))
     func = getattr(module, path[-1])
@@ -28,7 +29,7 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
     return next_itr
 
 
-def get_scheduled_task(task_model: str, task_id: int):
+def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
     if task_model not in MODEL_NAMES:
         raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
     model = apps.get_model(app_label="scheduler", model_name=task_model)
@@ -38,7 +39,7 @@ def get_scheduled_task(task_model: str, task_id: int):
     return task
 
 
-def run_task(task_model: str, task_id: int):
+def run_task(task_model: str, task_id: int) -> Any:
     """Run a scheduled job"""
     scheduled_task = get_scheduled_task(task_model, task_id)
     logger.debug(f"Running task {str(scheduled_task)}")
@@ -48,7 +49,7 @@ def run_task(task_model: str, task_id: int):
     return res
 
 
-def _calc_worker_name(existing_worker_names):
+def _calc_worker_name(existing_worker_names) -> str:
     hostname = os.uname()[1]
     c = 1
     worker_name = f"{hostname}-worker.{c}"
@@ -58,10 +59,8 @@ def _calc_worker_name(existing_worker_names):
     return worker_name
 
 
-def create_worker(*queue_names, **kwargs):
-    """
-    Returns a Django worker for all queues or specified ones.
-    """
+def create_worker(*queue_names, **kwargs) -> DjangoWorker:
+    """Returns a Django worker for all queues or specified ones."""
 
     queues = get_queues(*queue_names)
     existing_workers = DjangoWorker.all(connection=queues[0].connection)
@@ -84,7 +83,7 @@ def create_worker(*queue_names, **kwargs):
     return worker
 
 
-def get_job_executions(queue_name, scheduled_task):
+def get_job_executions_for_task(queue_name, scheduled_task) -> List[JobExecution]:
     queue = get_queue(queue_name)
     job_list = queue.get_all_jobs()
     res = list(filter(lambda j: j.is_execution_of(scheduled_task), job_list))

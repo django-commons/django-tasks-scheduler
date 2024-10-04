@@ -38,7 +38,7 @@ def create_job_from_dict(job_dict: Dict[str, Any], update):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
     model_fields = set(map(lambda field: field.attname, model._meta.get_fields()))
-    keys_to_ignore = list(filter(lambda k: k not in model_fields, kwargs.keys()))
+    keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:
         del kwargs[k]
     scheduled_job = model.objects.create(**kwargs)

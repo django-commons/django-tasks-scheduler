@@ -1,4 +1,4 @@
-from typing import List, Any, Optional, Union
+from typing import List, Optional, Union
 
 import django
 from django.apps import apps
@@ -37,44 +37,33 @@ def register_sentry(sentry_dsn, **opts):
     rq_register_sentry(sentry_dsn, **opts)
 
 
-def as_text(v: Union[bytes, str]) -> Optional[str]:
-    """Converts a bytes value to a string using `utf-8`.
+def as_str(v: Union[bytes, str]) -> Optional[str]:
+    """Converts a `bytes` value to a string using `utf-8`.
 
-    :param v: The value (bytes or string)
-    :raises: ValueError: If the value is not bytes or string
+    :param v: The value (None/bytes/str)
+    :raises: ValueError: If the value is not `bytes` or `str`
     :returns: Either the decoded string or None
     """
     if v is None:
         return None
-    elif isinstance(v, bytes):
+    if isinstance(v, bytes):
         return v.decode("utf-8")
-    elif isinstance(v, str):
+    if isinstance(v, str):
         return v
-    else:
-        raise ValueError("Unknown type %r" % type(v))
-
-
-def compact(lst: List[Any]) -> List[Any]:
-    """Remove `None` values from an iterable object.
-    :param lst: A list (or list-like) object
-    :returns: The list without None values
-    """
-    return [item for item in lst if item is not None]
+    raise ValueError("Unknown type %r" % type(v))
 
 
 class JobExecution(Job):
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, Job) and self.id == other.id
 
     @property
-    def is_scheduled_task(self):
+    def is_scheduled_task(self) -> bool:
         return self.meta.get("scheduled_task_id", None) is not None
 
-    def is_execution_of(self, scheduled_job):
-        return (
-            self.meta.get("task_type", None) == scheduled_job.TASK_TYPE
-            and self.meta.get("scheduled_task_id", None) == scheduled_job.id
-        )
+    def is_execution_of(self, task: "ScheduledTask") -> bool:  # noqa: F821
+        return (self.meta.get("task_type", None) == task.TASK_TYPE
+                and self.meta.get("scheduled_task_id", None) == task.id)
 
     def stop_execution(self, connection: ConnectionType):
         send_stop_job_command(connection, self.id)
@@ -102,19 +91,18 @@ class DjangoWorker(Worker):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-        self,
-        burst: bool = False,
-        logging_level: str = "INFO",
-        date_format: str = "%H:%M:%S",
-        log_format: str = "%(asctime)s %(message)s",
+            self,
+            burst: bool = False,
+            logging_level: str = "INFO",
+            date_format: str = "%H:%M:%S",
+            log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.
         Instantiates the DjangoScheduler and tries to acquire a lock.
         If the lock is acquired, start scheduler.
-        If worker is on burst mode just enqueues scheduled jobs and quits,
+        If the worker is on burst mode, just enqueues scheduled jobs and quits,
         otherwise, starts the scheduler in a separate process.
-
 
         :param burst (bool, optional): Whether to work on burst mode. Defaults to False.
         :param logging_level (str, optional): Logging level to use. Defaults to "INFO".
@@ -138,7 +126,7 @@ class DjangoWorker(Worker):
                 proc = self.scheduler.start()
                 self._set_property("scheduler_pid", proc.pid)
 
-    def execute_job(self, job: "Job", queue: "Queue"):
+    def execute_job(self, job: "Job", queue: "Queue") -> None:
         if self.fork_job_execution:
             super(DjangoWorker, self).execute_job(job, queue)
         else:
@@ -150,16 +138,17 @@ class DjangoWorker(Worker):
         kwargs.setdefault("with_scheduler", True)
         return super(DjangoWorker, self).work(**kwargs)
 
-    def _set_property(self, prop_name: str, val, pipeline: Optional[PipelineType] = None):
+    def _set_property(self, prop_name: str, val, pipeline: Optional[PipelineType] = None) -> None:
         connection = pipeline if pipeline is not None else self.connection
         if val is None:
             connection.hdel(self.key, prop_name)
         else:
             connection.hset(self.key, prop_name, val)
 
-    def _get_property(self, prop_name: str, pipeline: Optional[PipelineType] = None):
+    def _get_property(self, prop_name: str, pipeline: Optional[PipelineType] = None) -> Optional[str]:
         connection = pipeline if pipeline is not None else self.connection
-        return as_text(connection.hget(self.key, prop_name))
+        res = connection.hget(self.key, prop_name)
+        return as_str(res)
 
     def scheduler_pid(self) -> Optional[int]:
         if len(self.queues) == 0:
@@ -170,6 +159,9 @@ class DjangoWorker(Worker):
 
 
 class DjangoQueue(Queue):
+    """A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be enqueued later at the end of Django's
+    request/response cycle."""
+
     REGISTRIES = dict(
         finished="finished_job_registry",
         failed="failed_job_registry",
@@ -178,12 +170,8 @@ class DjangoQueue(Queue):
         deferred="deferred_job_registry",
         canceled="canceled_job_registry",
     )
-    """
-    A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be
-    enqueued later at the end of Django's request/response cycle.
-    """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         kwargs["job_class"] = JobExecution
         super(DjangoQueue, self).__init__(*args, **kwargs)
 
@@ -196,11 +184,11 @@ class DjangoQueue(Queue):
         return None
 
     @property
-    def finished_job_registry(self):
+    def finished_job_registry(self) -> FinishedJobRegistry:
         return FinishedJobRegistry(self.name, self.connection)
 
     @property
-    def started_job_registry(self):
+    def started_job_registry(self) -> StartedJobRegistry:
         return StartedJobRegistry(
             self.name,
             self.connection,
@@ -208,7 +196,7 @@ class DjangoQueue(Queue):
         )
 
     @property
-    def deferred_job_registry(self):
+    def deferred_job_registry(self) -> DeferredJobRegistry:
         return DeferredJobRegistry(
             self.name,
             self.connection,
@@ -216,7 +204,7 @@ class DjangoQueue(Queue):
         )
 
     @property
-    def failed_job_registry(self):
+    def failed_job_registry(self) -> FailedJobRegistry:
         return FailedJobRegistry(
             self.name,
             self.connection,
@@ -224,7 +212,7 @@ class DjangoQueue(Queue):
         )
 
     @property
-    def scheduled_job_registry(self):
+    def scheduled_job_registry(self) -> ScheduledJobRegistry:
         return ScheduledJobRegistry(
             self.name,
             self.connection,
@@ -232,7 +220,7 @@ class DjangoQueue(Queue):
         )
 
     @property
-    def canceled_job_registry(self):
+    def canceled_job_registry(self) -> CanceledJobRegistry:
         return CanceledJobRegistry(
             self.name,
             self.connection,
@@ -250,24 +238,24 @@ class DjangoQueue(Queue):
         res.extend(self.canceled_job_registry.get_job_ids())
         return res
 
-    def get_all_jobs(self):
+    def get_all_jobs(self) -> List[JobExecution]:
         job_ids = self.get_all_job_ids()
-        return compact([self.fetch_job(job_id) for job_id in job_ids])
+        return list(filter(lambda j: j is not None, [self.fetch_job(job_id) for job_id in job_ids]))
 
-    def clean_registries(self):
+    def clean_registries(self) -> None:
         self.started_job_registry.cleanup()
         self.failed_job_registry.cleanup()
         self.finished_job_registry.cleanup()
 
-    def remove_job_id(self, job_id: str):
+    def remove_job_id(self, job_id: str) -> None:
         self.connection.lrem(self.key, 0, job_id)
 
-    def last_job_id(self):
+    def last_job_id(self) -> Optional[str]:
         return self.connection.lindex(self.key, 0)
 
 
 class DjangoScheduler(RQScheduler):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("interval", settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL)
         super(DjangoScheduler, self).__init__(*args, **kwargs)
 
@@ -281,10 +269,10 @@ class DjangoScheduler(RQScheduler):
                 logger.debug(f"Rescheduling {str(item)}")
                 item.save()
 
-    def work(self):
+    def work(self) -> None:
         django.setup()
         super(DjangoScheduler, self).work()
 
-    def enqueue_scheduled_jobs(self):
+    def enqueue_scheduled_jobs(self) -> None:
         self.reschedule_all_jobs()
         super(DjangoScheduler, self).enqueue_scheduled_jobs()

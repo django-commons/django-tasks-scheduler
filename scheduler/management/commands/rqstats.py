@@ -68,7 +68,7 @@ class Command(BaseCommand):
             # Deal with colors
             if prev_stats and len(prev_stats["queues"]) > ind:
                 prev = prev_stats["queues"][ind]
-                prev_vals = (prev[k] for k in KEYS)
+                prev_vals = tuple(prev[k] for k in KEYS)
                 colors = [
                     ANSI_LIGHT_GREEN if vals[i] != prev_vals[i] else ANSI_LIGHT_WHITE for i in range(len(prev_vals))
                 ]
