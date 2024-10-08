@@ -51,7 +51,7 @@ valkey = "6.0.1"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.8.3"
-black = "^24.4.2"
+black = "^24.10.0"
 coverage = "^7.6"
 fakeredis = { version = "^2.21.5", extras = ['lua'] }
 Flake8-pyproject = "^1.2"
