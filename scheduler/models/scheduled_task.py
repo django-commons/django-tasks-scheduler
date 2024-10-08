@@ -294,8 +294,8 @@ class BaseTask(models.Model):
             scheduled_time=self._schedule_time().isoformat(),
             interval=getattr(self, "interval", None),
             interval_unit=getattr(self, "interval_unit", None),
-            successful_runs=getattr(self, "successful_runs", None),
-            failed_runs=getattr(self, "failed_runs", None),
+            successful_runs=getattr(self, "successful_runs", 0),
+            failed_runs=getattr(self, "failed_runs", 0),
             last_successful_run=getattr(self, "last_successful_run", None),
             last_failed_run=getattr(self, "last_failed_run", None),
         )
