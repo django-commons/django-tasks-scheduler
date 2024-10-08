@@ -98,8 +98,6 @@ class Task(models.Model):
     at_front = models.BooleanField(
         _("At front"),
         default=False,
-        blank=True,
-        null=True,
         help_text=_("When queuing the job, add it in the front of the queue"),
     )
     timeout = models.IntegerField(

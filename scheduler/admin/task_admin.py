@@ -20,129 +20,18 @@ class HiddenMixin(object):
 class JobArgInline(HiddenMixin, GenericStackedInline):
     model = TaskArg
     extra = 0
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    (
-                        "arg_type",
-                        "val",
-                    ),
-                ),
-            },
-        ),
-    )
+    fieldsets = ((None, dict(fields=("arg_type", "val"))),)
 
 
 class JobKwargInline(HiddenMixin, GenericStackedInline):
     model = TaskKwarg
     extra = 0
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    ("key",),
-                    (
-                        "arg_type",
-                        "val",
-                    ),
-                ),
-            },
-        ),
-    )
-
-
-_LIST_DISPLAY_EXTRA = dict(
-    CronTask=(
-        "cron_string",
-        "next_run",
-        "successful_runs",
-        "last_successful_run",
-        "failed_runs",
-        "last_failed_run",
-    ),
-    ScheduledTask=("scheduled_time",),
-    RepeatableTask=(
-        "scheduled_time",
-        "interval_display",
-        "successful_runs",
-        "last_successful_run",
-        "failed_runs",
-        "last_failed_run",
-    ),
-    Task=(
-        "scheduled_time",
-        "interval_display",
-        "cron_string",
-        "next_run",
-        "successful_runs",
-        "last_successful_run",
-        "failed_runs",
-        "last_failed_run",
-    ),
-)
-_FIELDSET_EXTRA = dict(
-    CronTask=(
-        "cron_string",
-        "timeout",
-        "result_ttl",
-        (
-            "successful_runs",
-            "last_successful_run",
-        ),
-        (
-            "failed_runs",
-            "last_failed_run",
-        ),
-    ),
-    ScheduledTask=("scheduled_time", "timeout", "result_ttl"),
-    RepeatableTask=(
-        "scheduled_time",
-        (
-            "interval",
-            "interval_unit",
-        ),
-        "repeat",
-        "timeout",
-        "result_ttl",
-        (
-            "successful_runs",
-            "last_successful_run",
-        ),
-        (
-            "failed_runs",
-            "last_failed_run",
-        ),
-    ),
-    Task=(
-        "scheduled_time",
-        "cron_string",
-        (
-            "interval",
-            "interval_unit",
-        ),
-        "repeat",
-        "timeout",
-        "result_ttl",
-        (
-            "successful_runs",
-            "last_successful_run",
-        ),
-        (
-            "failed_runs",
-            "last_failed_run",
-        ),
-    ),
-)
+    fieldsets = ((None, dict(fields=("key", ("arg_type", "val")))),)
 
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    """TaskAdmin admin view for all task models.
-    Using the _LIST_DISPLAY_EXTRA and _FIELDSET_EXTRA additional data for each model.
-    """
+    """TaskAdmin admin view for all task models."""
 
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
@@ -163,48 +52,43 @@ class TaskAdmin(admin.ModelAdmin):
         "function_string",
         "is_scheduled",
         "queue",
+        "scheduled_time",
+        "interval_display",
+        "cron_string",
+        "next_run",
+        "successful_runs",
+        "last_successful_run",
+        "failed_runs",
+        "last_failed_run",
     )
     list_display_links = ("name",)
-    readonly_fields = ("job_id",)
+    readonly_fields = (
+        "job_id",
+        "successful_runs",
+        "last_successful_run",
+        "failed_runs",
+        "last_failed_run",
+    )
+    radio_fields = {"task_type": admin.HORIZONTAL}
     fieldsets = (
         (
             None,
-            {
-                "fields": (
+            dict(
+                fields=(
                     "name",
                     "callable",
-                    "enabled",
-                    "at_front",
-                ),
-            },
+                    "task_type",
+                    ("enabled", "timeout", "result_ttl"),
+                    ("scheduled_time", "cron_string", "interval", "interval_unit", "repeat"),
+                )
+            ),
         ),
+        (_("RQ Settings"), dict(fields=(("queue", "at_front"), "job_id"))),
         (
-            _("RQ Settings"),
-            {
-                "fields": (
-                    "queue",
-                    "job_id",
-                ),
-            },
+            _("Previous runs info"),
+            dict(fields=(("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))),
         ),
     )
-
-    def get_list_display(self, request):
-        if self.model.__name__ not in _LIST_DISPLAY_EXTRA:
-            raise ValueError(f"Unrecognized model {self.model}")
-        return TaskAdmin.list_display + _LIST_DISPLAY_EXTRA[self.model.__name__]
-
-    def get_fieldsets(self, request, obj=None):
-        if self.model.__name__ not in _FIELDSET_EXTRA:
-            raise ValueError(f"Unrecognized model {self.model}")
-        return TaskAdmin.fieldsets + (
-            (
-                _("Scheduling"),
-                {
-                    "fields": _FIELDSET_EXTRA[self.model.__name__],
-                },
-            ),
-        )
 
     @admin.display(description="Next run")
     def next_run(self, o: Task):
