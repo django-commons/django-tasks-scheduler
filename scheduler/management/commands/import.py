@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from scheduler.models import TaskArg, TaskKwarg
+from scheduler.models import TaskArg, TaskKwarg, Task
 from scheduler.tools import MODEL_NAMES
 
 
@@ -17,10 +17,20 @@ def job_model_str(model_str: str) -> str:
         return model_str[:-3] + "Task"
     return model_str
 
+def get_task_type(model_str: str) -> Task.TaskType:
+    model_str = job_model_str(model_str)
+    if model_str not in MODEL_NAMES:
+        raise ValueError(f"Invalid model {model_str}")
+    if model_str == "CronTask":
+        return Task.TaskType.CRON
+    elif model_str == "RepeatableTask":
+        return Task.TaskType.REPEATABLE
+    elif model_str == "ScheduledTask":
+        return Task.TaskType.ONCE
 
-def create_job_from_dict(job_dict: Dict[str, Any], update):
-    model = apps.get_model(app_label="scheduler", model_name=job_model_str(job_dict["model"]))
-    existing_job = model.objects.filter(name=job_dict["name"]).first()
+def create_task_from_dict(task_dict: Dict[str, Any], update):
+    existing_job = Task.objects.filter(name=task_dict["name"]).first()
+    task_type = get_task_type(task_dict["model"])
     if existing_job:
         if update:
             click.echo(f'Found existing job "{existing_job}, removing it to be reinserted"')
@@ -28,7 +38,8 @@ def create_job_from_dict(job_dict: Dict[str, Any], update):
         else:
             click.echo(f'Found existing job "{existing_job}", skipping')
             return
-    kwargs = dict(job_dict)
+    kwargs = dict(task_dict)
+    kwargs["task_type"] = task_type
     del kwargs["model"]
     del kwargs["callable_args"]
     del kwargs["callable_kwargs"]
@@ -37,21 +48,21 @@ def create_job_from_dict(job_dict: Dict[str, Any], update):
         if not settings.USE_TZ and not timezone.is_naive(target):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
-    model_fields = set(map(lambda field: field.attname, model._meta.get_fields()))
+    model_fields = set(map(lambda field: field.attname, Task._meta.get_fields()))
     keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:
         del kwargs[k]
-    scheduled_job = model.objects.create(**kwargs)
+    scheduled_job = Task.objects.create(**kwargs)
     click.echo(f"Created job {scheduled_job}")
     content_type = ContentType.objects.get_for_model(scheduled_job)
 
-    for arg in job_dict["callable_args"]:
+    for arg in task_dict["callable_args"]:
         TaskArg.objects.create(
             content_type=content_type,
             object_id=scheduled_job.id,
             **arg,
         )
-    for arg in job_dict["callable_kwargs"]:
+    for arg in task_dict["callable_kwargs"]:
         TaskKwarg.objects.create(
             content_type=content_type,
             object_id=scheduled_job.id,
@@ -125,4 +136,4 @@ class Command(BaseCommand):
                 model.objects.all().delete()
 
         for job in jobs:
-            create_job_from_dict(job, update=options.get("update"))
+            create_task_from_dict(job, update=options.get("update"))

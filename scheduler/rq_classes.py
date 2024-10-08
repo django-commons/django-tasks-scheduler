@@ -61,9 +61,9 @@ class JobExecution(Job):
     def is_scheduled_task(self) -> bool:
         return self.meta.get("scheduled_task_id", None) is not None
 
-    def is_execution_of(self, task: "ScheduledTask") -> bool:  # noqa: F821
+    def is_execution_of(self, task: "Task") -> bool:  # noqa: F821
         return (
-            self.meta.get("task_type", None) == task.TASK_TYPE and self.meta.get("scheduled_task_id", None) == task.id
+            self.meta.get("task_type", None) == task.task_type and self.meta.get("scheduled_task_id", None) == task.id
         )
 
     def stop_execution(self, connection: ConnectionType):
