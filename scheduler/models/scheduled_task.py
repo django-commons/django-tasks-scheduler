@@ -395,7 +395,7 @@ class ScheduledTask(ScheduledTimeMixin, BaseTask):
 
     def ready_for_schedule(self) -> bool:
         return super(ScheduledTask, self).ready_for_schedule() and (
-                self.scheduled_time is None or self.scheduled_time >= timezone.now()
+            self.scheduled_time is None or self.scheduled_time >= timezone.now()
         )
 
     class Meta:

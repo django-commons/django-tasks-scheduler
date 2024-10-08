@@ -93,8 +93,7 @@ class Task(models.Model):
     )
     queue = models.CharField(_("queue"), max_length=255, choices=get_queue_choices, help_text=_("Queue name"))
     job_id = models.CharField(
-        _("job id"), max_length=128, editable=False, blank=True, null=True,
-        help_text=_("Current job_id on queue")
+        _("job id"), max_length=128, editable=False, blank=True, null=True, help_text=_("Current job_id on queue")
     )
     at_front = models.BooleanField(
         _("At front"),
@@ -147,10 +146,18 @@ class Task(models.Model):
         help_text=_("Last time the task has failed"),
     )
     interval = models.PositiveIntegerField(
-        _("interval"), blank=True, null=True,
-        help_text=_("Interval for repeatable task"), )
+        _("interval"),
+        blank=True,
+        null=True,
+        help_text=_("Interval for repeatable task"),
+    )
     interval_unit = models.CharField(
-        _("interval unit"), max_length=12, choices=TimeUnits.choices, default=TimeUnits.HOURS, blank=True, null=True,
+        _("interval unit"),
+        max_length=12,
+        choices=TimeUnits.choices,
+        default=TimeUnits.HOURS,
+        blank=True,
+        null=True,
     )
     repeat = models.PositiveIntegerField(
         _("repeat"),
@@ -161,7 +168,9 @@ class Task(models.Model):
     scheduled_time = models.DateTimeField(_("scheduled time"))
     cron_string = models.CharField(
         _("cron string"),
-        max_length=64, blank=True, null=True,
+        max_length=64,
+        blank=True,
+        null=True,
         help_text=mark_safe(
             """Define the schedule in a crontab like syntax.
             Times are in UTC. Use <a href="https://crontab.guru/">crontab.guru</a> to create a cron string."""

@@ -87,7 +87,7 @@ def get_connection(queue_settings, use_strict_redis=False):
 
 
 def get_queue(
-        name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
+    name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
 ) -> DjangoQueue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     from .settings import QUEUES
