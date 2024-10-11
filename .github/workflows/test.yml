@@ -34,12 +34,12 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.10', '3.11', '3.12' ]
-        django-version: [ '5.0.7', '5.1.1' ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+        django-version: [ '5.0.7', '5.1.2' ]
         broker: [ 'redis', 'fakeredis', 'valkey' ]
         include:
           - python-version: '3.12'
-            django-version: '5.1.1'
+            django-version: '5.1.2'
             broker: 'redis'
             coverage: yes
 
