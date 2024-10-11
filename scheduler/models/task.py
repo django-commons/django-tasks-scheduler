@@ -69,6 +69,7 @@ class TaskType(models.TextChoices):
     REPEATABLE = "RepeatableTask", _("Repeatable Task")
     ONCE = "OnceTask", _("Run once")
 
+
 class Task(models.Model):
     class TimeUnits(models.TextChoices):
         SECONDS = "seconds", _("seconds")

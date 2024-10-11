@@ -406,6 +406,7 @@ class ScheduledTask(ScheduledTimeMixin, BaseTask):
 
 class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
     task_type = "RepeatableTask"
+
     class TimeUnits(models.TextChoices):
         SECONDS = "seconds", _("seconds")
         MINUTES = "minutes", _("minutes")

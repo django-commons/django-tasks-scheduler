@@ -18,6 +18,7 @@ def job_model_str(model_str: str) -> str:
         return model_str[:-3] + "Task"
     return model_str
 
+
 def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
     if model_str not in MODEL_NAMES:
@@ -28,6 +29,7 @@ def get_task_type(model_str: str) -> TaskType:
         return TaskType.REPEATABLE
     elif model_str == "ScheduledTask":
         return TaskType.ONCE
+
 
 def create_task_from_dict(task_dict: Dict[str, Any], update):
     existing_job = Task.objects.filter(name=task_dict["name"]).first()
