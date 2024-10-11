@@ -70,7 +70,7 @@ def get_queue_choices():
 class BaseTask(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    TASK_TYPE = "BaseTask"
+    task_type = "BaseTask"
     name = models.CharField(
         _("name"),
         max_length=128,
@@ -180,7 +180,7 @@ class BaseTask(models.Model):
         """
         res = dict(
             meta=dict(
-                task_type=self.TASK_TYPE,
+                task_type=self.task_type,
                 scheduled_task_id=self.id,
             ),
             on_success=success_callback,
@@ -227,7 +227,7 @@ class BaseTask(models.Model):
         job = self.rqueue.enqueue_at(
             schedule_time,
             tools.run_task,
-            args=(self.TASK_TYPE, self.id),
+            args=(self.task_type, self.id),
             **kwargs,
         )
         self.job_id = job.id
@@ -239,7 +239,7 @@ class BaseTask(models.Model):
         kwargs = self._enqueue_args()
         job = self.rqueue.enqueue(
             tools.run_task,
-            args=(self.TASK_TYPE, self.id),
+            args=(self.task_type, self.id),
             **kwargs,
         )
         self.job_id = job.id
@@ -266,7 +266,7 @@ class BaseTask(models.Model):
     def to_dict(self) -> Dict:
         """Export model to dictionary, so it can be saved as external file backup"""
         res = dict(
-            model=self.TASK_TYPE,
+            model=self.task_type,
             name=self.name,
             callable=self.callable,
             callable_args=[
@@ -312,7 +312,7 @@ class BaseTask(models.Model):
 
     def __str__(self):
         func = self.function_string()
-        return f"{self.TASK_TYPE}[{self.name}={func}]"
+        return f"{self.task_type}[{self.name}={func}]"
 
     def save(self, **kwargs):
         schedule_job = kwargs.pop("schedule_job", True)
@@ -391,7 +391,7 @@ class RepeatableMixin(models.Model):
 
 
 class ScheduledTask(ScheduledTimeMixin, BaseTask):
-    TASK_TYPE = "ScheduledTask"
+    task_type = "ScheduledTask"
 
     def ready_for_schedule(self) -> bool:
         return super(ScheduledTask, self).ready_for_schedule() and (
@@ -405,6 +405,7 @@ class ScheduledTask(ScheduledTimeMixin, BaseTask):
 
 
 class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
+    task_type = "RepeatableTask"
     class TimeUnits(models.TextChoices):
         SECONDS = "seconds", _("seconds")
         MINUTES = "minutes", _("minutes")
@@ -422,7 +423,6 @@ class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
         null=True,
         help_text=_("Number of times to run the job. Leaving this blank means it will run forever."),
     )
-    TASK_TYPE = "RepeatableTask"
 
     def clean(self):
         super(RepeatableTask, self).clean()
@@ -497,7 +497,7 @@ class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
 
 
 class CronTask(RepeatableMixin, BaseTask):
-    TASK_TYPE = "CronTask"
+    task_type = "CronTask"
 
     cron_string = models.CharField(
         _("cron string"),

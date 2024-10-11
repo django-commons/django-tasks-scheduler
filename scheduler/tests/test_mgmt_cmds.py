@@ -7,12 +7,13 @@ import yaml
 from django.core.management import call_command
 from django.test import TestCase
 
-from scheduler.models import ScheduledTask, RepeatableTask
+from scheduler.models import ScheduledTask, RepeatableTask, Task
 from scheduler.queues import get_queue
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.testtools import task_factory
 from . import test_settings  # noqa
 from .test_views import BaseTestCase
+from ..models.task import TaskType
 from ..tools import create_worker
 
 
@@ -231,8 +232,8 @@ class ImportTest(TestCase):
         # act
         call_command("import", filename=self.tmpfile.name)
         # assert
-        self.assertEqual(1, ScheduledTask.objects.count())
-        db_job = ScheduledTask.objects.first()
+        self.assertEqual(1, Task.objects.filter(task_type=TaskType.ONCE).count())
+        db_job = Task.objects.filter(task_type=TaskType.ONCE).first()
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
@@ -247,8 +248,8 @@ class ImportTest(TestCase):
         # act
         call_command("import", filename=self.tmpfile.name, format="yaml")
         # assert
-        self.assertEqual(1, ScheduledTask.objects.count())
-        db_job = ScheduledTask.objects.first()
+        self.assertEqual(1, Task.objects.filter(task_type=TaskType.ONCE).count())
+        db_job = Task.objects.filter(task_type=TaskType.ONCE).objects.first()
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
@@ -282,13 +283,13 @@ class ImportTest(TestCase):
             reset=True,
         )
         # assert
-        self.assertEqual(1, ScheduledTask.objects.count())
-        db_job = ScheduledTask.objects.first()
+        self.assertEqual(1, Task.objects.filter(task_type=TaskType.ONCE).count())
+        db_job = Task.objects.filter(task_type=TaskType.ONCE).first()
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))
-        self.assertEqual(1, RepeatableTask.objects.count())
-        db_job = RepeatableTask.objects.first()
+        self.assertEqual(1, Task.objects.filter(task_type=TaskType.REPEATABLE).count())
+        db_job = Task.objects.filter(task_type=TaskType.REPEATABLE).first()
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(jobs[1], attr), getattr(db_job, attr))
@@ -307,8 +308,8 @@ class ImportTest(TestCase):
             update=True,
         )
         # assert
-        self.assertEqual(2, ScheduledTask.objects.count())
-        db_job = ScheduledTask.objects.get(name=jobs[0].name)
+        self.assertEqual(2, Task.objects.filter(task_type=TaskType.ONCE).count())
+        db_job = Task.objects.filter(task_type=TaskType.ONCE).get(name=jobs[0].name)
         self.assertNotEqual(jobs[0].id, db_job.id)
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
@@ -327,8 +328,8 @@ class ImportTest(TestCase):
             filename=self.tmpfile.name,
         )
         # assert
-        self.assertEqual(2, ScheduledTask.objects.count())
-        db_job = ScheduledTask.objects.get(name=jobs[0].name)
+        self.assertEqual(2, Task.objects.filter(task_type=TaskType.ONCE).count())
+        db_job = Task.objects.get(name=jobs[0].name)
         attrs = ["id", "name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(jobs[0], attr), getattr(db_job, attr))

@@ -376,9 +376,7 @@ class BaseTestCases:
         def test_admin_enqueue_job_now(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.TaskModelClass)
             self.assertIsNotNone(task.job_id)
             self.assertTrue(task.is_scheduled())
             data = {
@@ -396,7 +394,7 @@ class BaseTestCases:
             self.assertEqual(200, res.status_code)
             entry = _get_job_from_scheduled_registry(task)
             task_model, scheduled_task_id = entry.args
-            self.assertEqual(task_model, task.TASK_TYPE)
+            self.assertEqual(task_model, task.task_type)
             self.assertEqual(scheduled_task_id, task.id)
             self.assertEqual("scheduled", entry.get_status())
             assert_has_execution_with_status(task, "queued")
@@ -410,7 +408,7 @@ class BaseTestCases:
 
             # assert 2
             entry = _get_job_from_scheduled_registry(task)
-            self.assertEqual(task_model, task.TASK_TYPE)
+            self.assertEqual(task_model, task.task_type)
             self.assertEqual(scheduled_task_id, task.id)
             assert_has_execution_with_status(task, "finished")
 

@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from scheduler.models import TaskArg, TaskKwarg, Task
+from scheduler.models.task import TaskType
 from scheduler.tools import MODEL_NAMES
 
 
@@ -17,16 +18,16 @@ def job_model_str(model_str: str) -> str:
         return model_str[:-3] + "Task"
     return model_str
 
-def get_task_type(model_str: str) -> Task.TaskType:
+def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
     if model_str not in MODEL_NAMES:
         raise ValueError(f"Invalid model {model_str}")
     if model_str == "CronTask":
-        return Task.TaskType.CRON
+        return TaskType.CRON
     elif model_str == "RepeatableTask":
-        return Task.TaskType.REPEATABLE
+        return TaskType.REPEATABLE
     elif model_str == "ScheduledTask":
-        return Task.TaskType.ONCE
+        return TaskType.ONCE
 
 def create_task_from_dict(task_dict: Dict[str, Any], update):
     existing_job = Task.objects.filter(name=task_dict["name"]).first()

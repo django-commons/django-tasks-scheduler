@@ -64,12 +64,12 @@ def get_queue_choices():
     return [(queue, queue) for queue in QUEUES.keys()]
 
 
-class Task(models.Model):
-    class TaskType(models.TextChoices):
-        CRON = "CronTask", _("Cron Task")
-        REPEATABLE = "RepeatableTask", _("Repeatable Task")
-        ONCE = "OnceTask", _("Run once")
+class TaskType(models.TextChoices):
+    CRON = "CronTask", _("Cron Task")
+    REPEATABLE = "RepeatableTask", _("Repeatable Task")
+    ONCE = "OnceTask", _("Run once")
 
+class Task(models.Model):
     class TimeUnits(models.TextChoices):
         SECONDS = "seconds", _("seconds")
         MINUTES = "minutes", _("minutes")
@@ -243,7 +243,7 @@ class Task(models.Model):
             res["job_timeout"] = self.timeout
         if self.result_ttl is not None:
             res["result_ttl"] = self.result_ttl
-        if self.task_type == self.TaskType.REPEATABLE:
+        if self.task_type == TaskType.REPEATABLE:
             res["meta"]["interval"] = self.interval_seconds()
             res["meta"]["repeat"] = self.repeat
         return res
@@ -267,7 +267,7 @@ class Task(models.Model):
         if not self.enabled:
             logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
             return False
-        if self.task_type == Task.TaskType.REPEATABLE and self._schedule_time() < timezone.now():
+        if self.task_type == TaskType.REPEATABLE and self._schedule_time() < timezone.now():
             return False
         return True
 
@@ -316,9 +316,9 @@ class Task(models.Model):
         return True
 
     def _schedule_time(self):
-        if self.task_type == self.TaskType.CRON:
+        if self.task_type == TaskType.CRON:
             self.scheduled_time = tools.get_next_cron_time(self.cron_string)
-        elif self.task_type == self.TaskType.REPEATABLE:
+        elif self.task_type == TaskType.REPEATABLE:
             _now = timezone.now()
             if self.scheduled_time >= _now:
                 return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
@@ -458,8 +458,8 @@ class Task(models.Model):
     def clean(self):
         self.clean_queue()
         self.clean_callable()
-        if self.task_type == self.TaskType.CRON:
+        if self.task_type == TaskType.CRON:
             self.clean_cron_string()
-        if self.task_type == self.TaskType.REPEATABLE:
+        if self.task_type == TaskType.REPEATABLE:
             self.clean_interval_unit()
             self.clean_result_ttl()

@@ -33,7 +33,7 @@ def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime
 
 def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
     if task_model not in MODEL_NAMES:
-        raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
+        raise ValueError(f"Job Model `{task_model}` does not exist, choices are {MODEL_NAMES}")
     model = apps.get_model(app_label="scheduler", model_name=task_model)
     task = model.objects.filter(id=task_id).first()
     if task is None:
