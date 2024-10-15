@@ -113,7 +113,7 @@ class SchedulerBaseCase(TestCase):
         queue.empty()
 
     def tearDown(self) -> None:
-        super(SchedulerBaseCase, self).setUp()
+        super(SchedulerBaseCase, self).tearDown()
         queue = get_queue("default")
         queue.empty()
 

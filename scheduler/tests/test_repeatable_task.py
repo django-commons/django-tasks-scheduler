@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from scheduler import settings
 from scheduler.models import RepeatableTask
-from scheduler.tests.test_models import BaseTestCases
+from scheduler.tests.test_old_models import BaseTestCases
 from .testtools import task_factory, _get_job_from_scheduled_registry
 
 

@@ -1,6 +1,6 @@
 import importlib
 import os
-from typing import List, Any, Callable
+from typing import List, Any, Callable, Optional
 
 import croniter
 from django.apps import apps
@@ -21,8 +21,10 @@ def callable_func(callable_str: str) -> Callable:
     return func
 
 
-def get_next_cron_time(cron_string) -> timezone.datetime:
+def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime]:
     """Calculate the next scheduled time by creating a crontab object with a cron string"""
+    if cron_string is None:
+        return None
     now = timezone.now()
     itr = croniter.croniter(cron_string, now)
     next_itr = itr.get_next(timezone.datetime)
@@ -31,7 +33,7 @@ def get_next_cron_time(cron_string) -> timezone.datetime:
 
 def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
     if task_model not in MODEL_NAMES:
-        raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
+        raise ValueError(f"Job Model `{task_model}` does not exist, choices are {MODEL_NAMES}")
     model = apps.get_model(app_label="scheduler", model_name=task_model)
     task = model.objects.filter(id=task_id).first()
     if task is None:

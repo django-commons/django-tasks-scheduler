@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from scheduler import settings
 from scheduler.models import CronTask
 from scheduler.tools import create_worker
-from .test_models import BaseTestCases
+from .test_old_models import BaseTestCases
 from .testtools import task_factory
 from ..queues import get_queue
 

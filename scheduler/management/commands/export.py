@@ -54,7 +54,7 @@ class Command(BaseCommand):
         if options.get("format") == "json":
             import json
 
-            click.echo(json.dumps(res, indent=2), file=file)
+            click.echo(json.dumps(res, indent=2, default=str), file=file)
             return
 
         if options.get("format") == "yaml":

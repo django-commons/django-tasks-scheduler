@@ -118,10 +118,7 @@ class Command(BaseCommand):
 
         try:
             # Instantiate a worker
-            w = create_worker(
-                *queues,
-                **init_options
-            )
+            w = create_worker(*queues, **init_options)
 
             # Close any opened DB connection before any fork
             reset_db_connections()
