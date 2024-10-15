@@ -12,9 +12,7 @@ from scheduler.tools import get_job_executions_for_task
 
 class HiddenMixin(object):
     class Media:
-        js = [
-            "admin/js/jquery.init.js",
-        ]
+        js = ("admin/js/jquery.init.js",)
 
 
 class JobArgInline(HiddenMixin, GenericStackedInline):
@@ -32,6 +30,9 @@ class JobKwargInline(HiddenMixin, GenericStackedInline):
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
+
+    class Media:
+        js = ("admin/js/jquery.init.js", "admin/js/select-fields.js",)
 
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
@@ -69,7 +70,7 @@ class TaskAdmin(admin.ModelAdmin):
         "failed_runs",
         "last_failed_run",
     )
-    radio_fields = {"task_type": admin.HORIZONTAL}
+    # radio_fields = {"task_type": admin.HORIZONTAL}
     fieldsets = (
         (
             None,
@@ -79,9 +80,19 @@ class TaskAdmin(admin.ModelAdmin):
                     "callable",
                     "task_type",
                     ("enabled", "timeout", "result_ttl"),
-                    ("scheduled_time", "cron_string", "interval", "interval_unit", "repeat"),
                 )
             ),
+        ),
+        (
+            None,
+            dict(fields=("scheduled_time",), classes=("tasktype-OnceTask",)),
+        ),
+        (
+            None,
+            dict(fields=("cron_string",), classes=("tasktype-CronTask",)),
+        ), (
+            None,
+            dict(fields=("interval", "interval_unit", "repeat"), classes=("tasktype-RepeatableTask",)),
         ),
         (_("RQ Settings"), dict(fields=(("queue", "at_front"), "job_id"))),
         (
