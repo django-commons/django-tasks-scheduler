@@ -1,15 +1,23 @@
 import importlib
 import os
-from typing import List, Any, Callable, Optional
+from typing import List, Any, Callable, Optional, Union
 
 import croniter
 from django.apps import apps
+from django.db import models
 from django.utils import timezone
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 
 from scheduler.queues import get_queues, logger, get_queue
 from scheduler.rq_classes import DjangoWorker, MODEL_NAMES, JobExecution
 from scheduler.settings import SCHEDULER_CONFIG, Broker
+
+
+class TaskType(models.TextChoices):
+    CRON = "CronTask", _("Cron Task")
+    REPEATABLE = "RepeatableTask", _("Repeatable Task")
+    ONCE = "OnceTask", _("Run once")
 
 
 def callable_func(callable_str: str) -> Callable:
@@ -31,8 +39,14 @@ def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime
     return next_itr
 
 
-def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
-    if task_model not in MODEL_NAMES:
+def get_scheduled_task(task_model: Union[TaskType, str], task_id: int) -> "BaseTask":  # noqa: F821
+    if isinstance(task_model, TaskType):
+        model = apps.get_model(app_label="scheduler", model_name="Task")
+        task = model.objects.filter(task_type=task_model, id=task_id).first()
+        if task is None:
+            raise ValueError(f"Job {task_model}:{task_id} does not exit")
+        return task
+    if isinstance(task_model, str) and task_model not in MODEL_NAMES:
         raise ValueError(f"Job Model `{task_model}` does not exist, choices are {MODEL_NAMES}")
     model = apps.get_model(app_label="scheduler", model_name=task_model)
     task = model.objects.filter(id=task_id).first()

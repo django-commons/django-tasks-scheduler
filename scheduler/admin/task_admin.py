@@ -32,7 +32,10 @@ class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
 
     class Media:
-        js = ("admin/js/jquery.init.js", "admin/js/select-fields.js",)
+        js = (
+            "admin/js/jquery.init.js",
+            "admin/js/select-fields.js",
+        )
 
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
@@ -90,7 +93,8 @@ class TaskAdmin(admin.ModelAdmin):
         (
             None,
             dict(fields=("cron_string",), classes=("tasktype-CronTask",)),
-        ), (
+        ),
+        (
             None,
             dict(fields=("interval", "interval_unit", "repeat"), classes=("tasktype-RepeatableTask",)),
         ),

@@ -9,7 +9,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from scheduler import settings
-from scheduler.models import BaseTask, TaskArg, TaskKwarg, ScheduledTask
+from scheduler.models import Task, TaskArg, TaskKwarg
 from scheduler.tools import run_task, create_worker
 from . import jobs
 from .testtools import (
@@ -19,6 +19,7 @@ from .testtools import (
     SchedulerBaseCase,
     _get_executions,
 )
+from ..models.task import TaskType
 from ..queues import get_queue
 
 
@@ -38,39 +39,39 @@ def assert_has_execution_with_status(task, status):
 
 class BaseTestCases:
     class TestBaseTask(SchedulerBaseCase):
-        TaskModelClass = BaseTask
+        task_type = None
 
         def test_callable_func(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.callable = "scheduler.tests.jobs.test_job"
             func = task.callable_func()
             self.assertEqual(jobs.test_job, func)
 
         def test_callable_func_not_callable(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.callable = "scheduler.tests.jobs.test_non_callable"
             with self.assertRaises(TypeError):
                 task.callable_func()
 
         def test_clean_callable(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.callable = "scheduler.tests.jobs.test_job"
             self.assertIsNone(task.clean_callable())
 
         def test_clean_callable_invalid(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.callable = "scheduler.tests.jobs.test_non_callable"
             with self.assertRaises(ValidationError):
                 task.clean_callable()
 
         def test_clean_queue(self):
             for queue in settings.QUEUES.keys():
-                task = task_factory(self.TaskModelClass)
+                task = task_factory(self.task_type)
                 task.queue = queue
                 self.assertIsNone(task.clean_queue())
 
         def test_clean_queue_invalid(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.queue = "xxxxxx"
             task.callable = "scheduler.tests.jobs.test_job"
             with self.assertRaises(ValidationError):
@@ -78,158 +79,140 @@ class BaseTestCases:
 
         # next 2 check the above are included in job.clean() function
         def test_clean_base(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.queue = list(settings.QUEUES)[0]
             task.callable = "scheduler.tests.jobs.test_job"
             self.assertIsNone(task.clean())
 
         def test_clean_invalid_callable(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.queue = list(settings.QUEUES)[0]
             task.callable = "scheduler.tests.jobs.test_non_callable"
             with self.assertRaises(ValidationError):
                 task.clean()
 
         def test_clean_invalid_queue(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.queue = "xxxxxx"
             task.callable = "scheduler.tests.jobs.test_job"
             with self.assertRaises(ValidationError):
                 task.clean()
 
         def test_is_schedulable_already_scheduled(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             task.schedule()
             self.assertTrue(task.is_scheduled())
 
         def test_is_schedulable_disabled(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.enabled = False
             self.assertFalse(task.enabled)
 
         def test_schedule(self):
             task = task_factory(
-                self.TaskModelClass,
+                self.task_type,
             )
             self.assertTrue(task.is_scheduled())
             self.assertIsNotNone(task.job_id)
 
         def test_unschedulable(self):
-            task = task_factory(self.TaskModelClass, enabled=False)
+            task = task_factory(self.task_type, enabled=False)
             self.assertFalse(task.is_scheduled())
             self.assertIsNone(task.job_id)
 
         def test_unschedule(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             self.assertTrue(task.unschedule())
             self.assertIsNone(task.job_id)
 
         def test_unschedule_not_scheduled(self):
-            task = task_factory(self.TaskModelClass, enabled=False)
+            task = task_factory(self.task_type, enabled=False)
             self.assertTrue(task.unschedule())
             self.assertIsNone(task.job_id)
 
         def test_save_enabled(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             self.assertIsNotNone(task.job_id)
 
         def test_save_disabled(self):
-            task = task_factory(self.TaskModelClass, enabled=False)
+            task = task_factory(self.task_type, enabled=False)
             task.save()
             self.assertIsNone(task.job_id)
 
         def test_save_and_schedule(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             self.assertIsNotNone(task.job_id)
             self.assertTrue(task.is_scheduled())
 
         def test_schedule2(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.queue = list(settings.QUEUES)[0]
             task.enabled = False
             task.scheduled_time = timezone.now() + timedelta(minutes=1)
             self.assertFalse(task.schedule())
 
         def test_delete_and_unschedule(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             self.assertIsNotNone(task.job_id)
             self.assertTrue(task.is_scheduled())
             task.delete()
             self.assertFalse(task.is_scheduled())
 
         def test_job_create(self):
-            prev_count = self.TaskModelClass.objects.count()
-            task_factory(self.TaskModelClass)
-            self.assertEqual(self.TaskModelClass.objects.count(), prev_count + 1)
+            prev_count = Task.objects.filter(task_type=self.task_type).count()
+            task_factory(self.task_type)
+            self.assertEqual(Task.objects.filter(task_type=self.task_type).count(), prev_count + 1)
 
         def test_str(self):
             name = "test"
-            task = task_factory(self.TaskModelClass, name=name)
-            self.assertEqual(f"{self.TaskModelClass.__name__}[{name}={task.callable}()]", str(task))
+            task = task_factory(self.task_type, name=name)
+            self.assertEqual(f"{self.task_type.value}[{name}={task.callable}()]", str(task))
 
         def test_callable_passthrough(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             entry = _get_job_from_scheduled_registry(task)
             self.assertEqual(entry.func, run_task)
             job_model, job_id = entry.args
-            self.assertEqual(job_model, self.TaskModelClass.__name__)
+            self.assertEqual(job_model, self.task_type.value)
             self.assertEqual(job_id, task.id)
 
         def test_timeout_passthrough(self):
-            task = task_factory(self.TaskModelClass, timeout=500)
+            task = task_factory(self.task_type, timeout=500)
             entry = _get_job_from_scheduled_registry(task)
             self.assertEqual(entry.timeout, 500)
 
         def test_at_front_passthrough(self):
-            task = task_factory(self.TaskModelClass, at_front=True)
+            task = task_factory(self.task_type, at_front=True)
             queue = task.rqueue
             jobs_to_schedule = queue.scheduled_job_registry.get_job_ids()
             self.assertIn(task.job_id, jobs_to_schedule)
 
         def test_callable_result(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             entry = _get_job_from_scheduled_registry(task)
             self.assertEqual(entry.perform(), 2)
 
         def test_callable_empty_args_and_kwargs(self):
-            task = task_factory(self.TaskModelClass, callable="scheduler.tests.jobs.test_args_kwargs")
+            task = task_factory(self.task_type, callable="scheduler.tests.jobs.test_args_kwargs")
             entry = _get_job_from_scheduled_registry(task)
             self.assertEqual(entry.perform(), "test_args_kwargs()")
 
         def test_delete_args(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             arg = taskarg_factory(TaskArg, val="one", content_object=task)
             self.assertEqual(1, task.callable_args.count())
             arg.delete()
             self.assertEqual(0, task.callable_args.count())
 
         def test_delete_kwargs(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             kwarg = taskarg_factory(TaskKwarg, key="key1", arg_type="str", val="one", content_object=task)
             self.assertEqual(1, task.callable_kwargs.count())
             kwarg.delete()
             self.assertEqual(0, task.callable_kwargs.count())
 
         def test_parse_args(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             date = timezone.now()
             taskarg_factory(TaskArg, val="one", content_object=task)
             taskarg_factory(TaskArg, arg_type="int", val=2, content_object=task)
@@ -239,9 +222,7 @@ class BaseTestCases:
             self.assertEqual(task.parse_args(), ["one", 2, True, False, date])
 
         def test_parse_kwargs(self):
-            job = task_factory(
-                self.TaskModelClass,
-            )
+            job = task_factory(self.task_type)
             date = timezone.now()
             taskarg_factory(TaskKwarg, key="key1", arg_type="str", val="one", content_object=job)
             taskarg_factory(TaskKwarg, key="key2", arg_type="int", val=2, content_object=job)
@@ -251,7 +232,7 @@ class BaseTestCases:
             self.assertEqual(kwargs, dict(key1="one", key2=2, key3=True, key4=date))
 
         def test_callable_args_and_kwargs(self):
-            task = task_factory(self.TaskModelClass, callable="scheduler.tests.jobs.test_args_kwargs")
+            task = task_factory(self.task_type, callable="scheduler.tests.jobs.test_args_kwargs")
             date = timezone.now()
             taskarg_factory(TaskArg, arg_type="str", val="one", content_object=task)
             taskarg_factory(TaskKwarg, key="key1", arg_type="int", val=2, content_object=task)
@@ -262,9 +243,7 @@ class BaseTestCases:
             self.assertEqual(entry.perform(), "test_args_kwargs('one', key1=2, key2={}, key3=False)".format(date))
 
         def test_function_string(self):
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             date = timezone.now()
             taskarg_factory(TaskArg, arg_type="str", val="one", content_object=task)
             taskarg_factory(TaskArg, arg_type="int", val="1", content_object=task)
@@ -283,9 +262,7 @@ class BaseTestCases:
         def test_admin_list_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            job = task_factory(
-                self.TaskModelClass,
-            )
+            job = task_factory(self.task_type)
             model = job._meta.model.__name__.lower()
             url = reverse(f"admin:scheduler_{model}_changelist")
             # act
@@ -297,7 +274,7 @@ class BaseTestCases:
             # arrange
             self.client.login(username="admin", password="admin")
             task = task_factory(
-                self.TaskModelClass,
+                self.task_type,
             )
             model = task._meta.model.__name__.lower()
             url = reverse(f"admin:scheduler_{model}_changelist")
@@ -317,9 +294,7 @@ class BaseTestCases:
         def test_admin_run_job_now_enqueues_job_at(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.TaskModelClass,
-            )
+            task = task_factory(self.task_type)
             model = task._meta.model.__name__.lower()
             url = reverse(f"admin:scheduler_{model}_changelist")
             # act
@@ -342,7 +317,7 @@ class BaseTestCases:
             # arrange
             self.client.login(username="admin", password="admin")
             task = task_factory(
-                self.TaskModelClass,
+                self.task_type,
             )
             model = task._meta.model.__name__.lower()
             url = reverse(
@@ -359,7 +334,7 @@ class BaseTestCases:
         def test_admin_change_view__bad_redis_connection(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.TaskModelClass, queue="test2", instance_only=True)
+            task = task_factory(self.task_type, queue="test2", instance_only=True)
             task.save(schedule_job=False)
             model = task._meta.model.__name__.lower()
             url = reverse(
@@ -376,7 +351,7 @@ class BaseTestCases:
         def test_admin_enqueue_job_now(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             self.assertIsNotNone(task.job_id)
             self.assertTrue(task.is_scheduled())
             data = {
@@ -415,7 +390,7 @@ class BaseTestCases:
         def test_admin_enable_job(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.TaskModelClass, enabled=False)
+            task = task_factory(self.task_type, enabled=False)
             self.assertIsNone(task.job_id)
             self.assertFalse(task.is_scheduled())
             data = {
@@ -438,7 +413,7 @@ class BaseTestCases:
         def test_admin_disable_job(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.TaskModelClass, enabled=True)
+            task = task_factory(self.task_type, enabled=True)
             task.save()
             data = {
                 "action": "disable_selected",
@@ -461,9 +436,9 @@ class BaseTestCases:
         def test_admin_single_delete(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            prev_count = self.TaskModelClass.objects.count()
+            prev_count = Task.objects.filter(task_type=self.task_type).count()
             task = task_factory(
-                self.TaskModelClass,
+                self.task_type,
             )
             self.assertIsNotNone(task.job_id)
             self.assertTrue(task.is_scheduled())
@@ -482,13 +457,13 @@ class BaseTestCases:
             res = self.client.post(url, data=data, follow=True)
             # assert
             self.assertEqual(200, res.status_code)
-            self.assertEqual(prev_count, self.TaskModelClass.objects.count())
+            self.assertEqual(prev_count, Task.objects.filter(task_type=self.task_type).count())
             self.assertEqual(prev - 1, len(_get_executions(task)))
 
         def test_admin_delete_selected(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.TaskModelClass, enabled=True)
+            task = task_factory(self.task_type, enabled=True)
             task.save()
             queue = get_queue(task.queue)
             scheduled_jobs = queue.scheduled_job_registry.get_job_ids()
@@ -507,45 +482,45 @@ class BaseTestCases:
             res = self.client.post(url, data=data, follow=True)
             # assert
             self.assertEqual(200, res.status_code)
-            assert_response_has_msg(res, f"Successfully deleted 1 {self.TaskModelClass._meta.verbose_name}.")
-            self.assertIsNone(self.TaskModelClass.objects.filter(id=task.id).first())
+            assert_response_has_msg(res, f"Successfully deleted 1 task.")
+            self.assertIsNone(Task.objects.filter(task_type=self.task_type).filter(id=task.id).first())
             scheduled_jobs = queue.scheduled_job_registry.get_job_ids()
             self.assertNotIn(job_id, scheduled_jobs)
 
     class TestSchedulableJob(TestBaseTask):
         # Currently ScheduledJob and RepeatableJob
-        TaskModelClass = ScheduledTask
+        task_type = TaskType.ONCE
 
         @freeze_time("2016-12-25")
         @override_settings(USE_TZ=False)
         def test_schedule_time_no_tz(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=None)
             self.assertEqual("2016-12-25T08:00:00", task._schedule_time().isoformat())
 
         @freeze_time("2016-12-25")
         @override_settings(USE_TZ=True)
         def test_schedule_time_with_tz(self):
-            task = task_factory(self.TaskModelClass)
+            task = task_factory(self.task_type)
             est = zoneinfo.ZoneInfo("US/Eastern")
             task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=est)
             self.assertEqual("2016-12-25T13:00:00+00:00", task._schedule_time().isoformat())
 
         def test_result_ttl_passthrough(self):
-            job = task_factory(self.TaskModelClass, result_ttl=500)
+            job = task_factory(self.task_type, result_ttl=500)
             entry = _get_job_from_scheduled_registry(job)
             self.assertEqual(entry.result_ttl, 500)
 
 
 class TestScheduledJob(BaseTestCases.TestSchedulableJob):
-    TaskModelClass = ScheduledTask
+    task_type = TaskType.ONCE
 
     def test_clean(self):
-        job = task_factory(self.TaskModelClass)
+        job = task_factory(self.task_type)
         job.queue = list(settings.QUEUES)[0]
         job.callable = "scheduler.tests.jobs.test_job"
         self.assertIsNone(job.clean())
 
     def test_unschedulable_old_job(self):
-        job = task_factory(self.TaskModelClass, scheduled_time=timezone.now() - timedelta(hours=1))
+        job = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1))
         self.assertFalse(job.is_scheduled())

@@ -24,6 +24,7 @@ from scheduler.queues import get_queue
 from scheduler.rq_classes import DjangoQueue
 from scheduler.settings import QUEUES
 from scheduler.settings import logger
+from scheduler.tools import TaskType
 
 SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL
 
@@ -62,12 +63,6 @@ def success_callback(job, connection, result, *args, **kwargs):
 
 def get_queue_choices():
     return [(queue, queue) for queue in QUEUES.keys()]
-
-
-class TaskType(models.TextChoices):
-    CRON = "CronTask", _("Cron Task")
-    REPEATABLE = "RepeatableTask", _("Repeatable Task")
-    ONCE = "OnceTask", _("Run once")
 
 
 class Task(models.Model):
@@ -164,7 +159,7 @@ class Task(models.Model):
         null=True,
         help_text=_("Number of times to run the job. Leaving this blank means it will run forever."),
     )
-    scheduled_time = models.DateTimeField(_("scheduled time"))
+    scheduled_time = models.DateTimeField(_("scheduled time"), blank=True, null=True)
     cron_string = models.CharField(
         _("cron string"),
         max_length=64,
