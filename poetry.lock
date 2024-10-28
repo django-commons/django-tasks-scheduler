@@ -633,13 +633,13 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fakeredis"
-version = "2.25.1"
+version = "2.26.1"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = "<4.0,>=3.7"
 files = [
-    {file = "fakeredis-2.25.1-py3-none-any.whl", hash = "sha256:d08dcbaceae0804db4644fa634106e3c42d76fe4d11aea2949eda768df0c6450"},
-    {file = "fakeredis-2.25.1.tar.gz", hash = "sha256:e9e73bacf412d1d942ee7f80525dc188182158e82d41be57eb9c4e71f7474ac8"},
+    {file = "fakeredis-2.26.1-py3-none-any.whl", hash = "sha256:68a5615d7ef2529094d6958677e30a6d30d544e203a5ab852985c19d7ad57e32"},
+    {file = "fakeredis-2.26.1.tar.gz", hash = "sha256:69f4daafe763c8014a6dbf44a17559c46643c95447b3594b3975251a171b806d"},
 ]
 
 [package.dependencies]
@@ -1757,4 +1757,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "641d4bec80938f6c858d36d4d4cce1226021cd0a99263de0f9d3e9a240ae4512"
+content-hash = "4ed8f7045060f56ed0abfcaa88ae93adf9850305b62e18e604d7865ba1419a1f"
