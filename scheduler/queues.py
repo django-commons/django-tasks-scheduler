@@ -1,12 +1,20 @@
 from typing import List, Dict, Set
 
 import redis
-import valkey
 
-from .connection_types import RedisSentinel, BrokerConnectionClass
+from .connection_types import RedisSentinel, ValkeySentinel, BrokerConnectionClass
 from .rq_classes import JobExecution, DjangoQueue, DjangoWorker
 from .settings import SCHEDULER_CONFIG
 from .settings import logger, Broker
+
+
+try:
+    from valkey import exceptions
+except ImportError:
+    exceptions = ""
+    exceptions.ConnectionError = redis.ConnectionError
+
+ConnectionErrors = (redis.ConnectionError, exceptions.ConnectionError)
 
 _CONNECTION_PARAMS = {
     "URL",
@@ -28,31 +36,43 @@ class QueueNotFoundError(Exception):
     pass
 
 
-def _get_redis_connection(config, use_strict_redis=False):
+ssl_url_protocol = {
+    "valkey": "valkeys",
+    "redis": "rediss",
+    "fakeredis": "rediss"
+}
+
+sentinel_broker = {
+    "valkey": ValkeySentinel,
+    "redis": RedisSentinel,
+}
+
+
+def _get_broker_connection(config, use_strict_broker=False):
     """
     Returns a redis connection from a connection config
     """
     if SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS:
         import fakeredis
 
-        redis_cls = fakeredis.FakeRedis if use_strict_redis else fakeredis.FakeStrictRedis
+        broker_cls = fakeredis.FakeRedis if not use_strict_broker else fakeredis.FakeStrictRedis
     else:
-        redis_cls = BrokerConnectionClass[(SCHEDULER_CONFIG.BROKER, use_strict_redis)]
+        broker_cls = BrokerConnectionClass[(SCHEDULER_CONFIG.BROKER, use_strict_broker)]
     logger.debug(f"Getting connection for {config}")
     if "URL" in config:
-        if config.get("SSL") or config.get("URL").startswith("rediss://"):
-            return redis_cls.from_url(
+        if config.get("SSL") or config.get("URL").startswith(f"{ssl_url_protocol[SCHEDULER_CONFIG.BROKER.value]}://"):
+            return broker_cls.from_url(
                 config["URL"],
                 db=config.get("DB"),
                 ssl_cert_reqs=config.get("SSL_CERT_REQS", "required"),
             )
         else:
-            return redis_cls.from_url(
+            return broker_cls.from_url(
                 config["URL"],
                 db=config.get("DB"),
             )
     if "UNIX_SOCKET_PATH" in config:
-        return redis_cls(unix_socket_path=config["UNIX_SOCKET_PATH"], db=config["DB"])
+        return broker_cls(unix_socket_path=config["UNIX_SOCKET_PATH"], db=config["DB"])
 
     if "SENTINELS" in config:
         connection_kwargs = {
@@ -63,13 +83,15 @@ def _get_redis_connection(config, use_strict_redis=False):
         }
         connection_kwargs.update(config.get("CONNECTION_KWARGS", {}))
         sentinel_kwargs = config.get("SENTINEL_KWARGS", {})
-        sentinel = RedisSentinel(config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
+        sentinel = sentinel_broker[SCHEDULER_CONFIG.BROKER.value](
+            config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs
+        )
         return sentinel.master_for(
             service_name=config["MASTER_NAME"],
-            redis_class=redis_cls,
+            redis_class=broker_cls,
         )
 
-    return redis_cls(
+    return broker_cls(
         host=config["HOST"],
         port=config["PORT"],
         db=config.get("DB", 0),
@@ -82,8 +104,8 @@ def _get_redis_connection(config, use_strict_redis=False):
 
 
 def get_connection(queue_settings, use_strict_redis=False):
-    """Returns a Redis connection to use based on parameters in SCHEDULER_QUEUES"""
-    return _get_redis_connection(queue_settings, use_strict_redis)
+    """Returns a Broker connection to use based on parameters in SCHEDULER_QUEUES"""
+    return _get_broker_connection(queue_settings, use_strict_redis)
 
 
 def get_queue(
@@ -116,7 +138,7 @@ def get_all_workers() -> Set[DjangoWorker]:
         try:
             curr_workers: Set[DjangoWorker] = set(DjangoWorker.all(connection=connection))
             workers_set.update(curr_workers)
-        except (redis.ConnectionError, valkey.ConnectionError) as e:
+        except ConnectionErrors as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
     return workers_set
 
@@ -142,7 +164,7 @@ def get_queues(*queue_names, **kwargs) -> List[DjangoQueue]:
     for name in queue_names[1:]:
         if not _queues_share_connection_params(queue_params, QUEUES[name]):
             raise ValueError(
-                f'Queues must have the same redis connection. "{name}" and'
+                f'Queues must have the same broker connection. "{name}" and'
                 f' "{queue_names[0]}" have different connections'
             )
         queue = get_queue(name, **kwargs)
