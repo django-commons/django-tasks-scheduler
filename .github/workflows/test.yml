@@ -82,7 +82,7 @@ jobs:
         run: |
           python -m pip --quiet install poetry
           echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-          poetry install -E yaml
+          poetry install -E yaml -E valkey
           poetry run pip install django==${{ matrix.django-version }}
 
       - name: Get version
