@@ -2,7 +2,6 @@ from html import escape
 from math import ceil
 from typing import Tuple, Optional
 
-import redis
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
@@ -12,8 +11,8 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.views.decorators.cache import never_cache
-from redis.exceptions import ResponseError
 
+from .broker_types import ConnectionErrorTypes, ResponseErrorTypes
 from .queues import get_all_workers, get_connection, QueueNotFoundError
 from .queues import get_queue as get_queue_base
 from .rq_classes import JobExecution, DjangoWorker, DjangoQueue, InvalidJobOperation
@@ -71,7 +70,7 @@ def get_statistics(run_maintenance_tasks=False):
             if run_maintenance_tasks:
                 queue.clean_registries()
 
-            # Raw access to the first item from left of the redis list.
+            # Raw access to the first item from left of the broker list.
             # This might not be accurate since new job can be added from the left
             # with `at_front` parameters.
             # Ideally rq should supports Queue.oldest_job
@@ -102,7 +101,7 @@ def get_statistics(run_maintenance_tasks=False):
                 canceled_jobs=len(queue.canceled_job_registry),
             )
             queues.append(queue_data)
-        except redis.ConnectionError as e:
+        except ConnectionErrorTypes as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
             continue
 
@@ -277,7 +276,7 @@ def clear_queue_registry(request: HttpRequest, queue_name: str, registry_name: s
                 for job_id in job_ids:
                     registry.remove(job_id, delete_job=True)
             messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
-        except ResponseError as e:
+        except ResponseErrorTypes as e:
             messages.error(
                 request,
                 f"error: {e}",

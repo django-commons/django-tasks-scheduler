@@ -3,12 +3,11 @@ import os
 import sys
 
 import click
-import redis
-import valkey
 from django.core.management.base import BaseCommand
 from django.db import connections
 from rq.logutils import setup_loghandlers
 
+from scheduler.broker_types import ConnectionErrorTypes
 from scheduler.rq_classes import register_sentry
 from scheduler.tools import create_worker
 
@@ -136,6 +135,6 @@ class Command(BaseCommand):
                 logging_level=log_level,
                 max_jobs=options["max_jobs"],
             )
-        except (redis.ConnectionError, valkey.ConnectionError) as e:
+        except ConnectionErrorTypes as e:
             click.echo(str(e), err=True)
             sys.exit(1)
