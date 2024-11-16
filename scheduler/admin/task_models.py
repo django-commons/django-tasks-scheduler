@@ -1,10 +1,9 @@
-import redis
-import valkey
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
+from scheduler.broker_types import ConnectionErrorTypes
 from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task
@@ -186,7 +185,7 @@ class TaskAdmin(admin.ModelAdmin):
         obj = self.get_object(request, object_id)
         try:
             execution_list = get_job_executions_for_task(obj.queue, obj)
-        except (redis.ConnectionError, valkey.ConnectionError) as e:
+        except ConnectionErrorTypes as e:
             logger.warn(f"Could not get job executions: {e}")
             execution_list = list()
         paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)

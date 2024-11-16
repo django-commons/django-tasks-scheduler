@@ -1,20 +1,9 @@
 from typing import List, Dict, Set
 
-import redis
-
-from .connection_types import RedisSentinel, ValkeySentinel, BrokerConnectionClass
+from .broker_types import ConnectionErrorTypes, BrokerMetaData
 from .rq_classes import JobExecution, DjangoQueue, DjangoWorker
 from .settings import SCHEDULER_CONFIG
 from .settings import logger, Broker
-
-
-try:
-    from valkey import exceptions
-except ImportError:
-    exceptions = ""
-    exceptions.ConnectionError = redis.ConnectionError
-
-ConnectionErrors = (redis.ConnectionError, exceptions.ConnectionError)
 
 _CONNECTION_PARAMS = {
     "URL",
@@ -36,18 +25,6 @@ class QueueNotFoundError(Exception):
     pass
 
 
-ssl_url_protocol = {
-    "valkey": "valkeys",
-    "redis": "rediss",
-    "fakeredis": "rediss"
-}
-
-sentinel_broker = {
-    "valkey": ValkeySentinel,
-    "redis": RedisSentinel,
-}
-
-
 def _get_broker_connection(config, use_strict_broker=False):
     """
     Returns a redis connection from a connection config
@@ -57,10 +34,11 @@ def _get_broker_connection(config, use_strict_broker=False):
 
         broker_cls = fakeredis.FakeRedis if not use_strict_broker else fakeredis.FakeStrictRedis
     else:
-        broker_cls = BrokerConnectionClass[(SCHEDULER_CONFIG.BROKER, use_strict_broker)]
+        broker_cls = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][0]
     logger.debug(f"Getting connection for {config}")
     if "URL" in config:
-        if config.get("SSL") or config.get("URL").startswith(f"{ssl_url_protocol[SCHEDULER_CONFIG.BROKER.value]}://"):
+        ssl_url_protocol = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][2]
+        if config.get("SSL") or config.get("URL").startswith(f"{ssl_url_protocol}://"):
             return broker_cls.from_url(
                 config["URL"],
                 db=config.get("DB"),
@@ -83,9 +61,8 @@ def _get_broker_connection(config, use_strict_broker=False):
         }
         connection_kwargs.update(config.get("CONNECTION_KWARGS", {}))
         sentinel_kwargs = config.get("SENTINEL_KWARGS", {})
-        sentinel = sentinel_broker[SCHEDULER_CONFIG.BROKER.value](
-            config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs
-        )
+        SentinelClass = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][1]
+        sentinel = SentinelClass(config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
             service_name=config["MASTER_NAME"],
             redis_class=broker_cls,
@@ -138,7 +115,7 @@ def get_all_workers() -> Set[DjangoWorker]:
         try:
             curr_workers: Set[DjangoWorker] = set(DjangoWorker.all(connection=connection))
             workers_set.update(curr_workers)
-        except ConnectionErrors as e:
+        except ConnectionErrorTypes as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
     return workers_set
 

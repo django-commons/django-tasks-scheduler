@@ -13,20 +13,11 @@ from django.urls import reverse, resolve
 from django.views.decorators.cache import never_cache
 from redis.exceptions import ResponseError
 
-
-from .queues import get_all_workers, get_connection, QueueNotFoundError, ConnectionErrors
+from .broker_types import ConnectionErrorTypes
+from .queues import get_all_workers, get_connection, QueueNotFoundError
 from .queues import get_queue as get_queue_base
 from .rq_classes import JobExecution, DjangoWorker, DjangoQueue, InvalidJobOperation
 from .settings import SCHEDULER_CONFIG, logger
-
-
-try:
-    from valkey import exceptions
-except ImportError:
-    exceptions = ""
-    exceptions.ResponseError = ResponseError
-
-ResponseErrors = (ResponseError, exceptions.ResponseError)
 
 
 def get_queue(queue_name: str) -> DjangoQueue:
@@ -111,7 +102,7 @@ def get_statistics(run_maintenance_tasks=False):
                 canceled_jobs=len(queue.canceled_job_registry),
             )
             queues.append(queue_data)
-        except ConnectionErrors as e:
+        except ConnectionErrorTypes as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
             continue
 
