@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v2.2.0 🌈
 
 ### 🚀 Features
@@ -10,6 +9,11 @@
   - `Task` model has a `task_type` field to differentiate between the types of tasks.
   - Old tasks in the database will be migrated to the new `Task` model automatically.
 
+## v2.1.1 🌈
+
+### 🐛 Bug Fixes
+
+- Support for valkey sentinel configuration @amirreza8002 (#191)
 
 ## v2.1.0 🌈
 

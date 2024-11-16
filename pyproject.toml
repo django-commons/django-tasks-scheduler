@@ -8,9 +8,9 @@ packages = [
     { include = "scheduler" },
 ]
 version = "2.2.0"
-description = "An async job scheduler for django using redis"
+description = "An async job scheduler for django using redis/valkey brokers"
 readme = "README.md"
-keywords = ["redis", "django", "background-jobs", "job-queue", "task-queue", "redis-queue", "scheduled-jobs"]
+keywords = ["redis", "valkey", "django", "background-jobs", "job-queue", "task-queue", "redis-queue", "scheduled-jobs"]
 authors = [
     "Daniel Moran <daniel@moransoftware.ca>",
 ]
@@ -34,7 +34,7 @@ classifiers = [
     'Framework :: Django :: 5.1',
 ]
 homepage = "https://github.com/django-commons/django-tasks-scheduler"
-documentation = "https://django-tasks-scheduler.readthedocs.io/"
+documentation = "https://django-tasks-scheduler.readthedocs.io/en/latest/"
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"

@@ -22,7 +22,7 @@ from rq.scheduler import RQScheduler
 from rq.worker import WorkerStatus
 
 from scheduler import settings
-from scheduler.connection_types import PipelineType, ConnectionType
+from scheduler.broker_types import PipelineType, ConnectionType
 
 MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
 
