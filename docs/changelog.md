@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.1 🌈
+
+### 🐛 Bug Fixes
+
+- Support for valkey sentinel configuration @amirreza8002 (#191)
+
 ## v2.1.0 🌈
 
 ### 🚀 Features

@@ -1,3 +1,4 @@
+# This is a helper module to obfuscate types used by different broker implementations.
 from typing import Union, Dict, Tuple, Type
 
 import redis
