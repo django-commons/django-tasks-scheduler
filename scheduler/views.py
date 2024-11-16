@@ -11,9 +11,8 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse, resolve
 from django.views.decorators.cache import never_cache
-from redis.exceptions import ResponseError
 
-from .broker_types import ConnectionErrorTypes
+from .broker_types import ConnectionErrorTypes, ResponseErrorTypes
 from .queues import get_all_workers, get_connection, QueueNotFoundError
 from .queues import get_queue as get_queue_base
 from .rq_classes import JobExecution, DjangoWorker, DjangoQueue, InvalidJobOperation
@@ -277,7 +276,7 @@ def clear_queue_registry(request: HttpRequest, queue_name: str, registry_name: s
                 for job_id in job_ids:
                     registry.remove(job_id, delete_job=True)
             messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
-        except ResponseErrors as e:
+        except ResponseErrorTypes as e:
             messages.error(
                 request,
                 f"error: {e}",
