@@ -55,7 +55,7 @@ def task_factory(
                 scheduled_time=timezone.now() + timedelta(days=1),
             )
         )
-    elif task_type == CronTask:
+    elif task_type == TaskType.CRON:
         values.update(
             dict(
                 cron_string="0 0 * * *",
@@ -69,6 +69,7 @@ def task_factory(
     return instance
 
 
+# TODO remove
 def old_task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs):
     values = dict(
         name="Scheduled Job %d" % next(seq),

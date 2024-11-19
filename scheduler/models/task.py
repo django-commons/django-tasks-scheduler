@@ -326,8 +326,9 @@ class Task(models.Model):
 
     def to_dict(self) -> Dict:
         """Export model to dictionary, so it can be saved as external file backup"""
+        interval_unit = str(self.interval_unit) if self.interval_unit else None
         res = dict(
-            model=self.task_type,
+            model=str(self.task_type),
             name=self.name,
             callable=self.callable,
             callable_args=[
@@ -354,7 +355,7 @@ class Task(models.Model):
             cron_string=getattr(self, "cron_string", None),
             scheduled_time=self._schedule_time().isoformat(),
             interval=getattr(self, "interval", None),
-            interval_unit=getattr(self, "interval_unit", None),
+            interval_unit=interval_unit,
             successful_runs=getattr(self, "successful_runs", None),
             failed_runs=getattr(self, "failed_runs", None),
             last_successful_run=getattr(self, "last_successful_run", None),
