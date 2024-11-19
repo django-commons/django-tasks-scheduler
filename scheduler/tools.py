@@ -45,7 +45,7 @@ def get_scheduled_task(task_type_str: str, task_id: int) -> "BaseTask":  # noqa:
     if task_type_str in TASK_TYPES:
         try:
             task_type = TaskType(task_type_str)
-            task = model.objects.filter(task_type=TaskType.ONCE, id=task_id).first()
+            task = model.objects.filter(task_type=task_type, id=task_id).first()
             if task is None:
                 raise ValueError(f"Job {task_type}:{task_id} does not exit")
             return task
