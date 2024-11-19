@@ -341,9 +341,7 @@ class BaseTestCases:
         def test_admin_change_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = old_task_factory(
-                self.TaskModelClass,
-            )
+            task = old_task_factory(self.TaskModelClass)
             model = task._meta.model.__name__.lower()
             url = reverse(
                 f"admin:scheduler_{model}_change",
@@ -512,7 +510,7 @@ class BaseTestCases:
             scheduled_jobs = queue.scheduled_job_registry.get_job_ids()
             self.assertNotIn(job_id, scheduled_jobs)
 
-    class TestSchedulableJob(TestBaseTask):
+    class TestSchedulableTask(TestBaseTask):
         # Currently ScheduledJob and RepeatableJob
         TaskModelClass = ScheduledTask
 
@@ -537,7 +535,7 @@ class BaseTestCases:
             self.assertEqual(entry.result_ttl, 500)
 
 
-class TestScheduledJob(BaseTestCases.TestSchedulableJob):
+class TestScheduledTask(BaseTestCases.TestSchedulableTask):
     TaskModelClass = ScheduledTask
 
     def test_clean(self):
