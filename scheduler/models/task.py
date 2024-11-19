@@ -395,6 +395,8 @@ class Task(models.Model):
         super(Task, self).delete(**kwargs)
 
     def interval_display(self):
+        if self.interval is None or self.interval_unit is None:
+            return ""
         return "{} {}".format(self.interval, self.get_interval_unit_display())
 
     def interval_seconds(self):
