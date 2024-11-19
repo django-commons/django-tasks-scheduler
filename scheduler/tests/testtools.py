@@ -128,7 +128,7 @@ def taskarg_factory(cls, **kwargs):
     return instance
 
 
-def _get_job_from_scheduled_registry(django_task: BaseTask):
+def _get_task_job_execution_from_registry(django_task: BaseTask):
     jobs_to_schedule = django_task.rqueue.scheduled_job_registry.get_job_ids()
     entry = next(i for i in jobs_to_schedule if i == django_task.job_id)
     return django_task.rqueue.fetch_job(entry)

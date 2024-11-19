@@ -8,7 +8,7 @@ from scheduler import settings
 from scheduler.models import RepeatableTask
 from scheduler.tests.test_old_models.test_old_task_model import BaseTestCases
 
-from scheduler.tests.testtools import old_task_factory, _get_job_from_scheduled_registry
+from scheduler.tests.testtools import old_task_factory, _get_task_job_execution_from_registry
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
@@ -121,12 +121,12 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         job = old_task_factory(
             self.TaskModelClass,
         )
-        entry = _get_job_from_scheduled_registry(job)
+        entry = _get_task_job_execution_from_registry(job)
         self.assertEqual(entry.meta["interval"], 3600)
 
     def test_repeat(self):
         job = old_task_factory(self.TaskModelClass, repeat=10)
-        entry = _get_job_from_scheduled_registry(job)
+        entry = _get_task_job_execution_from_registry(job)
         self.assertEqual(entry.meta["repeat"], 10)
 
     def test_repeat_old_job_exhausted(self):

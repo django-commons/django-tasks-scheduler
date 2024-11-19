@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from scheduler import settings
 from scheduler.models import RepeatableTask
-from scheduler.tests.testtools import task_factory, _get_job_from_scheduled_registry
+from scheduler.tests.testtools import task_factory, _get_task_job_execution_from_registry
 from scheduler.tools import TaskType
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 
@@ -121,12 +121,12 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         job = task_factory(
             self.task_type,
         )
-        entry = _get_job_from_scheduled_registry(job)
+        entry = _get_task_job_execution_from_registry(job)
         self.assertEqual(entry.meta["interval"], 3600)
 
     def test_repeat(self):
         job = task_factory(self.task_type, repeat=10)
-        entry = _get_job_from_scheduled_registry(job)
+        entry = _get_task_job_execution_from_registry(job)
         self.assertEqual(entry.meta["repeat"], 10)
 
     def test_repeat_old_job_exhausted(self):

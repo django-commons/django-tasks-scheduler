@@ -12,7 +12,7 @@ from scheduler import settings
 from scheduler.models import BaseTask, TaskArg, TaskKwarg, ScheduledTask
 from scheduler.tools import run_task, create_worker
 from scheduler.tests import jobs
-from scheduler.tests.testtools import old_task_factory, taskarg_factory, _get_job_from_scheduled_registry, \
+from scheduler.tests.testtools import old_task_factory, taskarg_factory, _get_task_job_execution_from_registry, \
     SchedulerBaseCase, _get_executions
 from scheduler.queues import get_queue
 
@@ -174,7 +174,7 @@ class BaseTestCases:
 
         def test_callable_passthrough(self):
             task = old_task_factory(self.TaskModelClass)
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(entry.func, run_task)
             job_model, job_id = entry.args
             self.assertEqual(job_model, self.TaskModelClass.__name__)
@@ -182,7 +182,7 @@ class BaseTestCases:
 
         def test_timeout_passthrough(self):
             task = old_task_factory(self.TaskModelClass, timeout=500)
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(entry.timeout, 500)
 
         def test_at_front_passthrough(self):
@@ -195,12 +195,12 @@ class BaseTestCases:
             task = old_task_factory(
                 self.TaskModelClass,
             )
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(entry.perform(), 2)
 
         def test_callable_empty_args_and_kwargs(self):
             task = old_task_factory(self.TaskModelClass, callable="scheduler.tests.jobs.test_args_kwargs")
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(entry.perform(), "test_args_kwargs()")
 
         def test_delete_args(self):
@@ -253,7 +253,7 @@ class BaseTestCases:
             taskarg_factory(TaskKwarg, key="key2", arg_type="datetime", val=date, content_object=task)
             taskarg_factory(TaskKwarg, key="key3", arg_type="bool", val=False, content_object=task)
             task.save()
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(entry.perform(), "test_args_kwargs('one', key1=2, key2={}, key3=False)".format(date))
 
         def test_function_string(self):
@@ -387,7 +387,7 @@ class BaseTestCases:
 
             # assert part 1
             self.assertEqual(200, res.status_code)
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             task_model, scheduled_task_id = entry.args
             self.assertEqual(task_model, task.task_type)
             self.assertEqual(scheduled_task_id, task.id)
@@ -402,7 +402,7 @@ class BaseTestCases:
             worker.work(burst=True)
 
             # assert 2
-            entry = _get_job_from_scheduled_registry(task)
+            entry = _get_task_job_execution_from_registry(task)
             self.assertEqual(task_model, task.task_type)
             self.assertEqual(scheduled_task_id, task.id)
             assert_has_execution_with_status(task, "finished")
@@ -528,7 +528,7 @@ class BaseTestCases:
 
         def test_result_ttl_passthrough(self):
             job = old_task_factory(self.TaskModelClass, result_ttl=500)
-            entry = _get_job_from_scheduled_registry(job)
+            entry = _get_task_job_execution_from_registry(job)
             self.assertEqual(entry.result_ttl, 500)
 
 
