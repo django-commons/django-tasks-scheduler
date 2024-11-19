@@ -1,6 +1,6 @@
 import importlib
 import os
-from typing import List, Any, Callable, Optional, Union
+from typing import List, Any, Callable, Optional
 
 import croniter
 from django.apps import apps
@@ -10,14 +10,14 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.queues import get_queues, logger, get_queue
-from scheduler.rq_classes import DjangoWorker, OLD_MODEL_NAMES, JobExecution, MODEL_NAMES
+from scheduler.rq_classes import DjangoWorker, JobExecution, TASK_TYPES, MODEL_NAMES
 from scheduler.settings import SCHEDULER_CONFIG, Broker
 
 
 class TaskType(models.TextChoices):
-    CRON = "CronTask", _("Cron Task")
-    REPEATABLE = "RepeatableTask", _("Repeatable Task")
-    ONCE = "OnceTask", _("Run once")
+    CRON = "CronTaskType", _("Cron Task")
+    REPEATABLE = "RepeatableTaskType", _("Repeatable Task")
+    ONCE = "OnceTaskType", _("Run once")
 
 
 def callable_func(callable_str: str) -> Callable:
@@ -39,31 +39,25 @@ def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime
     return next_itr
 
 
-def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
-    if isinstance(task_model, str) and task_model not in OLD_MODEL_NAMES and task_model not in MODEL_NAMES:
-        raise ValueError(f"Job Model `{task_model}` does not exist, choices are {OLD_MODEL_NAMES}")
-
+def get_scheduled_task(task_type_str: str, task_id: int) -> "BaseTask":  # noqa: F821
     # Try with new model names
     model = apps.get_model(app_label="scheduler", model_name="Task")
-    if task_model == "OnceTask":
-        task = model.objects.filter(task_type=TaskType.ONCE, id=task_id).first()
+    if task_type_str in TASK_TYPES:
+        try:
+            task_type = TaskType(task_type_str)
+            task = model.objects.filter(task_type=TaskType.ONCE, id=task_id).first()
+            if task is None:
+                raise ValueError(f"Job {task_type}:{task_id} does not exit")
+            return task
+        except ValueError:
+            raise ValueError(f"Invalid task type {task_type_str}")
+    elif task_type_str in MODEL_NAMES:
+        model = apps.get_model(app_label="scheduler", model_name=task_type_str)
+        task = model.objects.filter(id=task_id).first()
         if task is None:
-            raise ValueError(f"Job {task_model}:{task_id} does not exit")
+            raise ValueError(f"Job {task_type_str}:{task_id} does not exit")
         return task
-    elif task_model == "RepeatableTask":
-        task = model.objects.filter(task_type=TaskType.REPEATABLE, id=task_id).first()
-        if task is not None:
-            return task
-    elif task_model == "CronTask":
-        task = model.objects.filter(task_type=TaskType.CRON, id=task_id).first()
-        if task is not None:
-            return task
-
-    model = apps.get_model(app_label="scheduler", model_name=task_model)
-    task = model.objects.filter(id=task_id).first()
-    if task is None:
-        raise ValueError(f"Job {task_model}:{task_id} does not exit")
-    return task
+    raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
 
 
 def run_task(task_model: str, task_id: int) -> Any:

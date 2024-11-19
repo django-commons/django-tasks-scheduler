@@ -5,8 +5,7 @@ from django.apps import apps
 from django.core.management.base import BaseCommand
 
 from scheduler.models import Task
-from scheduler.rq_classes import MODEL_NAMES
-from scheduler.tools import OLD_MODEL_NAMES
+from scheduler.tools import MODEL_NAMES
 
 
 class Command(BaseCommand):
@@ -45,12 +44,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
         res = list()
-        jobs = Task.objects.all()
-        if options.get("enabled"):
-            jobs = jobs.filter(enabled=True)
-        for job in jobs:
-            res.append(job.to_dict())
-        for model_name in OLD_MODEL_NAMES:
+        for model_name in MODEL_NAMES:
             model = apps.get_model(app_label="scheduler", model_name=model_name)
             jobs = model.objects.all()
             if options.get("enabled"):

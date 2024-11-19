@@ -7,16 +7,18 @@ import yaml
 from django.core.management import call_command
 from django.test import TestCase
 
+from scheduler.tests import test_settings  # noqa
 from scheduler.tests.testtools import task_factory
 from scheduler.tools import TaskType
-from scheduler.tests import test_settings # noqa
 
 
 class ExportTest(TestCase):
     def setUp(self) -> None:
+        super().setUp()
         self.tmpfile = tempfile.NamedTemporaryFile()
 
     def tearDown(self) -> None:
+        super().tearDown()
         os.remove(self.tmpfile.name)
 
     def test_export__should_export_job(self):

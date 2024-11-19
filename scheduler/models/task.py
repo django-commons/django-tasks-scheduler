@@ -48,13 +48,13 @@ def failure_callback(job, connection, result, *args, **kwargs):
 
 
 def success_callback(job, connection, result, *args, **kwargs):
-    model_name = job.meta.get("task_type", None)
-    if model_name is None:
+    task_type = job.meta.get("task_type", None)
+    if task_type is None:
         return
 
     task = Task.objects.filter(job_id=job.id).first()
     if task is None:
-        model = apps.get_model(app_label="scheduler", model_name=model_name)
+        model = apps.get_model(app_label="scheduler", model_name=task_type)
         task = model.objects.filter(job_id=job.id).first()
     if task is None:
         logger.warn(f"Could not find task for job {job.id}")
@@ -267,7 +267,7 @@ class Task(models.Model):
         if not self.enabled:
             logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
             return False
-        if self.task_type == TaskType.REPEATABLE and self._schedule_time() < timezone.now():
+        if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and self._schedule_time() < timezone.now():
             return False
         return True
 

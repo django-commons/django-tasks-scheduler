@@ -24,8 +24,8 @@ from rq.worker import WorkerStatus
 from scheduler import settings
 from scheduler.broker_types import PipelineType, ConnectionType
 
-OLD_MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
-MODEL_NAMES = ["OnceTask", "RepeatableTask", "CronTask"]
+MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask", "Task"]
+TASK_TYPES = ["OnceTaskType", "RepeatableTaskType", "CronTaskType"]
 
 rq_job_decorator = job
 ExecutionStatus = JobStatus
@@ -264,7 +264,7 @@ class DjangoScheduler(RQScheduler):
 
     @staticmethod
     def reschedule_all_jobs():
-        for model_name in OLD_MODEL_NAMES:
+        for model_name in MODEL_NAMES:
             model = apps.get_model(app_label="scheduler", model_name=model_name)
             enabled_jobs = model.objects.filter(enabled=True)
             unscheduled_jobs = filter(lambda j: j.ready_for_schedule(), enabled_jobs)

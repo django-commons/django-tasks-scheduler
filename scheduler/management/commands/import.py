@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from scheduler.models import TaskArg, TaskKwarg, Task
 from scheduler.models.task import TaskType
-from scheduler.tools import OLD_MODEL_NAMES
+from scheduler.tools import MODEL_NAMES
 
 
 def job_model_str(model_str: str) -> str:
@@ -21,6 +21,8 @@ def job_model_str(model_str: str) -> str:
 
 def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
+    if TaskType(model_str):
+        return TaskType(model_str)
     if model_str == "CronTask":
         return TaskType.CRON
     elif model_str == "RepeatableTask":
@@ -133,7 +135,7 @@ class Command(BaseCommand):
             jobs = yaml.load(file, yaml.SafeLoader)
 
         if options.get("reset"):
-            for model_name in OLD_MODEL_NAMES:
+            for model_name in MODEL_NAMES:
                 model = apps.get_model(app_label="scheduler", model_name=model_name)
                 model.objects.all().delete()
 
