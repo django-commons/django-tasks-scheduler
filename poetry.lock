@@ -1623,17 +1623,17 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "valkey"
-version = "6.0.1"
+version = "6.0.2"
 description = "Python client for Valkey forked from redis-py"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "valkey-6.0.1-py3-none-any.whl", hash = "sha256:6702bf323e88e50ef0be37aad697bcc6334edd40cc66f01259265dd410fa22dc"},
-    {file = "valkey-6.0.1.tar.gz", hash = "sha256:58f4628dc038ab5aa04eea6e75557309c9412a8c45e81ad42d53e42b9a36e7dc"},
+    {file = "valkey-6.0.2-py3-none-any.whl", hash = "sha256:dbbdd65439ee0dc5689502c54f1899504cc7268e85cb7fe8935f062178ff5805"},
+    {file = "valkey-6.0.2.tar.gz", hash = "sha256:dc2e91512b82d1da0b91ab0cdbd8c97c0c0250281728cb32f9398760df9caeae"},
 ]
 
 [package.dependencies]
-async-timeout = {version = ">=4.0.3", markers = "python_version < \"3.11\""}
+async-timeout = {version = ">=4.0.3", markers = "python_version < \"3.11.3\""}
 
 [package.extras]
 libvalkey = ["libvalkey (>=4.0.0)"]
@@ -1752,9 +1752,10 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 type = ["pytest-mypy"]
 
 [extras]
+valkey = ["valkey"]
 yaml = ["pyyaml"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "641d4bec80938f6c858d36d4d4cce1226021cd0a99263de0f9d3e9a240ae4512"
+content-hash = "d2f15d1a3c26092b506e3da3a2539fe9ca83c8e68c7949c64f71f8af3401b3cb"
