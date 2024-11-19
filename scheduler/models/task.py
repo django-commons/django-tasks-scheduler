@@ -1,6 +1,6 @@
 import math
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Dict
 
 import croniter
@@ -311,7 +311,7 @@ class Task(models.Model):
         self.save(schedule_job=False)
         return True
 
-    def _schedule_time(self):
+    def _schedule_time(self) -> datetime:
         if self.task_type == TaskType.CRON:
             self.scheduled_time = tools.get_next_cron_time(self.cron_string)
         elif self.task_type == TaskType.REPEATABLE:

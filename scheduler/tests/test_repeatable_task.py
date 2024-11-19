@@ -8,10 +8,11 @@ from scheduler import settings
 from scheduler.models import RepeatableTask
 from scheduler.tests.test_old_models import BaseTestCases
 from .testtools import task_factory, _get_job_from_scheduled_registry
+from ..tools import TaskType
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
-    TaskModelClass = RepeatableTask
+    TaskModelClass = TaskType.REPEATABLE
 
     def test_unschedulable_old_job(self):
         job = task_factory(self.TaskModelClass, scheduled_time=timezone.now() - timedelta(hours=1), repeat=0)

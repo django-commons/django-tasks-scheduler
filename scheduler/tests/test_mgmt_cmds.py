@@ -10,7 +10,7 @@ from django.test import TestCase
 from scheduler.models import ScheduledTask, RepeatableTask, Task
 from scheduler.queues import get_queue
 from scheduler.tests.jobs import failing_job, test_job
-from scheduler.tests.testtools import task_factory
+from scheduler.tests.testtools import task_factory, old_task_factory
 from . import test_settings  # noqa
 from .test_views import BaseTestCase
 from ..models.task import TaskType
@@ -167,8 +167,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True))
 
         # act
         call_command("export", filename=self.tmpfile.name)
@@ -180,8 +180,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_enabled_jobs_only(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True))
-        jobs.append(task_factory(RepeatableTask, enabled=False))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=False))
 
         # act
         call_command("export", filename=self.tmpfile.name, enabled=True)
@@ -192,8 +192,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job_yaml_without_yaml_lib(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True))
 
         # act
         with mock.patch.dict("sys.modules", {"yaml": None}):
@@ -203,8 +203,8 @@ class ExportTest(TestCase):
 
     def test_export__should_export_job_yaml_green(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True))
 
         # act
         call_command("export", filename=self.tmpfile.name, format="yaml")
@@ -224,8 +224,8 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True, instance_only=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True, instance_only=True))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -241,8 +241,8 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_yaml(self):
         tasks = list()
-        tasks.append(task_factory(ScheduledTask, enabled=True, instance_only=True))
-        tasks.append(task_factory(RepeatableTask, enabled=True, instance_only=True))
+        tasks.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
+        tasks.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in tasks], default_flow_style=False)
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -258,8 +258,8 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_yaml_without_yaml_lib(self):
         jobs = list()
-        jobs.append(task_factory(ScheduledTask, enabled=True, instance_only=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True, instance_only=True))
+        jobs.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in jobs], default_flow_style=False)
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -271,10 +271,10 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_reset(self):
         jobs = list()
-        task_factory(ScheduledTask, enabled=True)
-        task_factory(ScheduledTask, enabled=True)
-        jobs.append(task_factory(ScheduledTask, enabled=True))
-        jobs.append(task_factory(RepeatableTask, enabled=True, instance_only=True))
+        task_factory(TaskType.ONCE, enabled=True)
+        task_factory(TaskType.ONCE, enabled=True)
+        jobs.append(task_factory(TaskType.ONCE, enabled=True))
+        jobs.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = json.dumps([j.to_dict() for j in jobs])
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -298,8 +298,8 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_update_existing(self):
         tasks = list()
-        tasks.append(task_factory(ScheduledTask, enabled=True))
-        tasks.append(task_factory(ScheduledTask, enabled=True))
+        tasks.append(task_factory(TaskType.ONCE, enabled=True))
+        tasks.append(task_factory(TaskType.ONCE, enabled=True))
         res = json.dumps([j.to_dict() for j in tasks])
         self.tmpfile.write(res)
         self.tmpfile.flush()
@@ -318,8 +318,8 @@ class ImportTest(TestCase):
 
     def test_import__should_schedule_job_without_update_existing(self):
         tasks = list()
-        tasks.append(task_factory(ScheduledTask, enabled=True))
-        tasks.append(task_factory(ScheduledTask, enabled=True))
+        tasks.append(task_factory(TaskType.ONCE, enabled=True))
+        tasks.append(task_factory(TaskType.ONCE, enabled=True))
         res = json.dumps([j.to_dict() for j in tasks])
         self.tmpfile.write(res)
         self.tmpfile.flush()
