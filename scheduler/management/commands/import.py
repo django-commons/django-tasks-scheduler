@@ -21,14 +21,13 @@ def job_model_str(model_str: str) -> str:
 
 def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
-    if model_str not in MODEL_NAMES:
-        raise ValueError(f"Invalid model {model_str}")
     if model_str == "CronTask":
         return TaskType.CRON
     elif model_str == "RepeatableTask":
         return TaskType.REPEATABLE
-    elif model_str == "ScheduledTask":
+    elif model_str in {"ScheduledTask", "OnceTask"}:
         return TaskType.ONCE
+    raise ValueError(f"Invalid model {model_str}")
 
 
 def create_task_from_dict(task_dict: Dict[str, Any], update):
