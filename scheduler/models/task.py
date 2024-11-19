@@ -51,9 +51,13 @@ def success_callback(job, connection, result, *args, **kwargs):
     model_name = job.meta.get("task_type", None)
     if model_name is None:
         return
-    model = apps.get_model(app_label="scheduler", model_name=model_name)
-    task = model.objects.filter(job_id=job.id).first()
+
+    task = Task.objects.filter(job_id=job.id).first()
     if task is None:
+        model = apps.get_model(app_label="scheduler", model_name=model_name)
+        task = model.objects.filter(job_id=job.id).first()
+    if task is None:
+        logger.warn(f"Could not find task for job {job.id}")
         return
     task.job_id = None
     task.successful_runs += 1

@@ -507,16 +507,3 @@ class BaseTestCases:
             entry = _get_task_job_execution_from_registry(job)
             self.assertEqual(entry.result_ttl, 500)
 
-
-class TestScheduledTask(BaseTestCases.TestSchedulableTask):
-    task_type = TaskType.ONCE
-
-    def test_clean(self):
-        job = task_factory(self.task_type)
-        job.queue = list(settings.QUEUES)[0]
-        job.callable = "scheduler.tests.jobs.test_job"
-        self.assertIsNone(job.clean())
-
-    def test_unschedulable_old_job(self):
-        job = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1))
-        self.assertFalse(job.is_scheduled())

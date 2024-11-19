@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from scheduler.models import TaskArg, TaskKwarg, Task
 from scheduler.models.task import TaskType
-from scheduler.tools import MODEL_NAMES
+from scheduler.tools import OLD_MODEL_NAMES
 
 
 def job_model_str(model_str: str) -> str:
@@ -133,7 +133,7 @@ class Command(BaseCommand):
             jobs = yaml.load(file, yaml.SafeLoader)
 
         if options.get("reset"):
-            for model_name in MODEL_NAMES:
+            for model_name in OLD_MODEL_NAMES:
                 model = apps.get_model(app_label="scheduler", model_name=model_name)
                 model.objects.all().delete()
 

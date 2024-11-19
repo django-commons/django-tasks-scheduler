@@ -24,7 +24,8 @@ from rq.worker import WorkerStatus
 from scheduler import settings
 from scheduler.broker_types import PipelineType, ConnectionType
 
-MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask", "Task"]
+OLD_MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
+MODEL_NAMES = ["OnceTask", "RepeatableTask", "CronTask"]
 
 rq_job_decorator = job
 ExecutionStatus = JobStatus
@@ -63,7 +64,8 @@ class JobExecution(Job):
 
     def is_execution_of(self, task: "Task") -> bool:  # noqa: F821
         return (
-            self.meta.get("task_type", None) == task.task_type and self.meta.get("scheduled_task_id", None) == task.id
+                self.meta.get("task_type", None) == task.task_type and self.meta.get("scheduled_task_id",
+                                                                                     None) == task.id
         )
 
     def stop_execution(self, connection: ConnectionType):
@@ -92,11 +94,11 @@ class DjangoWorker(Worker):
         return f"{self.name}/{','.join(self.queue_names())}"
 
     def _start_scheduler(
-        self,
-        burst: bool = False,
-        logging_level: str = "INFO",
-        date_format: str = "%H:%M:%S",
-        log_format: str = "%(asctime)s %(message)s",
+            self,
+            burst: bool = False,
+            logging_level: str = "INFO",
+            date_format: str = "%H:%M:%S",
+            log_format: str = "%(asctime)s %(message)s",
     ) -> None:
         """Starts the scheduler process.
         This is specifically designed to be run by the worker when running the `work()` method.
@@ -262,7 +264,7 @@ class DjangoScheduler(RQScheduler):
 
     @staticmethod
     def reschedule_all_jobs():
-        for model_name in MODEL_NAMES:
+        for model_name in OLD_MODEL_NAMES:
             model = apps.get_model(app_label="scheduler", model_name=model_name)
             enabled_jobs = model.objects.filter(enabled=True)
             unscheduled_jobs = filter(lambda j: j.ready_for_schedule(), enabled_jobs)

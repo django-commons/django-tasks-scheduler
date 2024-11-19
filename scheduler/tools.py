@@ -10,7 +10,7 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.queues import get_queues, logger, get_queue
-from scheduler.rq_classes import DjangoWorker, MODEL_NAMES, JobExecution
+from scheduler.rq_classes import DjangoWorker, OLD_MODEL_NAMES, JobExecution, MODEL_NAMES
 from scheduler.settings import SCHEDULER_CONFIG, Broker
 
 
@@ -39,15 +39,26 @@ def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime
     return next_itr
 
 
-def get_scheduled_task(task_model: Union[TaskType, str], task_id: int) -> "BaseTask":  # noqa: F821
-    if isinstance(task_model, TaskType):
-        model = apps.get_model(app_label="scheduler", model_name="Task")
-        task = model.objects.filter(task_type=task_model, id=task_id).first()
+def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
+    if isinstance(task_model, str) and task_model not in OLD_MODEL_NAMES and task_model not in MODEL_NAMES:
+        raise ValueError(f"Job Model `{task_model}` does not exist, choices are {OLD_MODEL_NAMES}")
+
+    # Try with new model names
+    model = apps.get_model(app_label="scheduler", model_name="Task")
+    if task_model == "OnceTask":
+        task = model.objects.filter(task_type=TaskType.ONCE, id=task_id).first()
         if task is None:
             raise ValueError(f"Job {task_model}:{task_id} does not exit")
         return task
-    if isinstance(task_model, str) and task_model not in MODEL_NAMES:
-        raise ValueError(f"Job Model `{task_model}` does not exist, choices are {MODEL_NAMES}")
+    elif task_model == "RepeatableTask":
+        task = model.objects.filter(task_type=TaskType.REPEATABLE, id=task_id).first()
+        if task is not None:
+            return task
+    elif task_model == "CronTask":
+        task = model.objects.filter(task_type=TaskType.CRON, id=task_id).first()
+        if task is not None:
+            return task
+
     model = apps.get_model(app_label="scheduler", model_name=task_model)
     task = model.objects.filter(id=task_id).first()
     if task is None:
@@ -81,7 +92,7 @@ def create_worker(*queue_names, **kwargs) -> DjangoWorker:
     queues = get_queues(*queue_names)
     existing_workers = DjangoWorker.all(connection=queues[0].connection)
     existing_worker_names = set(map(lambda w: w.name, existing_workers))
-    kwargs["fork_job_execution"] = SCHEDULER_CONFIG.BROKER != Broker.FAKEREDIS
+    kwargs.setdefault("fork_job_execution", SCHEDULER_CONFIG.BROKER != Broker.FAKEREDIS)
     if kwargs.get("name", None) is None:
         kwargs["name"] = _calc_worker_name(existing_worker_names)
 
