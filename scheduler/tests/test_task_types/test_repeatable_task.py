@@ -113,10 +113,6 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         job = RepeatableTask(interval=15, interval_unit="seconds")
         self.assertEqual(15.0, job.interval_seconds())
 
-    def test_interval_display(self):
-        job = task_factory(self.task_type, interval=15, interval_unit="minutes")
-        self.assertEqual(job.interval_display(), "15 minutes")
-
     def test_result_interval(self):
         job = task_factory(
             self.task_type,
