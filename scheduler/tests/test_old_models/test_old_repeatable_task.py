@@ -7,7 +7,6 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.models import RepeatableTask
 from scheduler.tests.test_old_models.test_old_task_model import BaseTestCases
-
 from scheduler.tests.testtools import old_task_factory, _get_task_job_execution_from_registry
 
 
@@ -136,7 +135,9 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
 
     def test_repeat_old_job_last_iter(self):
         base_time = timezone.now()
-        job = old_task_factory(self.TaskModelClass, scheduled_time=base_time - timedelta(hours=9, minutes=30), repeat=10)
+        job = old_task_factory(
+            self.TaskModelClass, scheduled_time=base_time - timedelta(hours=9, minutes=30), repeat=10,
+        )
         self.assertEqual(job.repeat, 0)
         self.assertEqual(job.is_scheduled(), True)
 

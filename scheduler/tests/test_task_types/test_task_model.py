@@ -478,7 +478,7 @@ class BaseTestCases:
             res = self.client.post(url, data=data, follow=True)
             # assert
             self.assertEqual(200, res.status_code)
-            assert_response_has_msg(res, f"Successfully deleted 1 task.")
+            assert_response_has_msg(res, "Successfully deleted 1 task.")
             self.assertIsNone(Task.objects.filter(task_type=self.task_type).filter(id=task.id).first())
             scheduled_jobs = queue.scheduled_job_registry.get_job_ids()
             self.assertNotIn(job_id, scheduled_jobs)
@@ -506,4 +506,3 @@ class BaseTestCases:
             job = task_factory(self.task_type, result_ttl=500)
             entry = _get_task_job_execution_from_registry(job)
             self.assertEqual(entry.result_ttl, 500)
-

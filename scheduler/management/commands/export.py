@@ -4,7 +4,6 @@ import click
 from django.apps import apps
 from django.core.management.base import BaseCommand
 
-from scheduler.models import Task
 from scheduler.tools import MODEL_NAMES
 
 
