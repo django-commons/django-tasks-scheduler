@@ -3,9 +3,9 @@ from django.core.exceptions import ValidationError
 from scheduler import settings
 from scheduler.models import CronTask
 from scheduler.tools import create_worker
-from .test_old_models import BaseTestCases
-from .testtools import old_task_factory
-from ..queues import get_queue
+from scheduler.tests.test_old_models.test_old_models import BaseTestCases
+from scheduler.tests.testtools import old_task_factory
+from scheduler.queues import get_queue
 
 
 class TestCronTask(BaseTestCases.TestBaseTask):

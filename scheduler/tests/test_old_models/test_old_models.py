@@ -10,16 +10,11 @@ from freezegun import freeze_time
 
 from scheduler import settings
 from scheduler.models import BaseTask, TaskArg, TaskKwarg, ScheduledTask
+from scheduler.queues import get_queue
+from scheduler.tests import jobs
+from scheduler.tests.testtools import (
+    old_task_factory, taskarg_factory, _get_job_from_scheduled_registry, SchedulerBaseCase, _get_executions)
 from scheduler.tools import run_task, create_worker
-from . import jobs
-from .testtools import (
-    old_task_factory,
-    taskarg_factory,
-    _get_job_from_scheduled_registry,
-    SchedulerBaseCase,
-    _get_executions,
-)
-from ..queues import get_queue
 
 
 def assert_response_has_msg(response, message):
@@ -341,9 +336,7 @@ class BaseTestCases:
         def test_admin_change_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = old_task_factory(
-                self.TaskModelClass,
-            )
+            task = old_task_factory(self.TaskModelClass)
             model = task._meta.model.__name__.lower()
             url = reverse(
                 f"admin:scheduler_{model}_change",
@@ -512,7 +505,7 @@ class BaseTestCases:
             scheduled_jobs = queue.scheduled_job_registry.get_job_ids()
             self.assertNotIn(job_id, scheduled_jobs)
 
-    class TestSchedulableJob(TestBaseTask):
+    class TestSchedulableTask(TestBaseTask):
         # Currently ScheduledJob and RepeatableJob
         TaskModelClass = ScheduledTask
 
@@ -537,7 +530,7 @@ class BaseTestCases:
             self.assertEqual(entry.result_ttl, 500)
 
 
-class TestScheduledJob(BaseTestCases.TestSchedulableJob):
+class TestScheduledTask(BaseTestCases.TestSchedulableTask):
     TaskModelClass = ScheduledTask
 
     def test_clean(self):
