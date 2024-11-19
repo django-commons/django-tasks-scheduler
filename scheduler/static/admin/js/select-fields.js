@@ -1,9 +1,9 @@
 (function ($) {
     $(function () {
         const tasktypes = {
-            "CronTask": $(".tasktype-CronTask"),
-            "RepeatableTask": $(".tasktype-RepeatableTask"),
-            "OnceTask": $(".tasktype-OnceTask"),
+            "CronTaskType": $(".tasktype-CronTaskType"),
+            "RepeatableTaskType": $(".tasktype-RepeatableTaskType"),
+            "OnceTaskType": $(".tasktype-OnceTaskType"),
         };
         var taskTypeField = $('#id_task_type');
 

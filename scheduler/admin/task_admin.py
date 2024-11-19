@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from scheduler import tools
 from scheduler.models import TaskArg, TaskKwarg, Task
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.tools import get_job_executions_for_task
+from scheduler.tools import get_job_executions_for_task, TaskType
 
 
 class HiddenMixin(object):
@@ -56,9 +56,7 @@ class TaskAdmin(admin.ModelAdmin):
         "function_string",
         "is_scheduled",
         "queue",
-        "scheduled_time",
-        "interval_display",
-        "cron_string",
+        "task_schedule",
         "next_run",
         "successful_runs",
         "last_successful_run",
@@ -88,15 +86,15 @@ class TaskAdmin(admin.ModelAdmin):
         ),
         (
             None,
-            dict(fields=("scheduled_time",), classes=("tasktype-OnceTask",)),
+            dict(fields=("scheduled_time",), classes=("tasktype-OnceTaskType",)),
         ),
         (
             None,
-            dict(fields=("cron_string",), classes=("tasktype-CronTask",)),
+            dict(fields=("cron_string",), classes=("tasktype-CronTaskType",)),
         ),
         (
             None,
-            dict(fields=("interval", "interval_unit", "repeat"), classes=("tasktype-RepeatableTask",)),
+            dict(fields=("interval", "interval_unit", "repeat"), classes=("tasktype-RepeatableTaskType",)),
         ),
         (_("RQ Settings"), dict(fields=(("queue", "at_front"), "job_id"))),
         (
@@ -105,8 +103,19 @@ class TaskAdmin(admin.ModelAdmin):
         ),
     )
 
+    @admin.display(description="Schedule")
+    def task_schedule(self, o: Task) -> str:
+        if o.task_type == TaskType.ONCE.value:
+            return f"Run once: {o.scheduled_time:%Y-%m-%d %H:%M:%S}"
+        elif o.task_type == TaskType.CRON.value:
+            return f"Cron: {o.cron_string}"
+        elif o.task_type == TaskType.REPEATABLE.value:
+            if o.interval is None or o.interval_unit is None:
+                return ""
+            return "Repeatable: {} {}".format(o.interval, o.get_interval_unit_display())
+
     @admin.display(description="Next run")
-    def next_run(self, o: Task):
+    def next_run(self, o: Task) -> str:
         return tools.get_next_cron_time(o.cron_string)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
