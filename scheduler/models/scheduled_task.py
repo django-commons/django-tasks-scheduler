@@ -124,6 +124,7 @@ class BaseTask(models.Model):
                 >0: Result expires after n seconds."""
         ),
     )
+    new_task_id = models.ForeignKey('Task', on_delete=models.CASCADE, blank=True, null=True)
 
     def callable_func(self):
         """Translate callable string to callable"""

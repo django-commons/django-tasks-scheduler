@@ -134,6 +134,7 @@ class TaskAdmin(admin.ModelAdmin):
         "function_string",
         "is_scheduled",
         "queue",
+        "new_task_id",
     )
     list_display_links = ("name",)
     readonly_fields = ("job_id",)
