@@ -9,18 +9,13 @@ from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task, TaskType
 
 
-class HiddenMixin(object):
-    class Media:
-        js = ("admin/js/jquery.init.js",)
-
-
-class JobArgInline(HiddenMixin, GenericStackedInline):
+class JobArgInline(GenericStackedInline):
     model = TaskArg
     extra = 0
     fieldsets = ((None, dict(fields=("arg_type", "val"))),)
 
 
-class JobKwargInline(HiddenMixin, GenericStackedInline):
+class JobKwargInline(GenericStackedInline):
     model = TaskKwarg
     extra = 0
     fieldsets = ((None, dict(fields=("key", ("arg_type", "val")))),)

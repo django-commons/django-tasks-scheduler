@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
+from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
@@ -158,6 +159,8 @@ class TaskAdmin(admin.ModelAdmin):
             },
         ),
     )
+    def has_add_permission(self, request: HttpRequest)-> bool:
+        return False
 
     def get_list_display(self, request):
         if self.model.__name__ not in _LIST_DISPLAY_EXTRA:
