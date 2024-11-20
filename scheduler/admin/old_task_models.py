@@ -159,7 +159,8 @@ class TaskAdmin(admin.ModelAdmin):
             },
         ),
     )
-    def has_add_permission(self, request: HttpRequest)-> bool:
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
     def get_list_display(self, request):
