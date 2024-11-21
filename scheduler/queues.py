@@ -76,7 +76,7 @@ def _get_broker_connection(config, use_strict_broker=False):
         password=config.get("PASSWORD"),
         ssl=config.get("SSL", False),
         ssl_cert_reqs=config.get("SSL_CERT_REQS", "required"),
-        **config.get("REDIS_CLIENT_KWARGS", {}),
+        **config.get("CLIENT_KWARGS", {}),
     )
 
 

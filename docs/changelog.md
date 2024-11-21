@@ -1,13 +1,17 @@
 # Changelog
 
-## v2.2.0 🌈
+## v3.0.0 🌈
+
+### Breaking Changes
+
+- Renamed `REDIS_CLIENT_KWARGS` configuration to `CLIENT_KWARGS`.
 
 ### 🚀 Features
 
-- Created a new `Task` model representing all kind of scheduled tasks. 
-  - In future versions, `CronTask`, `ScheduledTask` and `RepeatableTask` will be removed.
-  - `Task` model has a `task_type` field to differentiate between the types of tasks.
-  - Old tasks in the database will be migrated to the new `Task` model automatically.
+- Created a new `Task` model representing all kind of scheduled tasks.
+    - In future versions, `CronTask`, `ScheduledTask` and `RepeatableTask` will be removed.
+    - `Task` model has a `task_type` field to differentiate between the types of tasks.
+    - Old tasks in the database will be migrated to the new `Task` model automatically.
 
 ## v2.1.1 🌈
 
