@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import click
 from django.apps import apps
@@ -32,16 +32,16 @@ def get_task_type(model_str: str) -> TaskType:
     raise ValueError(f"Invalid model {model_str}")
 
 
-def create_task_from_dict(task_dict: Dict[str, Any], update):
-    existing_job = Task.objects.filter(name=task_dict["name"]).first()
+def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[Task]:
+    existing_task = Task.objects.filter(name=task_dict["name"]).first()
     task_type = get_task_type(task_dict["model"])
-    if existing_job:
+    if existing_task:
         if update:
-            click.echo(f'Found existing job "{existing_job}, removing it to be reinserted"')
-            existing_job.delete()
+            click.echo(f'Found existing job "{existing_task}, removing it to be reinserted"')
+            existing_task.delete()
         else:
-            click.echo(f'Found existing job "{existing_job}", skipping')
-            return
+            click.echo(f'Found existing job "{existing_task}", skipping')
+            return None
     kwargs = dict(task_dict)
     kwargs["task_type"] = task_type
     del kwargs["model"]
@@ -52,27 +52,28 @@ def create_task_from_dict(task_dict: Dict[str, Any], update):
         if not settings.USE_TZ and not timezone.is_naive(target):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
-    model_fields = filter(lambda field:hasattr(field,'attname'),Task._meta.get_fields())
+    model_fields = filter(lambda field: hasattr(field, 'attname'), Task._meta.get_fields())
     model_fields = set(map(lambda field: field.attname, model_fields))
     keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:
         del kwargs[k]
-    scheduled_job = Task.objects.create(**kwargs)
-    click.echo(f"Created job {scheduled_job}")
-    content_type = ContentType.objects.get_for_model(scheduled_job)
+    task = Task.objects.create(**kwargs)
+    click.echo(f"Created task {task}")
+    content_type = ContentType.objects.get_for_model(task)
 
     for arg in task_dict["callable_args"]:
         TaskArg.objects.create(
             content_type=content_type,
-            object_id=scheduled_job.id,
+            object_id=task.id,
             **arg,
         )
     for arg in task_dict["callable_kwargs"]:
         TaskKwarg.objects.create(
             content_type=content_type,
-            object_id=scheduled_job.id,
+            object_id=task.id,
             **arg,
         )
+    return task
 
 
 class Command(BaseCommand):
