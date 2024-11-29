@@ -175,7 +175,7 @@ class TaskAdmin(admin.ModelAdmin):
     def link_new_task(self, o: BaseTask) -> Optional[str]:
         if o.new_task_id is None:
             return None
-        url = reverse(f"admin:scheduler_task_change", args=[o.new_task_id.id, ])
+        url = reverse("admin:scheduler_task_change", args=[o.new_task_id.id, ])
         html = format_html(f"""<a href="{url}">{o.new_task_id.id}</a>""")
         return html
 

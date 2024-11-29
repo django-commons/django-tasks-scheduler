@@ -2,6 +2,8 @@ from scheduler import settings
 from .queues import get_queue, QueueNotFoundError
 from .rq_classes import rq_job_decorator
 
+JOB_METHODS_LIST = list()
+
 
 def job(*args, **kwargs):
     """
@@ -36,5 +38,6 @@ def job(*args, **kwargs):
 
     decorator = rq_job_decorator(queue, *args, **kwargs)
     if func:
+        JOB_METHODS_LIST.append(f"{func.__module__}.{func.__name__}")
         return decorator(func)
     return decorator

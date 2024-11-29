@@ -5,6 +5,6 @@ from .task import Task
 
 __all__ = [
     "TaskKwarg", "TaskArg",
-    "ScheduledTask", "RepeatableTask", "CronTask",
+    "BaseTask", "ScheduledTask", "RepeatableTask", "CronTask",
     "Queue", "Task",
 ]
