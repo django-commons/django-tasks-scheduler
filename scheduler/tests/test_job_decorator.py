@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from scheduler import job, settings
 from . import test_settings  # noqa
+from ..decorators import JOB_METHODS_LIST
 from ..queues import get_queue, QueueNotFoundError
 
 
@@ -33,6 +34,9 @@ def test_job_result_ttl():
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
+
+    def test_all_job_methods_registered(self):
+        self.assertEqual(1, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()
@@ -71,7 +75,6 @@ class JobDecoratorTest(TestCase):
 
     def test_job_decorator_bad_queue(self):
         with self.assertRaises(QueueNotFoundError):
-
             @job("bad-queue")
             def test_job_bad_queue():
                 time.sleep(1)
