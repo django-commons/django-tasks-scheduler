@@ -21,8 +21,10 @@ def job_model_str(model_str: str) -> str:
 
 def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
-    if TaskType(model_str):
+    try:
         return TaskType(model_str)
+    except ValueError:
+        pass
     if model_str == "CronTask":
         return TaskType.CRON
     elif model_str == "RepeatableTask":

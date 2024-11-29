@@ -9,6 +9,8 @@
 A database backed asynchronous tasks scheduler for django.
 This allows remembering scheduled tasks, their parameters, etc.
 
+!!! Important
+
 ## Terminology
 
 ### Scheduled Task

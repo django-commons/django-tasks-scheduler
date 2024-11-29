@@ -127,6 +127,7 @@ class TaskAdmin(admin.ModelAdmin):
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
     actions = [
+        "migrate_selected",
         "disable_selected",
         "enable_selected",
         "enqueue_job_now",
@@ -236,7 +237,7 @@ class TaskAdmin(admin.ModelAdmin):
         super(TaskAdmin, self).delete_model(request, obj)
 
     @admin.action(description=_("Migrate to new Task model(s)"), permissions=("change",))
-    def migrate(self, request, queryset):
+    def migrate_selected(self, request, queryset):
         rows_updated = 0
         for obj in queryset.filter(enabled=True).iterator():
             migrate_util.migrate(obj)

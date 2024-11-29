@@ -19,8 +19,10 @@ def job_model_str(model_str: str) -> str:
 
 def get_task_type(model_str: str) -> TaskType:
     model_str = job_model_str(model_str)
-    if TaskType(model_str):
+    try:
         return TaskType(model_str)
+    except ValueError:
+        pass
     if model_str == "CronTask":
         return TaskType.CRON
     elif model_str == "RepeatableTask":
@@ -31,9 +33,10 @@ def get_task_type(model_str: str) -> TaskType:
 
 
 def create_task_from_dict(task_dict: Dict[str, Any], recreate: bool) -> Optional[Task]:
+    existing_task = None
     if "new_task_id" in task_dict:
         existing_task = Task.objects.filter(id=task_dict["new_task_id"]).first()
-    else:
+    if existing_task is None:
         existing_task = Task.objects.filter(name=task_dict["name"]).first()
     task_type = get_task_type(task_dict["model"])
     if existing_task:
@@ -42,7 +45,7 @@ def create_task_from_dict(task_dict: Dict[str, Any], recreate: bool) -> Optional
             existing_task.delete()
         else:
             logger.info(f'Found existing job "{existing_task}", skipping')
-            return None
+            return existing_task
     kwargs = dict(task_dict)
     kwargs["task_type"] = task_type
     del kwargs["model"]
