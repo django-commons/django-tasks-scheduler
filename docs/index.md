@@ -10,6 +10,10 @@ A database backed asynchronous tasks scheduler for django.
 This allows remembering scheduled tasks, their parameters, etc.
 
 !!! Important
+    Version 3.0.0 introduced a major design change. Instead of three separate models, there is one new `Task` model.
+    The goal is to simplify.
+    Make sure to follow [the migration guide](migrate_to_v3.md)
+
 
 ## Terminology
 
