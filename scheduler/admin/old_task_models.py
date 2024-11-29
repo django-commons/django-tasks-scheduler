@@ -1,11 +1,15 @@
+from typing import Optional
+
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.http import HttpRequest
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
 from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
+from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task
 
@@ -130,11 +134,11 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = (
         "enabled",
         "name",
+        "link_new_task",
         "job_id",
         "function_string",
         "is_scheduled",
         "queue",
-        "new_task_id",
     )
     list_display_links = ("name",)
     readonly_fields = ("job_id",)
@@ -160,6 +164,14 @@ class TaskAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(description="New task")
+    def link_new_task(self, o: BaseTask) -> Optional[str]:
+        if o.new_task_id is None:
+            return None
+        url = reverse(f"admin:scheduler_task_change", args=[o.new_task_id, ])
+        html = format_html(f"""<a href="{url}">{o.new_task_id}</a>""")
+        return html
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
