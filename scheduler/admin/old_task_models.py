@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
 from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask
+from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask, migrate_util
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task
 
@@ -111,6 +111,11 @@ _FIELDSET_EXTRA = dict(
         ),
     ),
 )
+
+
+def get_message_bit(rows_updated: int) -> str:
+    message_bit = "1 task was" if rows_updated == 1 else f"{rows_updated} tasks were"
+    return message_bit
 
 
 @admin.register(CronTask, ScheduledTask, RepeatableTask)
@@ -230,6 +235,16 @@ class TaskAdmin(admin.ModelAdmin):
         obj.unschedule()
         super(TaskAdmin, self).delete_model(request, obj)
 
+    @admin.action(description=_("Migrate to new Task model(s)"), permissions=("change",))
+    def migrate(self, request, queryset):
+        rows_updated = 0
+        for obj in queryset.filter(enabled=True).iterator():
+            migrate_util.migrate(obj)
+            rows_updated += 1
+
+        level = messages.WARNING if not rows_updated else messages.INFO
+        self.message_user(request, f"{get_message_bit(rows_updated)} successfully migrated to new model.", level=level)
+
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
     def disable_selected(self, request, queryset):
         rows_updated = 0
@@ -238,10 +253,9 @@ class TaskAdmin(admin.ModelAdmin):
             obj.unschedule()
             rows_updated += 1
 
-        message_bit = "1 job was" if rows_updated == 1 else f"{rows_updated} jobs were"
-
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{message_bit} successfully disabled and unscheduled.", level=level)
+        self.message_user(request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.",
+                          level=level)
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request, queryset):
@@ -251,9 +265,8 @@ class TaskAdmin(admin.ModelAdmin):
             obj.save()
             rows_updated += 1
 
-        message_bit = "1 job was" if rows_updated == 1 else f"{rows_updated} jobs were"
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{message_bit} successfully enabled and scheduled.", level=level)
+        self.message_user(request, f"{get_message_bit(rows_updated)} successfully enabled and scheduled.", level=level)
 
     @admin.action(description="Enqueue now", permissions=("change",))
     def enqueue_job_now(self, request, queryset):

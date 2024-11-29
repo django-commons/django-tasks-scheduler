@@ -428,7 +428,7 @@ class BaseTestCases:
             task.refresh_from_db()
             self.assertTrue(task.enabled)
             self.assertTrue(task.is_scheduled())
-            assert_response_has_msg(res, "1 job was successfully enabled and scheduled.")
+            assert_response_has_msg(res, "1 task was successfully enabled and scheduled.")
 
         def test_admin_disable_job(self):
             # arrange
@@ -451,7 +451,7 @@ class BaseTestCases:
             task.refresh_from_db()
             self.assertFalse(task.is_scheduled())
             self.assertFalse(task.enabled)
-            assert_response_has_msg(res, "1 job was successfully disabled and unscheduled.")
+            assert_response_has_msg(res, "1 task was successfully disabled and unscheduled.")
 
         def test_admin_single_delete(self):
             # arrange

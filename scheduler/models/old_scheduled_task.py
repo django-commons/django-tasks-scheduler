@@ -299,6 +299,7 @@ class BaseTask(models.Model):
             failed_runs=getattr(self, "failed_runs", 0),
             last_successful_run=getattr(self, "last_successful_run", None),
             last_failed_run=getattr(self, "last_failed_run", None),
+            new_task_id=getattr(self, "new_task_id", None),
         )
         return res
 
@@ -396,7 +397,7 @@ class ScheduledTask(ScheduledTimeMixin, BaseTask):
 
     def ready_for_schedule(self) -> bool:
         return super(ScheduledTask, self).ready_for_schedule() and (
-            self.scheduled_time is None or self.scheduled_time >= timezone.now()
+                self.scheduled_time is None or self.scheduled_time >= timezone.now()
         )
 
     class Meta:

@@ -21,6 +21,11 @@ class JobKwargInline(GenericStackedInline):
     fieldsets = ((None, dict(fields=("key", ("arg_type", "val")))),)
 
 
+def get_message_bit(rows_updated: int) -> str:
+    message_bit = "1 task was" if rows_updated == 1 else f"{rows_updated} tasks were"
+    return message_bit
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
@@ -153,10 +158,9 @@ class TaskAdmin(admin.ModelAdmin):
             obj.unschedule()
             rows_updated += 1
 
-        message_bit = "1 job was" if rows_updated == 1 else f"{rows_updated} jobs were"
-
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{message_bit} successfully disabled and unscheduled.", level=level)
+        self.message_user(request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.",
+                          level=level)
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request, queryset):
@@ -166,9 +170,8 @@ class TaskAdmin(admin.ModelAdmin):
             obj.save()
             rows_updated += 1
 
-        message_bit = "1 job was" if rows_updated == 1 else f"{rows_updated} jobs were"
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{message_bit} successfully enabled and scheduled.", level=level)
+        self.message_user(request, f"{get_message_bit(rows_updated)} successfully enabled and scheduled.", level=level)
 
     @admin.action(description="Enqueue now", permissions=("change",))
     def enqueue_job_now(self, request, queryset):
