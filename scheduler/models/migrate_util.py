@@ -84,7 +84,7 @@ def create_task_from_dict(task_dict: Dict[str, Any], recreate: bool) -> Optional
 def migrate(old: BaseTask) -> Optional[Task]:
     old_task_dict = old.to_dict()
     new_task = create_task_from_dict(old_task_dict, old_task_dict.get("new_task_id") is not None)
-    old.new_task_id = new_task.id
+    old.new_task_id = new_task
     old.enabled = False
     old.save()
     return new_task

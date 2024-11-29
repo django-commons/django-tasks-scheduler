@@ -175,8 +175,8 @@ class TaskAdmin(admin.ModelAdmin):
     def link_new_task(self, o: BaseTask) -> Optional[str]:
         if o.new_task_id is None:
             return None
-        url = reverse(f"admin:scheduler_task_change", args=[o.new_task_id, ])
-        html = format_html(f"""<a href="{url}">{o.new_task_id}</a>""")
+        url = reverse(f"admin:scheduler_task_change", args=[o.new_task_id.id, ])
+        html = format_html(f"""<a href="{url}">{o.new_task_id.id}</a>""")
         return html
 
     def has_add_permission(self, request: HttpRequest) -> bool:
@@ -239,7 +239,7 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.action(description=_("Migrate to new Task model(s)"), permissions=("change",))
     def migrate_selected(self, request, queryset):
         rows_updated = 0
-        for obj in queryset.filter(enabled=True).iterator():
+        for obj in queryset.iterator():
             migrate_util.migrate(obj)
             rows_updated += 1
 
