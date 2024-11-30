@@ -20,7 +20,7 @@ SCHEDULER_QUEUES = {
         'USERNAME': 'some-user',
         'PASSWORD': 'some-password',
         'DEFAULT_TIMEOUT': 360,
-        'REDIS_CLIENT_KWARGS': {  # Eventual additional Redis connection arguments
+        'CLIENT_KWARGS': {  # Eventual additional Redis connection arguments
             'ssl_cert_reqs': None,
         },
         'TOKEN_VALIDATION_METHOD': None,  # Method to validate auth-header

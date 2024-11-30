@@ -1,15 +1,23 @@
 import importlib
 import os
-from typing import List, Any, Callable
+from typing import List, Any, Callable, Optional
 
 import croniter
 from django.apps import apps
+from django.db import models
 from django.utils import timezone
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 
 from scheduler.queues import get_queues, logger, get_queue
-from scheduler.rq_classes import DjangoWorker, MODEL_NAMES, JobExecution
+from scheduler.rq_classes import DjangoWorker, JobExecution, TASK_TYPES, MODEL_NAMES
 from scheduler.settings import SCHEDULER_CONFIG, Broker
+
+
+class TaskType(models.TextChoices):
+    CRON = "CronTaskType", _("Cron Task")
+    REPEATABLE = "RepeatableTaskType", _("Repeatable Task")
+    ONCE = "OnceTaskType", _("Run once")
 
 
 def callable_func(callable_str: str) -> Callable:
@@ -21,22 +29,35 @@ def callable_func(callable_str: str) -> Callable:
     return func
 
 
-def get_next_cron_time(cron_string) -> timezone.datetime:
+def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime]:
     """Calculate the next scheduled time by creating a crontab object with a cron string"""
+    if cron_string is None:
+        return None
     now = timezone.now()
     itr = croniter.croniter(cron_string, now)
     next_itr = itr.get_next(timezone.datetime)
     return next_itr
 
 
-def get_scheduled_task(task_model: str, task_id: int) -> "BaseTask":  # noqa: F821
-    if task_model not in MODEL_NAMES:
-        raise ValueError(f"Job Model {task_model} does not exist, choices are {MODEL_NAMES}")
-    model = apps.get_model(app_label="scheduler", model_name=task_model)
-    task = model.objects.filter(id=task_id).first()
-    if task is None:
-        raise ValueError(f"Job {task_model}:{task_id} does not exit")
-    return task
+def get_scheduled_task(task_type_str: str, task_id: int) -> "BaseTask":  # noqa: F821
+    # Try with new model names
+    model = apps.get_model(app_label="scheduler", model_name="Task")
+    if task_type_str in TASK_TYPES:
+        try:
+            task_type = TaskType(task_type_str)
+            task = model.objects.filter(task_type=task_type, id=task_id).first()
+            if task is None:
+                raise ValueError(f"Job {task_type}:{task_id} does not exit")
+            return task
+        except ValueError:
+            raise ValueError(f"Invalid task type {task_type_str}")
+    elif task_type_str in MODEL_NAMES:
+        model = apps.get_model(app_label="scheduler", model_name=task_type_str)
+        task = model.objects.filter(id=task_id).first()
+        if task is None:
+            raise ValueError(f"Job {task_type_str}:{task_id} does not exit")
+        return task
+    raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
 
 
 def run_task(task_model: str, task_id: int) -> Any:
@@ -65,7 +86,7 @@ def create_worker(*queue_names, **kwargs) -> DjangoWorker:
     queues = get_queues(*queue_names)
     existing_workers = DjangoWorker.all(connection=queues[0].connection)
     existing_worker_names = set(map(lambda w: w.name, existing_workers))
-    kwargs["fork_job_execution"] = SCHEDULER_CONFIG.BROKER != Broker.FAKEREDIS
+    kwargs.setdefault("fork_job_execution", SCHEDULER_CONFIG.BROKER != Broker.FAKEREDIS)
     if kwargs.get("name", None) is None:
         kwargs["name"] = _calc_worker_name(existing_worker_names)
 

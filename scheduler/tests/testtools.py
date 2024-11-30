@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from scheduler import settings
 from scheduler.models import CronTask, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask
+from scheduler.models.task import TaskType, Task
 from scheduler.queues import get_queue
 
 
@@ -26,7 +27,50 @@ def sequence_gen():
 seq = sequence_gen()
 
 
-def task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs):
+def task_factory(
+    task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
+):
+    values = dict(
+        name="Scheduled Job %d" % next(seq),
+        job_id=None,
+        queue=list(settings.QUEUES.keys())[0],
+        callable=callable_name,
+        enabled=True,
+        timeout=None,
+    )
+    if task_type == TaskType.ONCE:
+        values.update(
+            dict(
+                result_ttl=None,
+                scheduled_time=timezone.now() + timedelta(days=1),
+            )
+        )
+    elif task_type == TaskType.REPEATABLE:
+        values.update(
+            dict(
+                result_ttl=None,
+                interval=1,
+                interval_unit="hours",
+                repeat=None,
+                scheduled_time=timezone.now() + timedelta(days=1),
+            )
+        )
+    elif task_type == TaskType.CRON:
+        values.update(
+            dict(
+                cron_string="0 0 * * *",
+            )
+        )
+    values.update(kwargs)
+    if instance_only:
+        instance = Task(task_type=task_type, **values)
+    else:
+        instance = Task.objects.create(task_type=task_type, **values)
+    return instance
+
+
+# TODO remove
+def old_task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs):
     values = dict(
         name="Scheduled Job %d" % next(seq),
         job_id=None,
@@ -69,7 +113,7 @@ def task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", inst
 def taskarg_factory(cls, **kwargs):
     content_object = kwargs.pop("content_object", None)
     if content_object is None:
-        content_object = task_factory(ScheduledTask)
+        content_object = old_task_factory(ScheduledTask)
     values = dict(
         arg_type="str",
         val="",
@@ -84,7 +128,7 @@ def taskarg_factory(cls, **kwargs):
     return instance
 
 
-def _get_job_from_scheduled_registry(django_task: BaseTask):
+def _get_task_job_execution_from_registry(django_task: BaseTask):
     jobs_to_schedule = django_task.rqueue.scheduled_job_registry.get_job_ids()
     entry = next(i for i in jobs_to_schedule if i == django_task.job_id)
     return django_task.rqueue.fetch_job(entry)
@@ -113,7 +157,7 @@ class SchedulerBaseCase(TestCase):
         queue.empty()
 
     def tearDown(self) -> None:
-        super(SchedulerBaseCase, self).setUp()
+        super(SchedulerBaseCase, self).tearDown()
         queue = get_queue("default")
         queue.empty()
 

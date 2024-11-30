@@ -76,7 +76,7 @@ def _get_broker_connection(config, use_strict_broker=False):
         password=config.get("PASSWORD"),
         ssl=config.get("SSL", False),
         ssl_cert_reqs=config.get("SSL_CERT_REQS", "required"),
-        **config.get("REDIS_CLIENT_KWARGS", {}),
+        **config.get("CLIENT_KWARGS", {}),
     )
 
 
@@ -86,7 +86,7 @@ def get_connection(queue_settings, use_strict_redis=False):
 
 
 def get_queue(
-        name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
+    name="default", default_timeout=None, is_async=None, autocommit=None, connection=None, **kwargs
 ) -> DjangoQueue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     from .settings import QUEUES

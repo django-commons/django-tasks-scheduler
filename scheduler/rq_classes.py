@@ -24,7 +24,8 @@ from rq.worker import WorkerStatus
 from scheduler import settings
 from scheduler.broker_types import PipelineType, ConnectionType
 
-MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask"]
+MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask", "Task"]
+TASK_TYPES = ["OnceTaskType", "RepeatableTaskType", "CronTaskType"]
 
 rq_job_decorator = job
 ExecutionStatus = JobStatus
@@ -61,9 +62,11 @@ class JobExecution(Job):
     def is_scheduled_task(self) -> bool:
         return self.meta.get("scheduled_task_id", None) is not None
 
-    def is_execution_of(self, task: "ScheduledTask") -> bool:  # noqa: F821
-        return (self.meta.get("task_type", None) == task.TASK_TYPE
-                and self.meta.get("scheduled_task_id", None) == task.id)
+    def is_execution_of(self, task: "Task") -> bool:  # noqa: F821
+        return (
+                self.meta.get("task_type", None) == task.task_type and self.meta.get("scheduled_task_id",
+                                                                                     None) == task.id
+        )
 
     def stop_execution(self, connection: ConnectionType):
         send_stop_job_command(connection, self.id)

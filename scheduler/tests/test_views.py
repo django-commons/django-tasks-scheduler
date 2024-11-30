@@ -8,12 +8,11 @@ from django.test.client import Client
 from django.urls import reverse
 
 from scheduler.queues import get_queue
-from scheduler.tools import create_worker
-from . import test_settings  # noqa
-from .jobs import failing_job, long_job, test_job
-from .testtools import assert_message_in_response, task_factory, _get_job_from_scheduled_registry
-from ..models import ScheduledTask
-from ..rq_classes import JobExecution, ExecutionStatus
+from scheduler.rq_classes import JobExecution, ExecutionStatus
+from scheduler.tests import test_settings  # noqa
+from scheduler.tests.jobs import failing_job, long_job, test_job
+from scheduler.tests.testtools import assert_message_in_response, task_factory, _get_task_job_execution_from_registry
+from scheduler.tools import create_worker, TaskType
 
 
 class BaseTestCase(TestCase):
@@ -358,8 +357,8 @@ class ViewTest(BaseTestCase):
 
     def test_scheduled_job_details(self):
         """Job data is displayed properly"""
-        scheduled_job = task_factory(ScheduledTask, enabled=True)
-        job = _get_job_from_scheduled_registry(scheduled_job)
+        scheduled_job = task_factory(TaskType.ONCE, enabled=True)
+        job = _get_task_job_execution_from_registry(scheduled_job)
 
         url = reverse(
             "job_details",

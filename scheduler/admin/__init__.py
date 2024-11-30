@@ -1,2 +1,5 @@
-from .task_models import TaskAdmin  # noqa: F401
-from .ephemeral_models import QueueAdmin, WorkerAdmin  # noqa: F401
+from .ephemeral_models import QueueAdmin, WorkerAdmin
+from .old_task_models import TaskAdmin as OldTaskAdmin
+from .task_admin import TaskAdmin
+
+__all__ = ["OldTaskAdmin", "QueueAdmin", "WorkerAdmin", "TaskAdmin", ]
