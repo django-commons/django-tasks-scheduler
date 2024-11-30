@@ -6,11 +6,7 @@ from scheduler.settings import conf_settings
 
 settings.SCHEDULER_QUEUES = {
     "default": {"HOST": "localhost", "PORT": 6379, "DB": 0, "DEFAULT_TIMEOUT": 500},
-    "test": {
-        "HOST": "localhost",
-        "PORT": 1,
-        "DB": 1,
-    },
+    "test": {"HOST": "localhost", "PORT": 1, "DB": 1},
     "sentinel": {
         "SENTINELS": [("localhost", 26736), ("localhost", 26737)],
         "MASTER_NAME": "testmaster",
@@ -93,7 +89,8 @@ settings.SCHEDULER_QUEUES = {
         "DEFAULT_TIMEOUT": 400,
     },
 }
-settings.SCHEDULER_CONFIG = dict(
-    FAKEREDIS=(os.getenv("FAKEREDIS", "False") == "True"),
-)
+if os.getenv("FAKEREDIS", "False") == "True":
+    for name, queue_settings in settings.SCHEDULER_QUEUES:
+        queue_settings["BROKER"] = "fakeredis"
+
 conf_settings()
