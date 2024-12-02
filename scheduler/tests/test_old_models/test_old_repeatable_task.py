@@ -5,7 +5,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models import RepeatableTask
+from scheduler.models.old_scheduled_task import RepeatableTask
 from scheduler.tests.test_old_models.test_old_task_model import BaseTestCases
 from scheduler.tests.testtools import old_task_factory, _get_task_job_execution_from_registry
 

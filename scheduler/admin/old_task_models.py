@@ -9,7 +9,9 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
 from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask, migrate_util
+from scheduler.models import migrate_util
+from scheduler.models.args import TaskKwarg, TaskArg
+from scheduler.models.old_scheduled_task import CronTask, RepeatableTask, ScheduledTask, BaseTask
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task
 

@@ -9,7 +9,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from scheduler import settings
-from scheduler.models import BaseTask, TaskArg, TaskKwarg, ScheduledTask
+from scheduler.models.old_scheduled_task import BaseTask, TaskArg, TaskKwarg, ScheduledTask
 from scheduler.queues import get_queue
 from scheduler.tests import jobs
 from scheduler.tests.testtools import (

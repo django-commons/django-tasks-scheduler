@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from scheduler import views
-from scheduler.models import Queue
+from scheduler.models.queue import Queue
 from scheduler.models.worker import Worker
 
 

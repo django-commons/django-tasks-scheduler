@@ -4,7 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
 from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.models import TaskArg, TaskKwarg, Task
+from scheduler.models.args import TaskArg, TaskKwarg
+from scheduler.models.task import Task
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.tools import get_job_executions_for_task, TaskType
 

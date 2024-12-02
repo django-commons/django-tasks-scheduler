@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 
 from scheduler import settings
-from scheduler.models import CronTask
+from scheduler.models.old_scheduled_task import CronTask
 from scheduler.tools import create_worker
 from scheduler.tests.test_old_models.test_old_models import BaseTestCases
 from scheduler.tests.testtools import old_task_factory

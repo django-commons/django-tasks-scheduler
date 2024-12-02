@@ -7,7 +7,7 @@ name = "django-tasks-scheduler"
 packages = [
     { include = "scheduler" },
 ]
-version = "3.0.0b1"
+version = "3.0.0b2"
 description = "An async job scheduler for django using redis/valkey brokers"
 readme = "README.md"
 keywords = ["redis", "valkey", "django", "background-jobs", "job-queue", "task-queue", "redis-queue", "scheduled-jobs"]

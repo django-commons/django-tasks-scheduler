@@ -9,7 +9,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from scheduler import settings
-from scheduler.models import BaseTask, TaskArg, TaskKwarg, ScheduledTask
+from scheduler.models.old_scheduled_task import BaseTask, TaskArg, TaskKwarg, ScheduledTask
 from scheduler.tools import run_task, create_worker
 from scheduler.tests import jobs
 from scheduler.tests.testtools import old_task_factory, taskarg_factory, _get_task_job_execution_from_registry, \

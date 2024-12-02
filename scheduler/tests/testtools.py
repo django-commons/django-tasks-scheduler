@@ -7,9 +7,11 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models import CronTask, TaskKwarg, RepeatableTask, ScheduledTask, BaseTask
-from scheduler.models.task import TaskType, Task
+from scheduler.models.args import TaskKwarg
+from scheduler.models.old_scheduled_task import CronTask, RepeatableTask, ScheduledTask, BaseTask
+from scheduler.models.task import Task
 from scheduler.queues import get_queue
+from scheduler.tools import TaskType
 
 
 def assert_message_in_response(response, message):
@@ -28,7 +30,7 @@ seq = sequence_gen()
 
 
 def task_factory(
-    task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
+        task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = dict(
         name="Scheduled Job %d" % next(seq),
