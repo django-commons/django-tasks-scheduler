@@ -276,7 +276,7 @@ class DjangoScheduler(RQScheduler):
         for model_name in MODEL_NAMES:
             model = apps.get_model(app_label="scheduler", model_name=model_name)
             enabled_jobs = model.objects.filter(enabled=True)
-            unscheduled_jobs = filter(lambda j: j.ready_for_schedule(), enabled_jobs)
+            unscheduled_jobs = filter(lambda j: j._ready_for_schedule(), enabled_jobs)
             for item in unscheduled_jobs:
                 logger.debug(f"Rescheduling {str(item)}")
                 item.save()

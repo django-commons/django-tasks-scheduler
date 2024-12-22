@@ -200,40 +200,6 @@ class BaseTask(models.Model):
         """Returns django-queue for job"""
         return get_queue(self.queue)
 
-    def ready_for_schedule(self) -> bool:
-        """Is the task ready to be scheduled?
-
-        If the task is already scheduled or disabled, then it is not
-        ready to be scheduled.
-
-        :returns: True if the task is ready to be scheduled.
-        """
-        if self.is_scheduled():
-            logger.debug(f"Task {self.name} already scheduled")
-            return False
-        if not self.enabled:
-            logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
-            return False
-        return True
-
-    def schedule(self) -> bool:
-        """Schedule the next execution for the task to run.
-        :returns: True if a job was scheduled, False otherwise.
-        """
-        if not self.ready_for_schedule():
-            return False
-        schedule_time = self._schedule_time()
-        kwargs = self._enqueue_args()
-        job = self.rqueue.enqueue_at(
-            schedule_time,
-            tools.run_task,
-            args=(self.TASK_TYPE, self.id),
-            **kwargs,
-        )
-        self.job_id = job.id
-        super(BaseTask, self).save()
-        return True
-
     def enqueue_to_run(self) -> bool:
         """Enqueue job to run now."""
         kwargs = self._enqueue_args()
@@ -314,15 +280,48 @@ class BaseTask(models.Model):
         func = self.function_string()
         return f"{self.TASK_TYPE}[{self.name}={func}]"
 
-    def save(self, **kwargs):
+    def _ready_for_schedule(self) -> bool:
+        """Is the task ready to be scheduled?
+
+        If the task is already scheduled or disabled, then it is not
+        ready to be scheduled.
+
+        :returns: True if the task is ready to be scheduled.
+        """
+        self.refresh_from_db()
+        if self.is_scheduled():
+            logger.debug(f"Task {self.name} already scheduled")
+            return False
+        if not self.enabled:
+            logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
+            return False
+        return True
+
+    def _schedule(self) -> bool:
+        """Schedule the task to be executed.
+        :returns: True if the task was scheduled.
+        """
+        if not self._ready_for_schedule():
+            return False
+        schedule_time = self._schedule_time()
+        kwargs = self._enqueue_args()
+        job = self.rqueue.enqueue_at(
+            schedule_time,
+            tools.run_task,
+            args=(self.TASK_TYPE, self.id),
+            **kwargs,
+        )
+        self.job_id = job.id
+        super(BaseTask, self).save()
+
+    def save(self, **kwargs) -> None:
         schedule_job = kwargs.pop("schedule_job", True)
-        update_fields = kwargs.get("update_fields", None)
+        update_fields = kwargs.get("update_fields", set())
         if update_fields:
             kwargs["update_fields"] = set(update_fields).union({"modified"})
         super(BaseTask, self).save(**kwargs)
         if schedule_job:
-            self.schedule()
-            super(BaseTask, self).save()
+            self._schedule()
 
     def delete(self, **kwargs):
         self.unschedule()
@@ -393,9 +392,9 @@ class RepeatableMixin(models.Model):
 class ScheduledTask(ScheduledTimeMixin, BaseTask):
     TASK_TYPE = "ScheduledTask"
 
-    def ready_for_schedule(self) -> bool:
-        return super(ScheduledTask, self).ready_for_schedule() and (
-            self.scheduled_time is None or self.scheduled_time >= timezone.now()
+    def _ready_for_schedule(self) -> bool:
+        return super(ScheduledTask, self)._ready_for_schedule() and (
+                self.scheduled_time is None or self.scheduled_time >= timezone.now()
         )
 
     class Meta:
@@ -483,8 +482,8 @@ class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
             self.repeat = (self.repeat - gap) if self.repeat is not None else None
         return super()._schedule_time()
 
-    def ready_for_schedule(self):
-        if super(RepeatableTask, self).ready_for_schedule() is False:
+    def _ready_for_schedule(self):
+        if super(RepeatableTask, self)._ready_for_schedule() is False:
             return False
         if self._schedule_time() < timezone.now():
             return False

@@ -148,12 +148,12 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableJob):
 
     def test_repeat_none_interval_2_min(self):
         base_time = timezone.now()
-        job = task_factory(self.TaskModelClass, scheduled_time=base_time - timedelta(minutes=29), repeat=None)
-        job.interval = 120
-        job.interval_unit = "seconds"
-        job.schedule()
-        self.assertTrue(job.scheduled_time > base_time)
-        self.assertTrue(job.is_scheduled())
+        task = task_factory(self.TaskModelClass, scheduled_time=base_time - timedelta(minutes=29), repeat=None)
+        task.interval = 120
+        task.interval_unit = "seconds"
+        task._schedule()
+        self.assertTrue(task.scheduled_time > base_time)
+        self.assertTrue(task.is_scheduled())
 
     def test_check_rescheduled_after_execution(self):
         task = task_factory(self.TaskModelClass, scheduled_time=timezone.now() + timedelta(seconds=1), repeat=10)
