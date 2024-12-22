@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.1.1 🌈
+
+### 🐛 Bug Fixes
+
+- Fix issue with task being scheduled despite being already scheduled #202
+
 ## v2.1.0 🌈
 
 ### 🚀 Features
