@@ -18,6 +18,7 @@
 ### 🐛 Bug Fixes
 
 - Support for valkey sentinel configuration @amirreza8002 (#191)
+- Fix issue with task being scheduled despite being already scheduled #202
 
 ## v2.1.0 🌈
 
