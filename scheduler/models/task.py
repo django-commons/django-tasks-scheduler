@@ -253,42 +253,6 @@ class Task(models.Model):
         """Returns django-queue for job"""
         return get_queue(self.queue)
 
-    def ready_for_schedule(self) -> bool:
-        """Is the task ready to be scheduled?
-
-        If the task is already scheduled or disabled, then it is not
-        ready to be scheduled.
-
-        :returns: True if the task is ready to be scheduled.
-        """
-        if self.is_scheduled():
-            logger.debug(f"Task {self.name} already scheduled")
-            return False
-        if not self.enabled:
-            logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
-            return False
-        if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and self._schedule_time() < timezone.now():
-            return False
-        return True
-
-    def schedule(self) -> bool:
-        """Schedule the next execution for the task to run.
-        :returns: True if a job was scheduled, False otherwise.
-        """
-        if not self.ready_for_schedule():
-            return False
-        schedule_time = self._schedule_time()
-        kwargs = self._enqueue_args()
-        job = self.rqueue.enqueue_at(
-            schedule_time,
-            tools.run_task,
-            args=(self.task_type, self.id),
-            **kwargs,
-        )
-        self.job_id = job.id
-        super(Task, self).save()
-        return True
-
     def enqueue_to_run(self) -> bool:
         """Enqueue task to run now."""
         kwargs = self._enqueue_args()
@@ -380,6 +344,31 @@ class Task(models.Model):
         func = self.function_string()
         return f"{self.task_type}[{self.name}={func}]"
 
+    def _schedule(self) -> bool:
+        """Schedule the next execution for the task to run.
+        :returns: True if a job was scheduled, False otherwise.
+        """
+        self.refresh_from_db()
+        if self.is_scheduled():
+            logger.debug(f"Task {self.name} already scheduled")
+            return False
+        if not self.enabled:
+            logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
+            return False
+        if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and self._schedule_time() < timezone.now():
+            return False
+        schedule_time = self._schedule_time()
+        kwargs = self._enqueue_args()
+        job = self.rqueue.enqueue_at(
+            schedule_time,
+            tools.run_task,
+            args=(self.task_type, self.id),
+            **kwargs,
+        )
+        self.job_id = job.id
+        super(Task, self).save()
+        return True
+
     def save(self, **kwargs):
         schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
@@ -387,7 +376,7 @@ class Task(models.Model):
             kwargs["update_fields"] = set(update_fields).union({"modified"})
         super(Task, self).save(**kwargs)
         if schedule_job:
-            self.schedule()
+            self._schedule()
             super(Task, self).save()
 
     def delete(self, **kwargs):

@@ -201,7 +201,7 @@ class BaseTask(models.Model):
         """Returns django-queue for job"""
         return get_queue(self.queue)
 
-    def ready_for_schedule(self) -> bool:
+    def _ready_for_schedule(self) -> bool:
         """Is the task ready to be scheduled?
 
         If the task is already scheduled or disabled, then it is not
@@ -217,11 +217,11 @@ class BaseTask(models.Model):
             return False
         return True
 
-    def schedule(self) -> bool:
+    def _schedule(self) -> bool:
         """Schedule the next execution for the task to run.
         :returns: True if a job was scheduled, False otherwise.
         """
-        if not self.ready_for_schedule():
+        if not self._ready_for_schedule():
             return False
         schedule_time = self._schedule_time()
         kwargs = self._enqueue_args()
@@ -323,7 +323,7 @@ class BaseTask(models.Model):
             kwargs["update_fields"] = set(update_fields).union({"modified"})
         super(BaseTask, self).save(**kwargs)
         if schedule_job:
-            self.schedule()
+            self._schedule()
             super(BaseTask, self).save()
 
     def delete(self, **kwargs):
@@ -395,8 +395,8 @@ class RepeatableMixin(models.Model):
 class ScheduledTask(ScheduledTimeMixin, BaseTask):
     task_type = "ScheduledTask"
 
-    def ready_for_schedule(self) -> bool:
-        return super(ScheduledTask, self).ready_for_schedule() and (
+    def _ready_for_schedule(self) -> bool:
+        return super(ScheduledTask, self)._ready_for_schedule() and (
                 self.scheduled_time is None or self.scheduled_time >= timezone.now()
         )
 
@@ -486,8 +486,8 @@ class RepeatableTask(RepeatableMixin, ScheduledTimeMixin, BaseTask):
             self.repeat = (self.repeat - gap) if self.repeat is not None else None
         return super()._schedule_time()
 
-    def ready_for_schedule(self):
-        if super(RepeatableTask, self).ready_for_schedule() is False:
+    def _ready_for_schedule(self):
+        if super(RepeatableTask, self)._ready_for_schedule() is False:
             return False
         if self._schedule_time() < timezone.now():
             return False

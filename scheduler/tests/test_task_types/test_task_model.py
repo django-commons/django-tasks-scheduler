@@ -95,7 +95,7 @@ class BaseTestCases:
 
         def test_is_schedulable_already_scheduled(self):
             task = task_factory(self.task_type)
-            task.schedule()
+            task._schedule()
             self.assertTrue(task.is_scheduled())
 
         def test_is_schedulable_disabled(self):
@@ -144,7 +144,7 @@ class BaseTestCases:
             task.queue = list(settings.QUEUES)[0]
             task.enabled = False
             task.scheduled_time = timezone.now() + timedelta(minutes=1)
-            self.assertFalse(task.schedule())
+            self.assertFalse(task._schedule())
 
         def test_delete_and_unschedule(self):
             task = task_factory(self.task_type)

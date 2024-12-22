@@ -153,7 +153,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         task = old_task_factory(self.TaskModelClass, scheduled_time=base_time - timedelta(minutes=29), repeat=None)
         task.interval = 120
         task.interval_unit = "seconds"
-        task.schedule()
+        task._schedule()
         self.assertTrue(task.scheduled_time > base_time)
         self.assertTrue(task.is_scheduled())
 
