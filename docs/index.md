@@ -1,8 +1,8 @@
 # Django tasks Scheduler
 
 [![Django CI][badge]][2]
-![badge][coverage]
-[![badge][pypi-downloads]][pypi]
+![badge][coverage]&nbsp;
+[![downloads][pypi-downloads]][pypi]
 
 ---
 
