@@ -1,5 +1,7 @@
 <!-- omit in toc -->
 
+
+
 # Contributing to django-tasks-scheduler
 
 First off, thanks for taking the time to contribute! ❤️
