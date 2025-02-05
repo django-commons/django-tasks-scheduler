@@ -2,8 +2,7 @@
 
 [![Django CI][badge]][2]
 ![badge][coverage]
-[![badge][pypi-downloads]][pypi]
-
+[![badge](https://img.shields.io/pypi/dm/django-tasks-scheduler)](https://pypi.org/project/django-tasks-scheduler/)
 ---
 
 A database backed asynchronous tasks scheduler for django.

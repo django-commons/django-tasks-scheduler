@@ -13,3 +13,6 @@ django-tasks-scheduler is developed for free.
 You can support this project by becoming a sponsor using [this link](https://github.com/sponsors/cunla).
 
 
+# Contributing 
+
+Interested in contributing, providing suggestions, or submitting bugs? See guidelines [at this link](.github/CONTRIBUTING.md).
