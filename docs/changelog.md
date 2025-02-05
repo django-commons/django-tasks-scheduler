@@ -13,6 +13,10 @@
     - `Task` model has a `task_type` field to differentiate between the types of tasks.
     - Old tasks in the database will be migrated to the new `Task` model automatically.
 
+### 🧰 Maintenance
+
+- Update dependencies to latest versions.
+
 ## v2.1.1 🌈
 
 ### 🐛 Bug Fixes
