@@ -1,9 +1,9 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from django import template
 from django.utils.safestring import mark_safe
 
-from scheduler.rq_classes import JobExecution, DjangoQueue
+from scheduler.rq_classes import JobExecution, DjangoQueue, DjangoWorker
 from scheduler.tools import get_scheduled_task
 
 register = template.Library()
@@ -33,8 +33,9 @@ def scheduled_job(job: JobExecution):
 
 
 @register.filter
-def worker_scheduler_pid(worker):
-    return worker.scheduler_pid()
+def worker_scheduler_pid(worker: Optional[DjangoWorker]) -> str:
+    scheduler_pid = worker.scheduler_pid() if worker is not None else None
+    return str(scheduler_pid) if scheduler_pid is not None else "-"
 
 
 @register.filter
