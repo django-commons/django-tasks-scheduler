@@ -24,7 +24,7 @@ from rq.worker import WorkerStatus
 from scheduler import settings
 from scheduler.broker_types import PipelineType, ConnectionType
 
-MODEL_NAMES = ["ScheduledTask", "RepeatableTask", "CronTask", "Task"]
+MODEL_NAMES = ["Task"]
 TASK_TYPES = ["OnceTaskType", "RepeatableTaskType", "CronTaskType"]
 
 rq_job_decorator = job

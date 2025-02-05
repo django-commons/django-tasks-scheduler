@@ -5,10 +5,9 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models.old_scheduled_task import RepeatableTask
+from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory, _get_task_job_execution_from_registry
 from scheduler.tools import TaskType
-from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
@@ -110,7 +109,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         self.assertEqual(900.0, job.interval_seconds())
 
     def test_interval_seconds_seconds(self):
-        job = RepeatableTask(interval=15, interval_unit="seconds")
+        job = task_factory(self.task_type, interval=15, interval_unit="seconds")
         self.assertEqual(15.0, job.interval_seconds())
 
     def test_result_interval(self):
