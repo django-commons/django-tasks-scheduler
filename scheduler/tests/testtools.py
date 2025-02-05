@@ -8,7 +8,6 @@ from django.utils import timezone
 
 from scheduler import settings
 from scheduler.models.args import TaskKwarg
-from scheduler.models.old_scheduled_task import CronTask, RepeatableTask, ScheduledTask, BaseTask
 from scheduler.models.task import Task
 from scheduler.queues import get_queue
 from scheduler.tools import TaskType
@@ -71,51 +70,10 @@ def task_factory(
     return instance
 
 
-# TODO remove
-def old_task_factory(cls, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs):
-    values = dict(
-        name="Scheduled Job %d" % next(seq),
-        job_id=None,
-        queue=list(settings.QUEUES.keys())[0],
-        callable=callable_name,
-        enabled=True,
-        timeout=None,
-    )
-    if cls == ScheduledTask:
-        values.update(
-            dict(
-                result_ttl=None,
-                scheduled_time=timezone.now() + timedelta(days=1),
-            )
-        )
-    elif cls == RepeatableTask:
-        values.update(
-            dict(
-                result_ttl=None,
-                interval=1,
-                interval_unit="hours",
-                repeat=None,
-                scheduled_time=timezone.now() + timedelta(days=1),
-            )
-        )
-    elif cls == CronTask:
-        values.update(
-            dict(
-                cron_string="0 0 * * *",
-            )
-        )
-    values.update(kwargs)
-    if instance_only:
-        instance = cls(**values)
-    else:
-        instance = cls.objects.create(**values)
-    return instance
-
-
 def taskarg_factory(cls, **kwargs):
     content_object = kwargs.pop("content_object", None)
     if content_object is None:
-        content_object = old_task_factory(ScheduledTask)
+        content_object = task_factory(TaskType.ONCE)
     values = dict(
         arg_type="str",
         val="",
@@ -130,13 +88,13 @@ def taskarg_factory(cls, **kwargs):
     return instance
 
 
-def _get_task_job_execution_from_registry(django_task: BaseTask):
+def _get_task_job_execution_from_registry(django_task: Task):
     jobs_to_schedule = django_task.rqueue.scheduled_job_registry.get_job_ids()
     entry = next(i for i in jobs_to_schedule if i == django_task.job_id)
     return django_task.rqueue.fetch_job(entry)
 
 
-def _get_executions(django_job: BaseTask):
+def _get_executions(django_job: Task):
     job_ids = django_job.rqueue.get_all_job_ids()
     return list(
         filter(lambda j: j.is_execution_of(django_job), map(lambda jid: django_job.rqueue.fetch_job(jid), job_ids))
