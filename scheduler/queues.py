@@ -34,10 +34,10 @@ def _get_broker_connection(config, use_strict_broker=False):
 
         broker_cls = fakeredis.FakeRedis if not use_strict_broker else fakeredis.FakeStrictRedis
     else:
-        broker_cls = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][0]
+        broker_cls = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)].connection_type
     logger.debug(f"Getting connection for {config}")
     if "URL" in config:
-        ssl_url_protocol = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][2]
+        ssl_url_protocol = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)].ssl_prefix
         if config.get("SSL") or config.get("URL").startswith(f"{ssl_url_protocol}://"):
             return broker_cls.from_url(
                 config["URL"],
@@ -61,7 +61,7 @@ def _get_broker_connection(config, use_strict_broker=False):
         }
         connection_kwargs.update(config.get("CONNECTION_KWARGS", {}))
         sentinel_kwargs = config.get("SENTINEL_KWARGS", {})
-        SentinelClass = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)][1]
+        SentinelClass = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)].sentinel_type
         sentinel = SentinelClass(config["SENTINELS"], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
             service_name=config["MASTER_NAME"],
