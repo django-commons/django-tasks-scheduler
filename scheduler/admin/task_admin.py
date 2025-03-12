@@ -1,13 +1,23 @@
+from typing import List
+
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 
-from scheduler import tools
+from scheduler.helpers import tools
 from scheduler.broker_types import ConnectionErrorTypes
 from scheduler.models.args import TaskArg, TaskKwarg
 from scheduler.models.task import Task
+from scheduler.helpers.queues import get_queue
+from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.tools import get_job_executions_for_task, TaskType
+
+
+def get_job_executions_for_task(queue_name, scheduled_task) -> List[JobModel]:
+    queue = get_queue(queue_name)
+    job_list: List[JobModel] = JobModel.get_many(queue.queued_job_registry.all(), connection=queue.connection)
+    res = list(filter(lambda j: j.is_execution_of(scheduled_task), job_list))
+    return res
 
 
 class JobArgInline(GenericStackedInline):
@@ -105,11 +115,11 @@ class TaskAdmin(admin.ModelAdmin):
 
     @admin.display(description="Schedule")
     def task_schedule(self, o: Task) -> str:
-        if o.task_type == TaskType.ONCE.value:
+        if o.task_type == tools.TaskType.ONCE.value:
             return f"Run once: {o.scheduled_time:%Y-%m-%d %H:%M:%S}"
-        elif o.task_type == TaskType.CRON.value:
+        elif o.task_type == tools.TaskType.CRON.value:
             return f"Cron: {o.cron_string}"
-        elif o.task_type == TaskType.REPEATABLE.value:
+        elif o.task_type == tools.TaskType.REPEATABLE.value:
             if o.interval is None or o.interval_unit is None:
                 return ""
             return "Repeatable: {} {}".format(o.interval, o.get_interval_unit_display())
@@ -160,8 +170,9 @@ class TaskAdmin(admin.ModelAdmin):
             rows_updated += 1
 
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.",
-                          level=level)
+        self.message_user(
+            request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.", level=level
+        )
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request, queryset):

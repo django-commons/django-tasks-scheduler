@@ -5,11 +5,10 @@ import sys
 import click
 from django.core.management.base import BaseCommand
 from django.db import connections
-from rq.logutils import setup_loghandlers
 
 from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.rq_classes import register_sentry
-from scheduler.tools import create_worker
+from scheduler.settings import logger
+from scheduler.helpers.tools import create_worker
 
 VERBOSITY_TO_LOG_LEVEL = {
     0: logging.CRITICAL,
@@ -20,26 +19,31 @@ VERBOSITY_TO_LOG_LEVEL = {
 
 WORKER_ARGUMENTS = {
     "name",
-    "default_result_ttl",
     "connection",
     "exc_handler",
     "exception_handlers",
-    "default_worker_ttl",
     "maintenance_interval",
-    "job_class",
-    "queue_class",
     "log_job_description",
     "job_monitoring_interval",
     "disable_default_exception_handler",
     "prepare_for_work",
-    "serializer",
-    "work_horse_killed_handler",
 }
 
 
 def reset_db_connections():
     for c in connections.all():
         c.close()
+
+
+def register_sentry(sentry_dsn, **opts):
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.rq import RqIntegration
+    except ImportError:
+        logger.error("Sentry SDK not installed. Skipping Sentry Integration")
+        return
+
+    sentry_sdk.init(sentry_dsn, integrations=[RqIntegration()], **opts)
 
 
 class Command(BaseCommand):
@@ -85,7 +89,6 @@ class Command(BaseCommand):
             type=bool,
             help="Fork job execution to another process",
         )
-        parser.add_argument("--job-class", action="store", dest="job_class", help="Jobs class to use")
         parser.add_argument(
             "queues",
             nargs="*",
@@ -111,7 +114,7 @@ class Command(BaseCommand):
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.pop("verbosity", 1)
         log_level = VERBOSITY_TO_LOG_LEVEL.get(verbosity, logging.INFO)
-        setup_loghandlers(log_level)
+        logger.setLevel(log_level)
 
         init_options = {k: v for k, v in options.items() if k in WORKER_ARGUMENTS}
 
@@ -129,7 +132,6 @@ class Command(BaseCommand):
 
             w.work(
                 burst=options.get("burst", False),
-                logging_level=log_level,
                 max_jobs=options["max_jobs"],
             )
         except ConnectionErrorTypes as e:

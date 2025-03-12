@@ -27,8 +27,6 @@ options:
   --max-jobs MAX_JOBS   Maximum number of jobs to execute before terminating worker
   --fork-job-execution FORK_JOB_EXECUTION
                         Fork job execution to another process
-  --job-class JOB_CLASS
-                        Jobs class to use
   --sentry-dsn SENTRY_DSN
                         Sentry DSN to use
   --sentry-debug        Enable Sentry debug mode

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import List
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -9,8 +10,9 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.models.args import TaskKwarg
 from scheduler.models.task import Task
-from scheduler.queues import get_queue
-from scheduler.tools import TaskType
+from scheduler.helpers.queues import get_queue
+from scheduler.redis_models import JobModel
+from scheduler.helpers.tools import TaskType
 
 
 def assert_message_in_response(response, message):
@@ -34,7 +36,7 @@ def task_factory(
     values = dict(
         name="Scheduled Job %d" % next(seq),
         job_id=None,
-        queue=list(settings.QUEUES.keys())[0],
+        queue=list(settings._QUEUES.keys())[0],
         callable=callable_name,
         enabled=True,
         timeout=None,
@@ -88,17 +90,16 @@ def taskarg_factory(cls, **kwargs):
     return instance
 
 
-def _get_task_job_execution_from_registry(django_task: Task):
-    jobs_to_schedule = django_task.rqueue.scheduled_job_registry.get_job_ids()
+def _get_task_job_execution_from_registry(django_task: Task) -> JobModel:
+    jobs_to_schedule = django_task.rqueue.scheduled_job_registry.all()
     entry = next(i for i in jobs_to_schedule if i == django_task.job_id)
-    return django_task.rqueue.fetch_job(entry)
+    return JobModel.get(entry, connection=django_task.rqueue.connection)
 
 
 def _get_executions(django_job: Task):
     job_ids = django_job.rqueue.get_all_job_ids()
-    return list(
-        filter(lambda j: j.is_execution_of(django_job), map(lambda jid: django_job.rqueue.fetch_job(jid), job_ids))
-    )
+    job_list: List[JobModel] = JobModel.get_many(job_ids, connection=django_job.rqueue.connection)
+    return list(filter(lambda j: j.is_execution_of(django_job), job_list))
 
 
 class SchedulerBaseCase(TestCase):

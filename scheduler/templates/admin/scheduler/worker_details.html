@@ -55,7 +55,7 @@
                     <div class="data">
                         {% if job %}
                             {{ job.func_name }}
-                            (<a href="{% url 'job_details' job.id %}">{{ job.id }}</a>)
+                            (<a href="{% url 'job_details' job.name %}">{{ job.name }}</a>)
                         {% else %}
                             No current job
                         {% endif %}

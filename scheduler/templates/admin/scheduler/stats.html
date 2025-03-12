@@ -30,7 +30,6 @@
                     <th>Queued Jobs</th>
                     <th>Oldest Queued Job</th>
                     <th>Active Jobs</th>
-                    <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
                     <th>Failed Jobs</th>
                     <th>Scheduled Jobs</th>
@@ -61,11 +60,6 @@
                         <th>
                             <a href="{% url 'queue_registry_jobs' queue.name 'started' %}">
                                 {{ queue.started_jobs }}
-                            </a>
-                        </th>
-                        <th>
-                            <a href="{% url 'queue_registry_jobs' queue.name 'deferred' %}">
-                                {{ queue.deferred_jobs }}
                             </a>
                         </th>
                         <th>

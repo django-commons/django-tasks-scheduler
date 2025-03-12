@@ -20,7 +20,7 @@
                 {% for exec in executions %}
                     <tr>
                         <td>
-                            <a href="{% url 'job_details' exec.id %}">{{ exec.id }}</a>
+                            <a href="{% url 'job_details' exec.name %}">{{ exec.id }}</a>
                         </td>
                         <td>
                             {{ exec|job_status }}

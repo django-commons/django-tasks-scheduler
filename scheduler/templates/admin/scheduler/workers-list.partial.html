@@ -8,6 +8,9 @@
                 <div class='text'><span>Name</span></div>
             </th>
             <th>
+                <div class='text'><span>Queues</span></div>
+            </th>
+            <th>
                 <div class='text'><span>State</span></div>
             </th>
             <th>
@@ -41,8 +44,14 @@
                         {{ worker.name }}
                     </a>
                 </td>
-                <td>{{ worker.get_state }}</td>
-                <td>{{ worker.birth_date | date:"Y-m-d, H:i:s" }}</td>
+                <td>
+                    {% for queue_name in worker.queue_names %}
+                        <a href='{% url 'queue_registry_jobs' queue_name 'queued' %}'>{{ queue_name }}</a>
+                        {% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                </td>
+                <td>{{ worker.state.value }}</td>
+                <td>{{ worker.birth | date:"Y-m-d, H:i:s" }}</td>
                 <td>{{ worker.hostname }}</td>
                 <td>{{ worker.pid | unlocalize }}</td>
                 <td>{{ worker.total_working_time | default:0 | floatformat }} secs</td>

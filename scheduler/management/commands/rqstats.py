@@ -9,7 +9,7 @@ ANSI_LIGHT_GREEN = "\033[1;32m"
 ANSI_LIGHT_WHITE = "\033[1;37m"
 ANSI_RESET = "\033[0m"
 
-KEYS = ("jobs", "started_jobs", "deferred_jobs", "finished_jobs", "canceled_jobs", "workers")
+KEYS = ("jobs", "started_jobs", "finished_jobs", "canceled_jobs", "workers")
 
 
 class Command(BaseCommand):
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         click.echo()
         self._print_separator()
         click.echo(
-            f'| {"Name":<16} |    Queued |    Active |  Deferred |' f"  Finished |" f"  Canceled |" f"   Workers |"
+            f'| {"Name":<16} |    Queued |    Active |' f"  Finished |" f"  Canceled |" f"   Workers |"
         )
         self._print_separator()
         for ind, queue in enumerate(statistics["queues"]):

@@ -1,8 +1,8 @@
 import click
 from django.core.management.base import BaseCommand
 
-from scheduler.queues import get_queue
-from scheduler.rq_classes import JobExecution
+from scheduler.helpers.queues import get_queue
+from scheduler.redis_models import JobModel
 
 
 class Command(BaseCommand):
@@ -15,15 +15,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         queue = get_queue(options.get("queue", "default"))
-        job_ids = queue.failed_job_registry.get_job_ids()
-        jobs = JobExecution.fetch_many(job_ids, connection=queue.connection)
+        job_ids = queue.failed_job_registry.all()
+        jobs = JobModel.get_many(job_ids, connection=queue.connection)
         func_name = options.get("func", None)
         if func_name is not None:
             jobs = [job for job in jobs if job.func_name == func_name]
         dry_run = options.get("dry_run", False)
         click.echo(f"Found {len(jobs)} failed jobs")
-        for job in jobs:
-            click.echo(f"Deleting {job.id}")
+        for job in job_ids:
+            click.echo(f"Deleting {job}")
             if not dry_run:
-                job.delete()
+                queue.delete_job(job)
         click.echo(f"Deleted {len(jobs)} failed jobs")
