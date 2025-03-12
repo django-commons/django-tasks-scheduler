@@ -1,6 +1,6 @@
 # This is a helper module to obfuscate types used by different broker implementations.
 from collections import namedtuple
-from typing import Union, Dict, Tuple, Type
+from typing import Union, Dict, Tuple
 
 import redis
 
