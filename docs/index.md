@@ -5,7 +5,6 @@
 [![badge](https://img.shields.io/pypi/dm/django-tasks-scheduler)](https://pypi.org/project/django-tasks-scheduler/)
 ---
 
-
 A database backed asynchronous tasks scheduler for django.
 This allows remembering scheduled tasks, their parameters, etc.
 
