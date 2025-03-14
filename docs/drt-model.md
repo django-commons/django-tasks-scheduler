@@ -1,6 +1,6 @@
 # Worker related flows
 
-Running `python manage.py startworker --name 'X' --queues high default low`
+Running `python manage.py scheduler_worker --name 'X' --queues high default low`
 
 ## Register new worker for queues
 ```mermaid
@@ -48,8 +48,8 @@ sequenceDiagram
         note over worker,job: Find next job
        
         loop over queueKeys until job to run is found or all queues are empty
-            worker ->>+ queue: get next job id and remove it or None (zrange+zpop)
-            queue -->>- worker: job id / nothing
+            worker ->>+ queue: get next job name and remove it or None (zrange+zpop)
+            queue -->>- worker: job name / nothing
         end
         
         note over worker,job: Execute job or sleep

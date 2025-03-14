@@ -8,15 +8,15 @@
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% url 'queues_home' %}">Queues</a> &rsaquo;
         <a href="{% url 'queue_registry_jobs' queue.name 'queued' %}">{{ queue.name }}</a> &rsaquo;
-        <a href="{% url 'job_details' job.id %}">{{ job.id }}</a>
+        <a href="{% url 'job_details' job.name %}">{{ job.name }}</a>
     </div>
 {% endblock %}
 
 {% block content_title %}
-    <h2>Job {{ job.id }}
+    <h2>Job {{ job.name }}
         {% if job.is_scheduled_task %}
             <small>
-                <a href="{{ job|scheduled_job }}">Link to scheduled job</a>
+                <a href="{{ job|scheduled_task }}">Link to scheduled job</a>
             </small>
         {% endif %}
     </h2>
@@ -27,7 +27,7 @@
         <fieldset class="module aligned ">
             <div class="form-row">
                 <label>Queue:</label>
-                <div class="readonly">{{ job.origin }}</div>
+                <div class="readonly">{{ job.queue_name }}</div>
             </div>
 
 
@@ -104,43 +104,30 @@
             </div>
 
 
-            <div class="form-row">
-                <div>
-                    <label>Depends On:</label>
-                    <div class="readonly">
-                        {% if dependency_id %}
-                            <a href="{% url 'job_details' dependency_id %}">
-                                {{ dependency_id }}
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
             {% if exc_info %}
                 <div class="form-row">
                     <label>Exception:</label>
                     <div>
-                        <pre>{% if job.exc_info %}{{ job.exc_info|linebreaks }}{% endif %}</pre>
+                        <pre>{{ job|job_exc_info|default:"-"|linebreaks}}</pre>
                     </div>
-
                 </div>
             {% endif %}
 
             <div class="form-row">
                 <label>Result:</label>
-                <div>{{ job.result | default:'-' }}</div>
+                <div>{{ job.return_value|default:'-' }}</div>
             </div>
         </fieldset>
 
 
         <div class="submit-row">
             <div class="deletelink-box">
-                <a href="{% url 'queue_job_action' job.id 'delete' %}"
+                <a href="{% url 'queue_job_action' job.name 'delete' %}"
                    class="deletelink">Delete</a>
             </div>
             {% if job.is_started %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.id 'cancel' %}">
+                    <form method='POST' action="{% url 'queue_job_action' job.name 'cancel' %}">
                         {% csrf_token %}
                         <input type="submit" value="cancel" class="default" name="cancel">
                     </form>
@@ -148,7 +135,7 @@
             {% endif %}
             {% if job.is_failed %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.id 'requeue' %}">
+                    <form method='POST' action="{% url 'queue_job_action' job.name 'requeue' %}">
                         {% csrf_token %}
                         <input type="submit" value="Requeue" class="default" name="requeue">
                     </form>
@@ -156,7 +143,7 @@
             {% endif %}
             {% if not job.is_queued and not job.is_failed %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.id 'enqueue' %}">
+                    <form method='POST' action="{% url 'queue_job_action' job.name 'enqueue' %}">
                         {% csrf_token %}
                         <input type="submit" value="Enqueue" class="default" name="Enqueue">
                     </form>

@@ -3,6 +3,8 @@ import os
 import django
 from fakeredis import FakeConnection
 
+from scheduler.configuration_types import QueueConfiguration
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -25,7 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "scheduler",
+    "scheduler.apps.SchedulerConfig",
 ]
 
 MIDDLEWARE = [
@@ -114,21 +116,11 @@ USE_TZ = False
 BROKER_PORT = os.getenv("BROKER_PORT", "6379")
 STATIC_URL = "/static/"
 SCHEDULER_QUEUES = {
-    "default": {
-        "URL": f"redis://localhost:{BROKER_PORT}/0",
-    },
-    "low": {
-        "URL": f"redis://localhost:{BROKER_PORT}/0",
-    },
-    "high": {
-        "URL": f"redis://localhost:{BROKER_PORT}/1",
-    },
-    "medium": {
-        "URL": f"redis://localhost:{BROKER_PORT}/1",
-    },
-    "another": {
-        "URL": f"redis://localhost:{BROKER_PORT}/1",
-    },
+    "default": QueueConfiguration(URL="redis://localhost:{BROKER_PORT}/0"),
+    "low": QueueConfiguration(URL=f"redis://localhost:{BROKER_PORT}/0"),
+    "high": QueueConfiguration(URL=f"redis://localhost:{BROKER_PORT}/1"),
+    "medium": QueueConfiguration(URL=f"redis://localhost:{BROKER_PORT}/1"),
+    "another": QueueConfiguration(URL=f"redis://localhost:{BROKER_PORT}/1"),
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

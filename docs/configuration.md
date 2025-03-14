@@ -5,35 +5,40 @@
 All default settings for scheduler can be in one dictionary in `settings.py`:
 
 ```python
-SCHEDULER_CONFIG = {
-    'EXECUTIONS_IN_PAGE': 20,
-    'DEFAULT_RESULT_TTL': 500,
-    'DEFAULT_TIMEOUT': 300,  # 5 minutes
-    'SCHEDULER_INTERVAL': 10,  # 10 seconds
-    'BROKER': 'redis',
-}
-SCHEDULER_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'USERNAME': 'some-user',
-        'PASSWORD': 'some-password',
-        'DEFAULT_TIMEOUT': 360,
-        'CLIENT_KWARGS': {  # Eventual additional Redis connection arguments
-            'ssl_cert_reqs': None,
+from typing import Dict
+
+from scheduler.configuration_types import SchedulerConfig, Broker, QueueConfiguration
+from scheduler.helpers.timeouts import UnixSignalDeathPenalty
+
+SCHEDULER_CONFIG = SchedulerConfig(
+    EXECUTIONS_IN_PAGE=20,
+    SCHEDULER_INTERVAL=10,
+    BROKER=Broker.REDIS,
+    CALLBACK_TIMEOUT=60,
+
+    DEFAULT_RESULT_TTL=500,
+    DEFAULT_FAILURE_TTL=365 * 24 * 60 * 60,
+    DEFAULT_JOB_TIMEOUT=300,
+    DEFAULT_WORKER_TTL=420,
+
+    DEFAULT_MAINTENANCE_TASK_INTERVAL=10 * 60,
+    DEFAULT_JOB_MONITORING_INTERVAL=30,
+    SCHEDULER_FALLBACK_PERIOD_SECS=120,
+    DEATH_PENALTY_CLASS=UnixSignalDeathPenalty,
+)
+SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
+    'default': QueueConfiguration(
+        HOST='localhost',
+        PORT=6379,
+        USERNAME='some-user',
+        PASSWORD='some-password',
+        CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
+            'ssl_cert_reqs': 'required',
+            'ssl':True,
         },
-        'TOKEN_VALIDATION_METHOD': None,  # Method to validate auth-header
-    },
-    'high': {
-        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'),  # If you're on Heroku
-        'DEFAULT_TIMEOUT': 500,
-    },
-    'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
+    ),
+    'high': QueueConfiguration(URL=os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0')),
+    'low': QueueConfiguration(HOST='localhost', PORT=6379, DB=0, ASYNC=False),
 }
 ```
 

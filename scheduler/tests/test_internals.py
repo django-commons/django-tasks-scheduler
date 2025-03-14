@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from scheduler.models.task import TaskType
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
-from scheduler.tools import get_scheduled_task
+from scheduler.helpers.tools import get_scheduled_task
 
 
 class TestInternals(SchedulerBaseCase):

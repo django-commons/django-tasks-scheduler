@@ -1,16 +1,13 @@
 import sys
 
 import click
-from django.apps import apps
 from django.core.management.base import BaseCommand
 
-from scheduler.tools import MODEL_NAMES
+from scheduler.models.task import Task
 
 
 class Command(BaseCommand):
-    """
-    Export all scheduled jobs
-    """
+    """Export all scheduled jobs"""
 
     help = __doc__
 
@@ -43,13 +40,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
         res = list()
-        for model_name in MODEL_NAMES:
-            model = apps.get_model(app_label="scheduler", model_name=model_name)
-            jobs = model.objects.all()
-            if options.get("enabled"):
-                jobs = jobs.filter(enabled=True)
-            for job in jobs:
-                res.append(job.to_dict())
+
+        tasks = Task.objects.all()
+        if options.get("enabled"):
+            tasks = tasks.filter(enabled=True)
+        for task in tasks:
+            res.append(task.to_dict())
 
         if options.get("format") == "json":
             import json
