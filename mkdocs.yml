@@ -56,6 +56,8 @@ markdown_extensions:
       permalink: true
       toc_depth: 3
 
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
 
 theme:
   name: material
