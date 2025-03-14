@@ -55,7 +55,7 @@ SCHEDULER_CONFIG = {
 * Click on the **Add** link for the type of job you want to add (`Scheduled Task` - run once, `Repeatable Task` - run
   multiple times, `Cron Task` - Run based on cron schedule).
 * Enter a unique name for the job in the **Name** field.
-* In the **Callable** field, enter a Python dot notation path to the method that defines the job. For the example  
+* In the **Callable** field, enter a Python dot notation path to the method that defines the job. For the example
   above, that would be `myapp.jobs.count`
 * Choose your **Queue**.
   The queues listed are defined in your app `settings.py` under `SCHEDULER_QUEUES`.
@@ -90,9 +90,9 @@ No additional steps are required.
 
 These additional fields are required:
 
-* Enter an **Interval**, and choose the **Interval unit**. This will calculate the time before the function is called  
+* Enter an **Interval**, and choose the **Interval unit**. This will calculate the time before the function is called
   again.
-* In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will  
+* In the **Repeat** field, enter the number of time the job is to be run. Leaving the field empty, means the job will
   be scheduled to run forever.
 
 ### Cron Task: Run a job multiple times based on cron
@@ -124,7 +124,7 @@ python manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker
 
 ```
 
-More information about the different parameters can be found in the [commands documentation](commands.md). 
+More information about the different parameters can be found in the [commands documentation](commands.md).
 
 ### Running multiple workers as unix/linux services using systemd
 
@@ -143,7 +143,7 @@ WorkingDirectory = {{ path_to_your_project_folder } }
 ExecStart = /home/ubuntu/.virtualenv/{ { your_virtualenv } }/bin/python \
             {{ path_to_your_project_folder } }/manage.py \
             rqworker high default low
-# Optional 
+# Optional
 # {{user to run rqworker as}}
 User = ubuntu
 # {{group to run rqworker as}}
@@ -164,7 +164,7 @@ After you are done editing the file, reload the settings and start the new worke
 
 ```shell
 sudo systemctl daemon-reload
-sudo systemctl start rqworker@{1..3} 
+sudo systemctl start rqworker@{1..3}
 ```
 
 You can target a specific worker using its number:
