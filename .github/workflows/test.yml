@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  flake8:
+  ruff:
     runs-on: ubuntu-latest
-    name: "flake8 on code"
+    name: "ruff on code"
     steps:
       - uses: actions/checkout@v4
 
@@ -22,13 +22,13 @@ jobs:
           python-version: "3.12"
           poetry-version: "2.1.1"
 
-      - name: Run flake8
+      - name: Run ruff
         shell: bash
         run: |
-          poetry run flake8
+          poetry run ruff
 
   test:
-    needs: [ 'flake8' ]
+    needs: [ 'ruff' ]
     runs-on: ubuntu-latest
     name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.broker }}"
     strategy:

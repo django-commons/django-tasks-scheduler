@@ -4,7 +4,7 @@ from scheduler.queues import get_queue
 from scheduler.tests.jobs import failing_job
 from scheduler.tests.test_views import BaseTestCase
 from scheduler.tools import create_worker
-from scheduler.tests import test_settings # noqa
+from scheduler.tests import test_settings  # noqa
 
 
 class DeleteFailedExecutionsTest(BaseTestCase):

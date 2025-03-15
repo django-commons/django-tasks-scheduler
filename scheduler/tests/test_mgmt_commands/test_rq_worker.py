@@ -3,11 +3,10 @@ from django.test import TestCase
 
 from scheduler.queues import get_queue
 from scheduler.tests.jobs import failing_job
-from scheduler.tests import test_settings # noqa
+from scheduler.tests import test_settings  # noqa
 
 
 class RqworkerTestCase(TestCase):
-
     def test_rqworker__no_queues_params(self):
         queue = get_queue("default")
 

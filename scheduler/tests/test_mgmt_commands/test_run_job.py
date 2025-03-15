@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from scheduler.queues import get_queue
 from scheduler.tests.jobs import test_job
-from scheduler.tests import test_settings # noqa
+from scheduler.tests import test_settings  # noqa
 
 
 class RunJobTest(TestCase):

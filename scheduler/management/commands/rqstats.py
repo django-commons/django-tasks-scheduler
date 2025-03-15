@@ -59,9 +59,7 @@ class Command(BaseCommand):
         click.echo("Django-Scheduler CLI Dashboard")
         click.echo()
         self._print_separator()
-        click.echo(
-            f'| {"Name":<16} |    Queued |    Active |  Deferred |' f"  Finished |" f"  Canceled |" f"   Workers |"
-        )
+        click.echo(f"| {'Name':<16} |    Queued |    Active |  Deferred |  Finished |  Canceled |   Workers |")
         self._print_separator()
         for ind, queue in enumerate(statistics["queues"]):
             vals = list((queue[k] for k in KEYS))
@@ -75,7 +73,7 @@ class Command(BaseCommand):
             else:
                 colors = [ANSI_LIGHT_WHITE for _ in range(len(vals))]
             to_print = " | ".join([f"{colors[i]}{vals[i]:9}{ANSI_RESET}" for i in range(len(vals))])
-            click.echo(f'| {queue["name"]:<16} | {to_print} |', color=True)
+            click.echo(f"| {queue['name']:<16} | {to_print} |", color=True)
 
         self._print_separator()
 
@@ -84,7 +82,6 @@ class Command(BaseCommand):
             click.echo("Press 'Ctrl+c' to quit")
 
     def handle(self, *args, **options):
-
         if options.get("json"):
             import json
 
