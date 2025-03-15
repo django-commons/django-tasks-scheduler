@@ -54,7 +54,7 @@ def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[T
         if not settings.USE_TZ and not timezone.is_naive(target):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
-    model_fields = filter(lambda field: hasattr(field, 'attname'), Task._meta.get_fields())
+    model_fields = filter(lambda field: hasattr(field, "attname"), Task._meta.get_fields())
     model_fields = set(map(lambda field: field.attname, model_fields))
     keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:

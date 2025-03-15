@@ -160,8 +160,9 @@ class TaskAdmin(admin.ModelAdmin):
             rows_updated += 1
 
         level = messages.WARNING if not rows_updated else messages.INFO
-        self.message_user(request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.",
-                          level=level)
+        self.message_user(
+            request, f"{get_message_bit(rows_updated)} successfully disabled and unscheduled.", level=level
+        )
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request, queryset):

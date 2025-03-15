@@ -13,8 +13,12 @@ from scheduler.models.task import TaskType, Task, TaskArg, TaskKwarg
 from scheduler.queues import get_queue
 from scheduler.tests import jobs
 from scheduler.tests.testtools import (
-    task_factory, taskarg_factory, _get_task_job_execution_from_registry,
-    SchedulerBaseCase, _get_executions, )
+    task_factory,
+    taskarg_factory,
+    _get_task_job_execution_from_registry,
+    SchedulerBaseCase,
+    _get_executions,
+)
 from scheduler.tools import run_task, create_worker
 
 

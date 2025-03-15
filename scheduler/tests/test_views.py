@@ -24,7 +24,6 @@ class BaseTestCase(TestCase):
 
 
 class SingleJobActionViewsTest(BaseTestCase):
-
     def test_single_job_action_unknown_job(self):
         res = self.client.get(reverse("queue_job_action", args=["unknown", "cancel"]), follow=True)
         self.assertEqual(400, res.status_code)
@@ -323,7 +322,6 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
 
 class ViewTest(BaseTestCase):
-
     def test_job_details(self):
         """Job data is displayed properly"""
         queue = get_queue("default")

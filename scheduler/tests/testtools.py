@@ -29,7 +29,7 @@ seq = sequence_gen()
 
 
 def task_factory(
-        task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
+    task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = dict(
         name="Scheduled Job %d" % next(seq),

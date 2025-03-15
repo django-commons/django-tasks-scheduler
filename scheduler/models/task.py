@@ -411,7 +411,7 @@ class Task(models.Model):
     def clean_interval_unit(self):
         if SCHEDULER_INTERVAL > self.interval_seconds():
             raise ValidationError(
-                _("Job interval is set lower than %(queue)r queue's interval. " "minimum interval is %(interval)"),
+                _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)"),
                 code="invalid",
                 params={"queue": self.queue, "interval": SCHEDULER_INTERVAL},
             )
