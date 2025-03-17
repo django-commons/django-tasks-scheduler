@@ -54,10 +54,13 @@ def success_callback(job, connection, result, *args, **kwargs):
 
     task = Task.objects.filter(job_id=job.id).first()
     if task is None:
-        model = apps.get_model(app_label="scheduler", model_name=task_type)
-        task = model.objects.filter(job_id=job.id).first()
+        try:
+            model = apps.get_model(app_label="scheduler", model_name=task_type)
+            task = model.objects.filter(job_id=job.id).first()
+        except LookupError:
+            pass
     if task is None:
-        logger.warn(f"Could not find task for job {job.id}")
+        logger.warn(f"Could not find task for job {task_type}/{job.id}")
         return
     task.job_id = None
     task.successful_runs += 1
