@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.0.1 🌈
+
+### 🐛 Bug Fixes
+
+- Lookup error issue #228.
+
+### 🧰 Maintenance
+
+- Migrated to use ruff instead of flake8/black
+
 ## v3.0.0 🌈
 
 ### Breaking Changes
