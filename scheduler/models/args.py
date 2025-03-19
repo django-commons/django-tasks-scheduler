@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from scheduler import tools
+from scheduler.helpers import utils
 
 ARG_TYPE_TYPES_DICT = {
     "str": str,
@@ -48,7 +48,7 @@ class BaseTaskArg(models.Model):
             )
         try:
             if self.arg_type == "callable":
-                tools.callable_func(self.val)
+                utils.callable_func(self.val)
             elif self.arg_type == "datetime":
                 datetime.fromisoformat(self.val)
             elif self.arg_type == "bool":
@@ -71,7 +71,7 @@ class BaseTaskArg(models.Model):
 
     def value(self):
         if self.arg_type == "callable":
-            res = tools.callable_func(self.val)()
+            res = utils.callable_func(self.val)()
         elif self.arg_type == "datetime":
             res = datetime.fromisoformat(self.val)
         elif self.arg_type == "bool":

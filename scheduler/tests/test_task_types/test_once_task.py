@@ -10,10 +10,11 @@ from scheduler.tests.testtools import task_factory
 
 class TestScheduledTask(BaseTestCases.TestSchedulableTask):
     task_type = TaskType.ONCE
+    queue_name = settings.get_queue_names()[0]
 
     def test_clean(self):
         job = task_factory(self.task_type)
-        job.queue = list(settings.QUEUES)[0]
+        job.queue = self.queue_name
         job.callable = "scheduler.tests.jobs.test_job"
         self.assertIsNone(job.clean())
 

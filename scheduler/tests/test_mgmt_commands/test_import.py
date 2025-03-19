@@ -8,9 +8,9 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from scheduler.models.task import Task
-from scheduler.tests.testtools import task_factory
-from scheduler.tools import TaskType
 from scheduler.tests import test_settings  # noqa
+from scheduler.tests.testtools import task_factory
+from scheduler.helpers.tools import TaskType
 
 
 class ImportTest(TestCase):

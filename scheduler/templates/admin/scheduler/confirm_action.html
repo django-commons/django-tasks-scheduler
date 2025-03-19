@@ -22,7 +22,7 @@
         <ul>
             {% for job in jobs %}
                 <li>
-                    <a href="{% url 'job_details' job.id %}" target="_blank">{{ job.id }}</a>
+                    <a href="{% url 'job_details' job.name %}" target="_blank">{{ job.name }}</a>
                     {{ job | show_func_name }}
                 </li>
             {% endfor %}
@@ -31,7 +31,7 @@
             {% csrf_token %}
             <div>
                 {% for job in jobs %}
-                    <input type="hidden" name="job_ids" value="{{ job.id }}">
+                    <input type="hidden" name="job_names" value="{{ job.name }}">
                 {% endfor %}
                 <input type="hidden" name="action" value="{{ action }}"/>
                 <input type="hidden" name="next_url" value="{{ next_url }}"/>
