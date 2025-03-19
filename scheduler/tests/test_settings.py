@@ -5,7 +5,7 @@ from django.conf import settings
 from scheduler.settings import conf_settings
 
 settings.SCHEDULER_QUEUES = {
-    "default": {"HOST": "localhost", "PORT": 6379, "DB": 0, "DEFAULT_TIMEOUT": 500},
+    "default": {"HOST": "localhost", "PORT": 6379, "DB": 0},
     "test": {"HOST": "localhost", "PORT": 1, "DB": 1},
     "sentinel": {
         "SENTINELS": [("localhost", 26736), ("localhost", 26737)],
@@ -20,7 +20,6 @@ settings.SCHEDULER_QUEUES = {
         "HOST": "localhost",
         "PORT": 1,
         "DB": 1,
-        "DEFAULT_TIMEOUT": 400,
     },
     "test2": {
         "HOST": "localhost",
@@ -86,11 +85,10 @@ settings.SCHEDULER_QUEUES = {
         "HOST": "localhost",
         "PORT": 6379,
         "DB": 0,
-        "DEFAULT_TIMEOUT": 400,
     },
 }
-if os.getenv("FAKEREDIS", "False") == "True":
-    for name, queue_settings in settings.SCHEDULER_QUEUES:
-        queue_settings["BROKER"] = "fakeredis"
+if os.getenv("FAKEREDIS", "False") == "True":  # pragma: no cover
+    for name, queue_settings in settings.SCHEDULER_QUEUES:  # pragma: no cover
+        queue_settings["BROKER"] = "fakeredis"  # pragma: no cover
 
 conf_settings()

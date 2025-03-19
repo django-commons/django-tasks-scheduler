@@ -92,11 +92,11 @@
                                 <td class="action-checkbox">
                                     <input class="action-select"
                                            name="_selected_action" type="checkbox"
-                                           value="{{ job.id }}" />
+                                           value="{{ job.name }}"/>
                                 </td>
                                 <th>
-                                    <a href="{% url 'job_details' job.id %}">
-                                        {{ job.id }}
+                                    <a href="{% url 'job_details' job.name %}">
+                                        {{ job.name }}
                                     </a>
                                 </th>
                                 <td>

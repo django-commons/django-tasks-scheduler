@@ -1,56 +1,38 @@
 import logging
-from dataclasses import dataclass
-from enum import Enum
-from typing import Callable
+from typing import List, Dict
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-logger = logging.getLogger(__package__)
+from scheduler.settings_types import SchedulerConfig, Broker, QueueConfiguration
 
-QUEUES = dict()
+logger = logging.getLogger("scheduler")
+logging.basicConfig(level=logging.DEBUG)
 
-
-class Broker(Enum):
-    REDIS = "redis"
-    FAKEREDIS = "fakeredis"
-    VALKEY = "valkey"
+_QUEUES: Dict[str, QueueConfiguration] = dict()
+SCHEDULER_CONFIG: SchedulerConfig = SchedulerConfig()
 
 
-@dataclass
-class SchedulerConfig:
-    EXECUTIONS_IN_PAGE: int
-    DEFAULT_RESULT_TTL: int
-    DEFAULT_TIMEOUT: int
-    SCHEDULER_INTERVAL: int
-    BROKER: Broker
-    TOKEN_VALIDATION_METHOD: Callable[[str], bool]
-
-
-def _token_validation(token: str) -> bool:
-    return False
-
-
-SCHEDULER_CONFIG: SchedulerConfig = SchedulerConfig(
-    EXECUTIONS_IN_PAGE=20,
-    DEFAULT_RESULT_TTL=600,
-    DEFAULT_TIMEOUT=300,
-    SCHEDULER_INTERVAL=10,
-    BROKER=Broker.REDIS,
-    TOKEN_VALIDATION_METHOD=_token_validation,
-)
+class QueueNotFoundError(Exception):
+    pass
 
 
 def conf_settings():
-    global QUEUES
+    global _QUEUES
     global SCHEDULER_CONFIG
 
-    QUEUES = getattr(settings, "SCHEDULER_QUEUES", None)
-    if QUEUES is None:
+    app_queues = getattr(settings, "SCHEDULER_QUEUES", None)
+    if app_queues is None:
         logger.warning("Configuration using RQ_QUEUES is deprecated. Use SCHEDULER_QUEUES instead")
-        QUEUES = getattr(settings, "RQ_QUEUES", None)
-    if QUEUES is None:
+        app_queues = getattr(settings, "RQ_QUEUES", None)
+    if app_queues is None:
         raise ImproperlyConfigured("You have to define SCHEDULER_QUEUES in settings.py")
+
+    for queue_name, queue_config in app_queues.items():
+        if isinstance(queue_config, QueueConfiguration):
+            _QUEUES[queue_name] = queue_config
+        else:
+            _QUEUES[queue_name] = QueueConfiguration(**queue_config)
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     if "FAKEREDIS" in user_settings:
@@ -64,3 +46,13 @@ def conf_settings():
 
 
 conf_settings()
+
+
+def get_queue_names() -> List[str]:
+    return list(_QUEUES.keys())
+
+
+def get_queue_configuration(queue_name: str) -> QueueConfiguration:
+    if queue_name not in _QUEUES:
+        raise QueueNotFoundError(f"Queue {queue_name} not found, queues={_QUEUES.keys()}")
+    return _QUEUES[queue_name]

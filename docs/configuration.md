@@ -5,35 +5,41 @@
 All default settings for scheduler can be in one dictionary in `settings.py`:
 
 ```python
-SCHEDULER_CONFIG = {
-    'EXECUTIONS_IN_PAGE': 20,
-    'DEFAULT_RESULT_TTL': 500,
-    'DEFAULT_TIMEOUT': 300,  # 5 minutes
-    'SCHEDULER_INTERVAL': 10,  # 10 seconds
-    'BROKER': 'redis',
-}
-SCHEDULER_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'USERNAME': 'some-user',
-        'PASSWORD': 'some-password',
-        'DEFAULT_TIMEOUT': 360,
-        'CLIENT_KWARGS': {  # Eventual additional Redis connection arguments
-            'ssl_cert_reqs': None,
+from typing import Dict
+
+from scheduler.settings_types import SchedulerConfig, Broker, QueueConfiguration, UnixSignalDeathPenalty
+
+
+SCHEDULER_CONFIG = SchedulerConfig(
+    EXECUTIONS_IN_PAGE=20,
+    SCHEDULER_INTERVAL=10,
+    BROKER=Broker.REDIS,
+    CALLBACK_TIMEOUT=60,  # Callback timeout in seconds (success/failure/stopped)
+    # Default values, can be overriden per task/job
+    DEFAULT_SUCCESS_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep successful job results
+    DEFAULT_FAILURE_TTL=365 * 24 * 60 * 60,  # Time To Live (TTL) in seconds to keep job failure information
+    DEFAULT_JOB_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep job information
+    DEFAULT_JOB_TIMEOUT=5 * 60,  # timeout (seconds) for a job
+    # General configuration values
+    DEFAULT_WORKER_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep worker information after last heartbeat
+    DEFAULT_MAINTENANCE_TASK_INTERVAL=10 * 60,  # The interval to run maintenance tasks in seconds. 10 minutes.
+    DEFAULT_JOB_MONITORING_INTERVAL=30,  # The interval to monitor jobs in seconds.
+    SCHEDULER_FALLBACK_PERIOD_SECS=120,  # Period (secs) to wait before requiring to reacquire locks
+    DEATH_PENALTY_CLASS=UnixSignalDeathPenalty,
+)
+SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
+    'default': QueueConfiguration(
+        HOST='localhost',
+        PORT=6379,
+        USERNAME='some-user',
+        PASSWORD='some-password',
+        CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
+            'ssl_cert_reqs': 'required',
+            'ssl': True,
         },
-        'TOKEN_VALIDATION_METHOD': None,  # Method to validate auth-header
-    },
-    'high': {
-        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'),  # If you're on Heroku
-        'DEFAULT_TIMEOUT': 500,
-    },
-    'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
+    ),
+    'high': QueueConfiguration(URL=os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0')),
+    'low': QueueConfiguration(HOST='localhost', PORT=6379, DB=0, ASYNC=False),
 }
 ```
 

@@ -27,7 +27,7 @@ jobs:
         run: |
           poetry run ruff check
 
-  test:
+  test-regular:
     needs: [ 'ruff' ]
     runs-on: ubuntu-latest
     name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.broker }}"
@@ -110,7 +110,7 @@ jobs:
           else
             export BROKER_PORT=6379
           fi
-          poetry run python manage.py test scheduler
+          poetry run python manage.py test scheduler --exclude-tag multiprocess
 
       # Steps for coverage check
       - name: Run tests with coverage
