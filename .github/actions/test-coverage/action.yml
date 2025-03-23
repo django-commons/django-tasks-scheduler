@@ -17,11 +17,11 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Run Tests with coverage
+    - name: Run regular tests with coverage
       shell: bash
       run: |
         cd testproject
-        poetry run coverage run manage.py test scheduler
+        poetry run coverage run manage.py test --exclude-tag multiprocess scheduler
     - name: Coverage report
       id: coverage_report
       shell: bash

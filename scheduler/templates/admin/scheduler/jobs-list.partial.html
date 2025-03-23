@@ -20,7 +20,12 @@
                 {% for exec in executions %}
                     <tr>
                         <td>
-                            <a href="{% url 'job_details' exec.id %}">{{ exec.id }}</a>
+                            <a href="{% url 'job_details' exec.name %}">{{ exec.name }}</a>
+                            {% if exec.scheduled_task_id %}
+                                <a href="{% url 'admin:scheduler_task_change' exec.scheduled_task_id %}">
+                                    Go to scheduled task
+                                </a>
+                            {% endif %}
                         </td>
                         <td>
                             {{ exec|job_status }}

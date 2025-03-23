@@ -2,13 +2,14 @@ import time
 
 from django.test import TestCase
 
-from scheduler import job, settings
+from scheduler import settings
+from scheduler.helpers.queues import get_queue
 from . import test_settings  # noqa
-from ..decorators import JOB_METHODS_LIST
-from ..queues import get_queue, QueueNotFoundError
+from ..decorators import JOB_METHODS_LIST, job
+from ..redis_models.job import JobModel
 
 
-@job
+@job()
 def test_job():
     time.sleep(1)
     return 1 + 1
@@ -36,45 +37,56 @@ class JobDecoratorTest(TestCase):
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(1, len(JOB_METHODS_LIST))
+        self.assertEqual(4, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()
-        config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props("default", test_job, config.DEFAULT_RESULT_TTL, config.DEFAULT_TIMEOUT)
+        self._assert_job_with_func_and_props(
+            "default",
+            test_job,
+            settings.SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL,
+            settings.SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT,
+        )
 
     def test_job_decorator_timeout(self):
         test_job_timeout.delay()
-        config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props("default", test_job_timeout, config.DEFAULT_RESULT_TTL, 1)
+        self._assert_job_with_func_and_props(
+            "default",
+            test_job_timeout,
+            settings.SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL,
+            1,
+        )
 
     def test_job_decorator_result_ttl(self):
         test_job_result_ttl.delay()
-        config = settings.SCHEDULER_CONFIG
-        self._assert_job_with_func_and_props("default", test_job_result_ttl, 1, config.DEFAULT_TIMEOUT)
+        self._assert_job_with_func_and_props(
+            "default",
+            test_job_result_ttl,
+            1,
+            settings.SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT,
+        )
 
     def test_job_decorator_different_queue(self):
         test_job_diff_queue.delay()
-        config = settings.SCHEDULER_CONFIG
         self._assert_job_with_func_and_props(
             "django_tasks_scheduler_test",
             test_job_diff_queue,
-            config.DEFAULT_RESULT_TTL,
-            config.DEFAULT_TIMEOUT,
+            settings.SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL,
+            settings.SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT,
         )
 
     def _assert_job_with_func_and_props(self, queue_name, expected_func, expected_result_ttl, expected_timeout):
         queue = get_queue(queue_name)
-        jobs = queue.get_jobs()
+        jobs = JobModel.get_many(queue.queued_job_registry.all(), queue.connection)
         self.assertEqual(1, len(jobs))
 
         j = jobs[0]
         self.assertEqual(j.func, expected_func)
-        self.assertEqual(j.result_ttl, expected_result_ttl)
+        self.assertEqual(j.success_ttl, expected_result_ttl)
         self.assertEqual(j.timeout, expected_timeout)
 
     def test_job_decorator_bad_queue(self):
-        with self.assertRaises(QueueNotFoundError):
+        with self.assertRaises(settings.QueueNotFoundError):
 
             @job("bad-queue")
             def test_job_bad_queue():
