@@ -6,7 +6,7 @@
 from scheduler import job
 
 
-@job
+@job()
 def long_running_func():
     pass
 
@@ -117,11 +117,10 @@ python manage.py run_job -q {queue} -t {timeout} -r {result_ttl} {callable} {arg
 Create a worker to execute queued jobs on specific queues using:
 
 ```shell
-python manage.py rqworker [-h] [--pid PIDFILE] [--burst] [--name NAME] [--worker-ttl WORKER_TTL] [--max-jobs MAX_JOBS] [--fork-job-execution FORK_JOB_EXECUTION]
-                          [--job-class JOB_CLASS] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
-                          [--skip-checks]
-                          [queues ...]
-
+usage: manage.py scheduler_worker [-h] [--pid PIDFILE] [--name NAME] [--worker-ttl WORKER_TTL] [--fork-job-execution FORK_JOB_EXECUTION] [--sentry-dsn SENTRY_DSN] [--sentry-debug] [--sentry-ca-certs SENTRY_CA_CERTS] [--burst]
+                                  [--max-jobs MAX_JOBS] [--max-idle-time MAX_IDLE_TIME] [--with-scheduler] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+                                  [--skip-checks]
+                                  [queues ...]
 ```
 
 More information about the different parameters can be found in the [commands documentation](commands.md). 
@@ -129,29 +128,29 @@ More information about the different parameters can be found in the [commands do
 ### Running multiple workers as unix/linux services using systemd
 
 You can have multiple workers running as system services.
-To have multiple rqworkers, edit the `/etc/systemd/system/rqworker@.service`
+To have multiple scheduler workers, edit the `/etc/systemd/system/scheduler_worker@.service`
 file, make sure it ends with `@.service`, the following is example:
 
 ```ini
-# /etc/systemd/system/rqworker@.service
+# /etc/systemd/system/scheduler_worker@.service
 [Unit]
-Description = rqworker daemon
+Description = scheduler_worker daemon
 After = network.target
 
 [Service]
 WorkingDirectory = {{ path_to_your_project_folder } }
 ExecStart = /home/ubuntu/.virtualenv/{ { your_virtualenv } }/bin/python \
             {{ path_to_your_project_folder } }/manage.py \
-            rqworker high default low
+            scheduler_worker high default low
 # Optional 
-# {{user to run rqworker as}}
+# {{user to run scheduler_worker as}}
 User = ubuntu
-# {{group to run rqworker as}}
+# {{group to run scheduler_worker as}}
 Group = www-data
 # Redirect logs to syslog
 StandardOutput = syslog
 StandardError = syslog
-SyslogIdentifier = rqworker
+SyslogIdentifier = scheduler_worker
 Environment = OBJC_DISABLE_INITIALIZE_FORK_SAFETY = YES
 Environment = LC_ALL = en_US.UTF-8
 Environment = LANG = en_US.UTF-8
@@ -164,11 +163,11 @@ After you are done editing the file, reload the settings and start the new worke
 
 ```shell
 sudo systemctl daemon-reload
-sudo systemctl start rqworker@{1..3} 
+sudo systemctl start scheduler_worker@{1..3} 
 ```
 
 You can target a specific worker using its number:
 
 ```shell
-sudo systemctl stop rqworker@2
+sudo systemctl stop scheduler_worker@2
 ```

@@ -1,6 +1,7 @@
+import logging
 from time import sleep
 
-from scheduler.queues import get_queue
+from scheduler.helpers.queues import get_queue
 
 _counter = 0
 
@@ -17,9 +18,13 @@ def test_args_kwargs(*args, **kwargs):
     kwargs_list = [f"{k}={v}" for (k, v) in kwargs.items()]
     return func.format(", ".join(args_list + kwargs_list))
 
+def two_seconds_job():
+    sleep(2)
+    logging.info(f"Job {_counter}")
 
 def long_job():
-    sleep(10)
+    sleep(1000)
+    logging.info(f"Job {_counter}")
 
 
 test_non_callable = "I am a teapot"
@@ -36,4 +41,4 @@ def test_job():
 def enqueue_jobs():
     queue = get_queue()
     for i in range(20):
-        queue.enqueue(test_job, job_id=f"job_{i}", args=())
+        queue.create_and_enqueue_job(test_job, name=f"job_{i:03}", args=())
