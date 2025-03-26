@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from scheduler.models.task import TaskType
+from scheduler.models.task import TaskType, Task
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 from scheduler.tools import get_scheduled_task
 
@@ -15,3 +15,8 @@ class TestInternals(SchedulerBaseCase):
             get_scheduled_task(task.task_type, task.id + 1)
         with self.assertRaises(ValueError):
             get_scheduled_task("UNKNOWN_JOBTYPE", task.id)
+
+    def test_task_update(self):
+        task = task_factory(TaskType.ONCE)
+        task.name = "new_name"
+        task.save(update_fields=["name"])
