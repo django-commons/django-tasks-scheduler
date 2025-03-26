@@ -5,16 +5,19 @@ import threading
 
 class BaseTimeoutException(Exception):
     """Base exception for timeouts."""
+
     pass
 
 
 class JobTimeoutException(BaseTimeoutException):
     """Raised when a job takes longer to complete than the allowed maximum timeout value."""
+
     pass
 
 
 class JobExecutionMonitorTimeoutException(BaseTimeoutException):
     """Raised when waiting for a job-execution-process exiting takes longer than the maximum timeout value."""
+
     pass
 
 

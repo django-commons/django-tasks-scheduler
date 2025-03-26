@@ -48,7 +48,8 @@ class StopJobCommand(WorkerCommand):
         try:
             pgid = os.getpgid(worker_model.job_execution_process_pid)
             logger.debug(
-                f"worker_pid {worker_model.pid}, job_execution_process {worker_model.job_execution_process_pid}")
+                f"worker_pid {worker_model.pid}, job_execution_process {worker_model.job_execution_process_pid}"
+            )
             if pgid == worker_model.pid:
                 logger.error("No separate process for job execution, skipping")
                 return

@@ -12,7 +12,7 @@ class DeleteFailedExecutionsTest(BaseTestCase):
         queue = get_queue("default")
         call_command("delete_failed_executions", queue="default")
         queue.create_and_enqueue_job(failing_job)
-        worker = create_worker("default",burst=True)
+        worker = create_worker("default", burst=True)
         worker.work()
         self.assertEqual(1, len(queue.failed_job_registry))
         call_command("delete_failed_executions", queue="default")

@@ -31,19 +31,23 @@ class Result(StreamModel):
 
     @classmethod
     def create(
-            cls,
-            connection: ConnectionType,
-            job_name: str,
-            worker_name: str,
-            _type: ResultType,
-            ttl: int,
-            return_value: Any = None,
-            exc_string: Optional[str] = None,
+        cls,
+        connection: ConnectionType,
+        job_name: str,
+        worker_name: str,
+        _type: ResultType,
+        ttl: int,
+        return_value: Any = None,
+        exc_string: Optional[str] = None,
     ) -> Self:
         result = cls(
             parent=job_name,
-            ttl=ttl, type=_type, return_value=return_value, exc_string=exc_string,
-            worker_name=worker_name, )
+            ttl=ttl,
+            type=_type,
+            return_value=return_value,
+            exc_string=exc_string,
+            worker_name=worker_name,
+        )
         result.save(connection)
         return result
 

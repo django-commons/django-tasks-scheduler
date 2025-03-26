@@ -28,7 +28,7 @@ class SingleJobActionViewsTest(BaseTestCase):
     def test_single_job_action_requeue_job(self):
         queue = get_queue("default")
         job = queue.create_and_enqueue_job(failing_job)
-        worker = create_worker("default",burst=True)
+        worker = create_worker("default", burst=True)
         worker.work()
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertTrue(job.is_failed)
@@ -95,8 +95,6 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertEqual(tmp.get_status(connection=queue.connection), JobStatus.QUEUED)
         self.assertIsNotNone(tmp.enqueued_at)
 
-
-
     def test_single_job_action_enqueue_job_sync_queue(self):
         queue = get_queue("scheduler_scheduler_active_test")
         job_list = []
@@ -119,4 +117,3 @@ class SingleJobActionViewsTest(BaseTestCase):
         tmp = JobModel.get(job_list[-1].name, connection=queue.connection)
         self.assertEqual(tmp.get_status(connection=queue.connection), JobStatus.FINISHED)
         self.assertIsNotNone(tmp.enqueued_at)
-

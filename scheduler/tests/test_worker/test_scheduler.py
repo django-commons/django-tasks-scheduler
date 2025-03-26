@@ -25,7 +25,13 @@ class TestWorkerScheduler(SchedulerBaseCase):
             self.assertNotIn(task.job_name, task.rqueue.queued_job_registry)
             self.assertIn(task.job_name, task.rqueue.scheduled_job_registry)
 
-            scheduler = WorkerScheduler([task.rqueue, ], worker_name="fake-worker", connection=task.rqueue.connection)
+            scheduler = WorkerScheduler(
+                [
+                    task.rqueue,
+                ],
+                worker_name="fake-worker",
+                connection=task.rqueue.connection,
+            )
 
             # act
             traveller.move_to(50)

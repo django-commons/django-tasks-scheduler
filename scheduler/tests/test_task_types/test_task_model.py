@@ -322,7 +322,6 @@ class BaseTestCases:
             assert_has_execution_with_status(task, JobStatus.QUEUED)
             self.assertIn(task.job_name, queue.scheduled_job_registry.all())
 
-
         def test_admin_change_view(self):
             # arrange
             self.client.login(username="admin", password="admin")

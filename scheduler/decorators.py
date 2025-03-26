@@ -9,18 +9,18 @@ JOB_METHODS_LIST = list()
 
 class job:
     def __init__(
-            self,
-            queue: Union["Queue", str, None] = None,  # noqa: F821
-            connection: Optional[ConnectionType] = None,
-            timeout: Optional[int] = None,
-            result_ttl: Optional[int] = None,
-            job_info_ttl: Optional[int] = None,
-            at_front: bool = False,
-            meta: Optional[Dict[Any, Any]] = None,
-            description: Optional[str] = None,
-            on_failure: Optional[Union["Callback", Callable[..., Any]]] = None,
-            on_success: Optional[Union["Callback", Callable[..., Any]]] = None,
-            on_stopped: Optional[Union["Callback", Callable[..., Any]]] = None,
+        self,
+        queue: Union["Queue", str, None] = None,  # noqa: F821
+        connection: Optional[ConnectionType] = None,
+        timeout: Optional[int] = None,
+        result_ttl: Optional[int] = None,
+        job_info_ttl: Optional[int] = None,
+        at_front: bool = False,
+        meta: Optional[Dict[Any, Any]] = None,
+        description: Optional[str] = None,
+        on_failure: Optional[Union["Callback", Callable[..., Any]]] = None,
+        on_success: Optional[Union["Callback", Callable[..., Any]]] = None,
+        on_stopped: Optional[Union["Callback", Callable[..., Any]]] = None,
     ):
         """A decorator that adds a ``delay`` method to the decorated function, which in turn creates a RQ job when
         called. Accepts a required ``queue`` argument that can be either a ``Queue`` instance or a string
@@ -48,6 +48,7 @@ class job:
         :param on_stopped: Callable to run when stopped
         """
         from scheduler.helpers.queues import get_queue
+
         if queue is None:
             queue = "default"
         self.queue = get_queue(queue) if isinstance(queue, str) else queue

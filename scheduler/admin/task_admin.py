@@ -22,9 +22,9 @@ def job_execution_of(job: JobModel, task: Task) -> bool:
 def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[JobModel]:
     queue = get_queue(queue_name)
     job_list: List[JobModel] = JobModel.get_many(queue.get_all_job_names(), connection=queue.connection)
-    res = sorted(list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)),
-                 key=lambda j: j.created_at,
-                 reverse=True)
+    res = sorted(
+        list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)), key=lambda j: j.created_at, reverse=True
+    )
     return res
 
 
@@ -50,7 +50,10 @@ class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
 
     class Media:
-        js = ("admin/js/jquery.init.js", "admin/js/select-fields.js",)
+        js = (
+            "admin/js/jquery.init.js",
+            "admin/js/select-fields.js",
+        )
 
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
@@ -90,18 +93,41 @@ class TaskAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
-            dict(fields=(
-                "name", "callable",
-                ("enabled", "timeout", "result_ttl"),
-                "task_type",
-            )),
+            dict(
+                fields=(
+                    "name",
+                    "callable",
+                    ("enabled", "timeout", "result_ttl"),
+                    "task_type",
+                )
+            ),
         ),
-        (None, dict(fields=("scheduled_time",), classes=("tasktype-OnceTaskType",)),),
-        (None, dict(fields=("cron_string",), classes=("tasktype-CronTaskType",)),),
-        (None, dict(fields=(("interval", "interval_unit",), "repeat"), classes=("tasktype-RepeatableTaskType",)),),
+        (
+            None,
+            dict(fields=("scheduled_time",), classes=("tasktype-OnceTaskType",)),
+        ),
+        (
+            None,
+            dict(fields=("cron_string",), classes=("tasktype-CronTaskType",)),
+        ),
+        (
+            None,
+            dict(
+                fields=(
+                    (
+                        "interval",
+                        "interval_unit",
+                    ),
+                    "repeat",
+                ),
+                classes=("tasktype-RepeatableTaskType",),
+            ),
+        ),
         (_("Queue settings"), dict(fields=(("queue", "at_front"), "job_name"))),
-        (_("Previous runs info"),
-         dict(fields=(("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))),),
+        (
+            _("Previous runs info"),
+            dict(fields=(("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))),
+        ),
     )
 
     @admin.display(description="Schedule")

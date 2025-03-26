@@ -108,18 +108,18 @@ class Worker:
         return res
 
     def __init__(
-            self,
-            queues,
-            name: str,
-            connection: Optional[ConnectionType] = None,
-            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-            job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-            disable_default_exception_handler: bool = False,
-            fork_job_execution: bool = True,
-            with_scheduler: bool = True,
-            burst: bool = False,
-            model: Optional[WorkerModel] = None,
+        self,
+        queues,
+        name: str,
+        connection: Optional[ConnectionType] = None,
+        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+        job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+        disable_default_exception_handler: bool = False,
+        fork_job_execution: bool = True,
+        with_scheduler: bool = True,
+        burst: bool = False,
+        model: Optional[WorkerModel] = None,
     ):  # noqa
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval = job_monitoring_interval
@@ -211,9 +211,9 @@ class Worker:
         signal.signal(signal.SIGTERM, self.request_stop)
 
     def work(
-            self,
-            max_jobs: Optional[int] = None,
-            max_idle_time: Optional[int] = None,
+        self,
+        max_jobs: Optional[int] = None,
+        max_idle_time: Optional[int] = None,
     ) -> bool:
         """Starts the work loop.
 
@@ -292,8 +292,11 @@ class Worker:
         logger.debug(f"[Worker {self.name}/{self._pid}]: Handling failed execution of job {job.name}")
         # check whether a job was stopped intentionally and set the job status appropriately if it was this job.
 
-        new_job_status = JobStatus.STOPPED if self._model.get_field("stopped_job_name",
-                                                                    self.connection) == job.name else JobStatus.FAILED
+        new_job_status = (
+            JobStatus.STOPPED
+            if self._model.get_field("stopped_job_name", self.connection) == job.name
+            else JobStatus.FAILED
+        )
         self._model.current_job_name = None
         with self.connection.pipeline() as pipeline:
             if new_job_status == JobStatus.STOPPED:
@@ -313,7 +316,7 @@ class Worker:
                 self._model.failed_job_count += 1
                 self._model.completed_jobs += 1
             if job.started_at and job.ended_at:
-                self._model.total_working_time_ms += ((job.ended_at - job.started_at).microseconds / 1000.0)
+                self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
             self._model.save(connection=self.connection)
 
             try:
@@ -345,8 +348,10 @@ class Worker:
         notified = False
         while self._model.shutdown_requested_date is not None and self._model.is_suspended:
             if burst:
-                logger.info(f"[Worker {self.name}/{self._pid}]: Suspended in burst mode, exiting, "
-                            f"Note: There could still be unfinished jobs on the queue")
+                logger.info(
+                    f"[Worker {self.name}/{self._pid}]: Suspended in burst mode, exiting, "
+                    f"Note: There could still be unfinished jobs on the queue"
+                )
                 raise StopRequested
 
             if not notified:
@@ -372,7 +377,7 @@ class Worker:
         self.clean_registries()
 
     def dequeue_job_and_maintain_ttl(
-            self, timeout: Optional[int], max_idle_time: Optional[int] = None
+        self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[JobModel, Queue]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -547,7 +552,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -602,7 +607,8 @@ class Worker:
             os._exit(0)  # just in case
         else:  # Parent worker process
             logger.debug(
-                f"[Worker {self.name}/{self._pid}]: Forking job execution process, job_execution_process_pid={child_pid}")
+                f"[Worker {self.name}/{self._pid}]: Forking job execution process, job_execution_process_pid={child_pid}"
+            )
             self._model.job_execution_process_pid = child_pid
             self._model.save(connection=self.connection)
             self.procline(f"Forked {child_pid} at {time.time()}")
@@ -630,7 +636,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val, rusage = self.wait_for_job_execution_process()
                 break
@@ -774,13 +780,11 @@ class Worker:
         with self.connection.pipeline() as pipeline:
             while True:
                 try:
-                    queue.job_handle_success(
-                        job, result=return_value, result_ttl=job.success_ttl, connection=pipeline
-                    )
+                    queue.job_handle_success(job, result=return_value, result_ttl=job.success_ttl, connection=pipeline)
                     self._model.current_job_name = None
                     self._model.successful_job_count += 1
                     self._model.completed_jobs += 1
-                    self._model.total_working_time_ms += ((job.ended_at - job.started_at).microseconds / 1000.0)
+                    self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
                     self._model.save(connection=self.connection)
 
                     job.expire(job.success_ttl, connection=pipeline)
@@ -868,7 +872,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue):
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):

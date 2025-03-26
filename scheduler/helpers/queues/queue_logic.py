@@ -117,7 +117,6 @@ class Queue:
                     logger.exception(f"Job {self.name}: error while executing failure callback")
                     raise
 
-
                 else:
                     logger.warning(
                         f"{self.__class__.__name__} cleanup: Moving job to {self.failed_job_registry.key} "
@@ -189,24 +188,24 @@ class Queue:
         return JobModel.get_many(job_names, connection=self.connection)
 
     def create_and_enqueue_job(
-            self,
-            func: FunctionReferenceType,
-            args: Union[Tuple, List, None] = None,
-            kwargs: Optional[Dict] = None,
-            timeout: Optional[int] = None,
-            result_ttl: Optional[int] = None,
-            job_info_ttl: Optional[int] = None,
-            description: Optional[str] = None,
-            name: Optional[str] = None,
-            at_front: bool = False,
-            meta: Optional[Dict] = None,
-            on_success: Optional[Callback] = None,
-            on_failure: Optional[Callback] = None,
-            on_stopped: Optional[Callback] = None,
-            task_type: Optional[str] = None,
-            scheduled_task_id: Optional[int] = None,
-            when: Optional[datetime] = None,
-            pipeline: Optional[ConnectionType] = None,
+        self,
+        func: FunctionReferenceType,
+        args: Union[Tuple, List, None] = None,
+        kwargs: Optional[Dict] = None,
+        timeout: Optional[int] = None,
+        result_ttl: Optional[int] = None,
+        job_info_ttl: Optional[int] = None,
+        description: Optional[str] = None,
+        name: Optional[str] = None,
+        at_front: bool = False,
+        meta: Optional[Dict] = None,
+        on_success: Optional[Callback] = None,
+        on_failure: Optional[Callback] = None,
+        on_stopped: Optional[Callback] = None,
+        task_type: Optional[str] = None,
+        scheduled_task_id: Optional[int] = None,
+        when: Optional[datetime] = None,
+        pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -258,23 +257,37 @@ class Queue:
     def job_handle_success(self, job: JobModel, result: Any, result_ttl: int, connection: ConnectionType):
         """Saves and cleanup job after successful execution"""
         job.after_execution(
-            result_ttl, JobStatus.FINISHED,
+            result_ttl,
+            JobStatus.FINISHED,
             prev_registry=self.active_job_registry,
-            new_registry=self.finished_job_registry, connection=connection)
-        Result.create(connection, job_name=job.name, worker_name=job.worker_name, _type=ResultType.SUCCESSFUL,
-                      return_value=result, ttl=result_ttl)
+            new_registry=self.finished_job_registry,
+            connection=connection,
+        )
+        Result.create(
+            connection,
+            job_name=job.name,
+            worker_name=job.worker_name,
+            _type=ResultType.SUCCESSFUL,
+            return_value=result,
+            ttl=result_ttl,
+        )
 
     def job_handle_failure(self, status: JobStatus, job: JobModel, exc_string: str, connection: ConnectionType):
         # Does not set job status since the job might be stopped
         job.after_execution(
-            SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL, status,
+            SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
+            status,
             prev_registry=self.active_job_registry,
             new_registry=self.failed_job_registry,
-            connection=connection)
+            connection=connection,
+        )
         Result.create(
-            connection, job.name, job.worker_name,
-            ResultType.FAILED, SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
-            exc_string=exc_string
+            connection,
+            job.name,
+            job.worker_name,
+            ResultType.FAILED,
+            SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
+            exc_string=exc_string,
         )
 
     def run_job(self, job: JobModel) -> JobModel:
@@ -299,7 +312,7 @@ class Queue:
         return job
 
     def enqueue_job(
-            self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
+        self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 
@@ -350,10 +363,10 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-            cls,
-            queues: List[Self],
-            timeout: Optional[int],
-            connection: Optional[ConnectionType] = None,
+        cls,
+        queues: List[Self],
+        timeout: Optional[int],
+        connection: Optional[ConnectionType] = None,
     ) -> Tuple[Optional[JobModel], Optional[Self]]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
@@ -439,8 +452,9 @@ class Queue:
                 if new_status == JobStatus.CANCELED:
                     self.canceled_job_registry.add(pipe, job_name, 0)
                 else:
-                    self.finished_job_registry.add(pipe, job_name,
-                                                   current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL)
+                    self.finished_job_registry.add(
+                        pipe, job_name, current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL
+                    )
                 pipe.execute()
                 break
             except WatchError:

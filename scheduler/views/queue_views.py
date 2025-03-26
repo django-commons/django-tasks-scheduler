@@ -199,7 +199,10 @@ def queue_confirm_action(request: HttpRequest, queue_name: str) -> HttpResponse:
     }
     return render(request, "admin/scheduler/confirm_action.html", context_data)
 
+
 _QUEUE_ACTIONS = {"delete", "requeue", "stop"}
+
+
 @never_cache
 @staff_member_required
 def queue_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
@@ -311,9 +314,12 @@ def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[s
 
 def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
     next_url = request.POST.get("next_url", default_next_url)
-    next_url = next_url.replace('\\', '')
-    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None) or urlparse(next_url).netloc or urlparse(
-            next_url).scheme:
+    next_url = next_url.replace("\\", "")
+    if (
+        not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)
+        or urlparse(next_url).netloc
+        or urlparse(next_url).scheme
+    ):
         messages.warning(request, "Bad followup URL")
         next_url = default_next_url
     try:

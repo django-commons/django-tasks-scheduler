@@ -55,7 +55,7 @@ def _import_attribute(name: str) -> Callable[..., Any]:
         except ImportError:
             attribute_bits.insert(0, module_name_bits.pop())
 
-    if module is None: # maybe it's a builtin
+    if module is None:  # maybe it's a builtin
         try:
             return __builtins__[name]
         except KeyError:

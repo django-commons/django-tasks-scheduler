@@ -3,9 +3,9 @@ from datetime import timedelta
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
+from scheduler.helpers.tools import get_scheduled_task
 from scheduler.models.task import TaskType
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
-from scheduler.helpers.tools import get_scheduled_task
 
 
 class TestInternals(SchedulerBaseCase):
@@ -21,6 +21,7 @@ class TestInternals(SchedulerBaseCase):
         task = task_factory(TaskType.ONCE)
         task.name = "new_name"
         task.save(update_fields=["name"])
+
     def test_callback_bad_arguments(self):
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("scheduler.tests.jobs.test_job", "1m")

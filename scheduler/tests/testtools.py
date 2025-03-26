@@ -26,9 +26,7 @@ def _run_worker_process(worker: Worker, **kwargs):
 
 def run_worker_in_process(*args, name="test-worker") -> Tuple[multiprocessing.Process, str]:
     worker = create_worker(*args, name=name, fork_job_execution=False)
-    process = multiprocessing.Process(
-        target=_run_worker_process, args=(worker,), kwargs=dict(with_scheduler=False)
-    )
+    process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs=dict(with_scheduler=False))
     process.start()
     return process, name
 
@@ -49,7 +47,7 @@ seq = sequence_gen()
 
 
 def task_factory(
-        task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
+    task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = dict(
         name="Scheduled Job %d" % next(seq),

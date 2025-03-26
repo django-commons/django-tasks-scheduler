@@ -34,11 +34,11 @@ def _reschedule_tasks():
 
 class WorkerScheduler:
     def __init__(
-            self,
-            queues: Sequence[Queue],
-            connection: ConnectionType,
-            worker_name: str,
-            interval: Optional[int] = None,
+        self,
+        queues: Sequence[Queue],
+        connection: ConnectionType,
+        worker_name: str,
+        interval: Optional[int] = None,
     ) -> None:
         interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._queues = queues
@@ -73,7 +73,8 @@ class WorkerScheduler:
             self._pid = os.getpid()
         queue_names = [queue.name for queue in self._queues]
         logger.debug(
-            f"""[Scheduler {self.worker_name}/{self.pid}] Trying to acquire locks for {", ".join(queue_names)}""")
+            f"""[Scheduler {self.worker_name}/{self.pid}] Trying to acquire locks for {", ".join(queue_names)}"""
+        )
         for queue in self._queues:
             lock = SchedulerLock(queue.name)
             if lock.acquire(self.pid, connection=queue.connection, expire=self.interval + 60):
@@ -119,7 +120,8 @@ class WorkerScheduler:
 
     def stop(self):
         logger.info(
-            f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}...")
+            f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}..."
+        )
         self.release_locks()
         self._status = SchedulerStatus.STOPPED
 
@@ -132,8 +134,7 @@ class WorkerScheduler:
 
     def work(self) -> None:
         queue_names = [queue.name for queue in self._queues]
-        logger.info(
-            f"""[Scheduler {self.worker_name}/{self.pid}] Scheduler for {", ".join(queue_names)} started""")
+        logger.info(f"""[Scheduler {self.worker_name}/{self.pid}] Scheduler for {", ".join(queue_names)} started""")
         django.setup()
 
         while True:

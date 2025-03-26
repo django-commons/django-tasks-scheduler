@@ -18,9 +18,11 @@ def test_args_kwargs(*args, **kwargs):
     kwargs_list = [f"{k}={v}" for (k, v) in kwargs.items()]
     return func.format(", ".join(args_list + kwargs_list))
 
+
 def two_seconds_job():
     sleep(2)
     logging.info(f"Job {_counter}")
+
 
 def long_job():
     sleep(1000)
