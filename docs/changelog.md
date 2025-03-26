@@ -36,6 +36,12 @@ Settings:
    ```
 - For how to configure in `settings.py`, please see the [settings documentation](./configuration.md).
 
+## v3.0.2 🌈
+
+### 🐛 Bug Fixes
+
+- Fix issue updating wrong field #233
+
 ## v3.0.1 🌈
 
 ### 🐛 Bug Fixes

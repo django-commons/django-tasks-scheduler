@@ -17,6 +17,10 @@ class TestInternals(SchedulerBaseCase):
         with self.assertRaises(ValueError):
             get_scheduled_task("UNKNOWN_JOBTYPE", task.id)
 
+    def test_task_update(self):
+        task = task_factory(TaskType.ONCE)
+        task.name = "new_name"
+        task.save(update_fields=["name"])
     def test_callback_bad_arguments(self):
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("scheduler.tests.jobs.test_job", "1m")
