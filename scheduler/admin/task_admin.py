@@ -66,11 +66,10 @@ class TaskAdmin(admin.ModelAdmin):
         JobArgInline,
         JobKwargInline,
     ]
-    list_filter = ("enabled",)
+    list_filter = ("enabled", "task_type", "queue")
     list_display = (
         "enabled",
         "name",
-        "job_name",
         "function_string",
         "is_scheduled",
         "queue",
