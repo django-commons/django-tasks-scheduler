@@ -38,4 +38,4 @@ class WorkerAdmin(ImmutableAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """The 'change list' admin view for this model."""
-        return views.workers(request)
+        return views.workers_list(request)

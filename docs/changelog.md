@@ -1,5 +1,47 @@
 # Changelog
 
+## v4.0.0b1 🌈
+
+### Breaking Changes
+
+This version is a full revamp of the package. The main changes are related to removing the RQ dependency.
+Worker/Queue/Job are all implemented in the package itself. This change allows for more flexibility and control over
+the tasks.
+
+Management commands:
+
+- `rqstats` => `scheduler_stats`
+- `rqworker` => `scheduler_worker`
+
+Settings:
+
+- `SCHEDULER_CONFIG` is now a `SchedulerConfiguration` object to help IDE guide settings.
+- `SCHEDULER_QUEUES` is now a list of `QueueConfiguration` objects to help IDE guide settings.
+- Configuring queue to use `SSL`/`SSL_CERT_REQS`/`SOCKET_TIMEOUT` is now done using `CONNECTION_KWARGS` in
+  `QueueConfiguration`
+  ```python
+  SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
+    'default': QueueConfiguration(
+        HOST='localhost',
+        PORT=6379,
+        USERNAME='some-user',
+        PASSWORD='some-password',
+        CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
+            'ssl_cert_reqs': 'required',
+            'ssl':True,
+        },
+    ),
+   # ...
+   }
+   ```
+- For how to configure in `settings.py`, please see the [settings documentation](./configuration.md).
+
+## v3.0.2 🌈
+
+### 🐛 Bug Fixes
+
+- Fix issue updating wrong field #233
+
 ## v3.0.1 🌈
 
 ### 🐛 Bug Fixes

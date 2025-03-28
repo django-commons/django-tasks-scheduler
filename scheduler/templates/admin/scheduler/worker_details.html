@@ -12,80 +12,84 @@
 
 {% block content %}
     <div id="content-main">
-        <fieldset class="module aligned ">
+        <fieldset class="module aligned">
             <div class="form-row">
-                <div>
-                    <label class="required">Name:</label>
-                    <div class="data">{{ worker.name }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">State:</label>
-                    <div class="data">{{ worker.get_state }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">Birth:</label>
-                    <div class="data">{{ worker.birth_date|date:"Y-m-d, H:i:s" }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">Queues:</label>
-                    <div class="data">{{ queue_names }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">PID:</label>
-                    <div class="data">{{ worker.pid }}</div>
-                </div>
-            </div>
-
-
-            <div class="form-row">
-                <div>
-                    <label class="required">Current Job:</label>
-                    <div class="data">
-                        {% if job %}
-                            {{ job.func_name }}
-                            (<a href="{% url 'job_details' job.id %}">{{ job.id }}</a>)
-                        {% else %}
-                            No current job
-                        {% endif %}
+                <div class="flex-container form-multiline">
+                    <div class="fieldBox wide">
+                        <label class="required">Name:</label>
+                        <div class="data">{{ worker.name }}</div>
+                    </div>
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">PID:</label>
+                            <div class="data">{{ worker.pid }}</div>
+                        </div>
+                    </div>
+                    <div class="fieldBox">
+                        <label class="required">State:</label>
+                        <div class="data">{{ worker.state.value |capfirst }}</div>
+                    </div>
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">Birth:</label>
+                            <div class="data">{{ worker.birth|date:"Y-m-d, H:i:s" }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-
             <div class="form-row">
                 <div>
-                    <label class="required">Successful job count:</label>
-                    <div class="data">{{ worker.successful_job_count|default:0 }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">Failed job count:</label>
-                    <div class="data">{{ worker.failed_job_count|default:0 }}</div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div>
-                    <label class="required">Total working time (seconds):</label>
-                    <div class="data">{{ total_working_time|default:0.0 }}ms</div>
+                    <label class="required">Queues:</label>
+                    <div class="data">
+                        {% for queue_name in worker.queue_names %}
+                            <a href="{% url 'queue_workers' queue_name %}">{{ queue_name }}</a>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </fieldset>
-        {% include 'admin/scheduler/jobs-list.partial.html' %}
+
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <div class="flex-container form-multiline">
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">Current Job:</label>
+                            <div class="data">
+                                {% if current_job %}
+                                    {{ current_job.func_name }}
+                                    (<a href="{% url 'job_details' current_job.name %}">{{ current_job.name }}</a>)
+                                {% else %}
+                                    No current job
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">Successful job count:</label>
+                            <div class="data">{{ worker.successful_job_count|default:0 }}</div>
+                        </div>
+                    </div>
+
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">Failed job count:</label>
+                            <div class="data">{{ worker.failed_job_count|default:0 }}</div>
+                        </div>
+                    </div>
+
+                    <div class="fieldBox">
+                        <div>
+                            <label class="required">Total working time (seconds):</label>
+                            <div class="data">{{ worker.total_working_time_ms|default:0|floatformat }}ms</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        {% include 'admin/scheduler/jobs-list-with-tasks.partial.html' %}
     </div>
 
 {% endblock %}

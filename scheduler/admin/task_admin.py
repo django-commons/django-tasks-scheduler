@@ -1,13 +1,31 @@
+from typing import List
+
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
+from django.db.models import QuerySet
+from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
 
-from scheduler import tools
 from scheduler.broker_types import ConnectionErrorTypes
+from scheduler.helpers import tools
+from scheduler.helpers.queues import get_queue
 from scheduler.models.args import TaskArg, TaskKwarg
-from scheduler.models.task import Task
+from scheduler.models.task import Task, TaskType
+from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.tools import get_job_executions_for_task, TaskType
+
+
+def job_execution_of(job: JobModel, task: Task) -> bool:
+    return job.scheduled_task_id == task.id and job.task_type == task.task_type
+
+
+def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[JobModel]:
+    queue = get_queue(queue_name)
+    job_list: List[JobModel] = JobModel.get_many(queue.get_all_job_names(), connection=queue.connection)
+    res = sorted(
+        list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)), key=lambda j: j.created_at, reverse=True
+    )
+    return res
 
 
 class JobArgInline(GenericStackedInline):
@@ -48,11 +66,10 @@ class TaskAdmin(admin.ModelAdmin):
         JobArgInline,
         JobKwargInline,
     ]
-    list_filter = ("enabled",)
+    list_filter = ("enabled", "task_type", "queue")
     list_display = (
         "enabled",
         "name",
-        "job_id",
         "function_string",
         "is_scheduled",
         "queue",
@@ -65,7 +82,7 @@ class TaskAdmin(admin.ModelAdmin):
     )
     list_display_links = ("name",)
     readonly_fields = (
-        "job_id",
+        "job_name",
         "successful_runs",
         "last_successful_run",
         "failed_runs",
@@ -79,8 +96,8 @@ class TaskAdmin(admin.ModelAdmin):
                 fields=(
                     "name",
                     "callable",
-                    "task_type",
                     ("enabled", "timeout", "result_ttl"),
+                    "task_type",
                 )
             ),
         ),
@@ -94,9 +111,18 @@ class TaskAdmin(admin.ModelAdmin):
         ),
         (
             None,
-            dict(fields=("interval", "interval_unit", "repeat"), classes=("tasktype-RepeatableTaskType",)),
+            dict(
+                fields=(
+                    (
+                        "interval",
+                        "interval_unit",
+                    ),
+                    "repeat",
+                ),
+                classes=("tasktype-RepeatableTaskType",),
+            ),
         ),
-        (_("RQ Settings"), dict(fields=(("queue", "at_front"), "job_id"))),
+        (_("Queue settings"), dict(fields=(("queue", "at_front"), "job_name"))),
         (
             _("Previous runs info"),
             dict(fields=(("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))),
@@ -109,16 +135,16 @@ class TaskAdmin(admin.ModelAdmin):
             return f"Run once: {o.scheduled_time:%Y-%m-%d %H:%M:%S}"
         elif o.task_type == TaskType.CRON.value:
             return f"Cron: {o.cron_string}"
-        elif o.task_type == TaskType.REPEATABLE.value:
+        else:  # if o.task_type == TaskType.REPEATABLE.value:
             if o.interval is None or o.interval_unit is None:
                 return ""
-            return "Repeatable: {} {}".format(o.interval, o.get_interval_unit_display())
+            return f"Repeatable: {o.interval} {o.get_interval_unit_display()}"
 
     @admin.display(description="Next run")
     def next_run(self, o: Task) -> str:
         return tools.get_next_cron_time(o.cron_string)
 
-    def change_view(self, request, object_id, form_url="", extra_context=None):
+    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None):
         extra = extra_context or {}
         obj = self.get_object(request, object_id)
         try:
@@ -142,17 +168,17 @@ class TaskAdmin(admin.ModelAdmin):
 
         return super(TaskAdmin, self).change_view(request, object_id, form_url, extra_context=extra)
 
-    def delete_queryset(self, request, queryset):
+    def delete_queryset(self, request: HttpRequest, queryset: QuerySet) -> None:
         for job in queryset:
             job.unschedule()
         super(TaskAdmin, self).delete_queryset(request, queryset)
 
-    def delete_model(self, request, obj):
+    def delete_model(self, request: HttpRequest, obj: Task) -> None:
         obj.unschedule()
         super(TaskAdmin, self).delete_model(request, obj)
 
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
-    def disable_selected(self, request, queryset):
+    def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
         for obj in queryset.filter(enabled=True).iterator():
             obj.enabled = False
@@ -165,7 +191,7 @@ class TaskAdmin(admin.ModelAdmin):
         )
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
-    def enable_selected(self, request, queryset):
+    def enable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
         for obj in queryset.filter(enabled=False).iterator():
             obj.enabled = True
@@ -176,7 +202,7 @@ class TaskAdmin(admin.ModelAdmin):
         self.message_user(request, f"{get_message_bit(rows_updated)} successfully enabled and scheduled.", level=level)
 
     @admin.action(description="Enqueue now", permissions=("change",))
-    def enqueue_job_now(self, request, queryset):
+    def enqueue_job_now(self, request: HttpRequest, queryset: QuerySet) -> None:
         task_names = []
         for task in queryset:
             task.enqueue_to_run()

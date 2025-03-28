@@ -27,14 +27,14 @@ jobs:
         run: |
           poetry run ruff check
 
-  test:
+  test-regular:
     needs: [ 'ruff' ]
     runs-on: ubuntu-latest
     name: "Run tests ${{ matrix.python-version }}/${{ matrix.django-version }}/${{ matrix.broker }}"
     strategy:
       max-parallel: 6
       matrix:
-        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+        python-version: [ '3.11', '3.12', '3.13' ]
         django-version: [ '5.0.7', '5.1.7' ]
         broker: [ 'redis', 'fakeredis', 'valkey' ]
         include:
@@ -110,7 +110,7 @@ jobs:
           else
             export BROKER_PORT=6379
           fi
-          poetry run python manage.py test scheduler
+          poetry run python manage.py test --exclude-tag multiprocess scheduler
 
       # Steps for coverage check
       - name: Run tests with coverage
@@ -141,7 +141,7 @@ jobs:
       # write permission is required for auto-labeler
       # otherwise, read permission is required at least
       pull-requests: write
-    needs: test
+    needs: test-regular
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6

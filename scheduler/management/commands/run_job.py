@@ -1,7 +1,7 @@
 import click
 from django.core.management.base import BaseCommand
 
-from scheduler.queues import get_queue
+from scheduler.helpers.queues import get_queue
 
 
 class Command(BaseCommand):
@@ -32,6 +32,6 @@ class Command(BaseCommand):
         queue = get_queue(options.get("queue"))
         func = options.get("callable")
         args = options.get("args")
-        job = queue.enqueue_call(func, args=args, timeout=timeout, result_ttl=result_ttl)
+        job = queue.create_and_enqueue_job(func, args=args, timeout=timeout, result_ttl=result_ttl)
         if verbosity:
-            click.echo(f"Job {job.id} created")
+            click.echo(f"Job {job.name} created")

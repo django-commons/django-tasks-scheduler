@@ -1,10 +1,8 @@
 import math
-import uuid
 from datetime import timedelta, datetime
-from typing import Dict
+from typing import Dict, Any, Optional
 
 import croniter
-from django.apps import apps
 from django.conf import settings as django_settings
 from django.contrib import admin
 from django.contrib.contenttypes.fields import GenericRelation
@@ -18,58 +16,60 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from scheduler import settings
-from scheduler import tools
+from scheduler.broker_types import ConnectionType
+from scheduler.helpers import tools, utils
+from scheduler.helpers.callback import Callback
+from scheduler.helpers.queues import Queue
+from scheduler.helpers.queues import get_queue
 from scheduler.models.args import TaskArg, TaskKwarg
-from scheduler.queues import get_queue
-from scheduler.rq_classes import DjangoQueue
-from scheduler.settings import QUEUES
-from scheduler.settings import logger
-from scheduler.tools import TaskType
+from scheduler.redis_models import JobModel
+from scheduler.settings import logger, get_queue_names
 
 SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL
 
 
-def failure_callback(job, connection, result, *args, **kwargs):
-    task_type = job.meta.get("task_type", None)
-    if task_type is None:
-        return
-    task = Task.objects.filter(job_id=job.id).first()
+def _get_task_for_job(job: JobModel) -> Optional["Task"]:
+    if job.task_type is None or job.scheduled_task_id is None:
+        return None
+    task = Task.objects.filter(id=job.scheduled_task_id).first()
+    return task
+
+
+def failure_callback(job: JobModel, connection, result, *args, **kwargs):
+    task = _get_task_for_job(job)
     if task is None:
-        logger.warn(f"Could not find task for job {job.id}")
+        logger.warn(f"Could not find task for job {job.name}")
         return
     mail_admins(
         f"Task {task.id}/{task.name} has failed",
         "See django-admin for logs",
     )
-    task.job_id = None
+    task.job_name = None
     task.failed_runs += 1
     task.last_failed_run = timezone.now()
     task.save(schedule_job=True)
 
 
-def success_callback(job, connection, result, *args, **kwargs):
-    task_type = job.meta.get("task_type", None)
-    if task_type is None:
-        return
-
-    task = Task.objects.filter(job_id=job.id).first()
+def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args, **kwargs):
+    task = _get_task_for_job(job)
     if task is None:
-        try:
-            model = apps.get_model(app_label="scheduler", model_name=task_type)
-            task = model.objects.filter(job_id=job.id).first()
-        except LookupError:
-            pass
-    if task is None:
-        logger.warn(f"Could not find task for job {task_type}/{job.id}")
+        logger.warn(f"Could not find task for job {job.name}")
         return
-    task.job_id = None
+    task.job_name = None
     task.successful_runs += 1
     task.last_successful_run = timezone.now()
     task.save(schedule_job=True)
 
 
 def get_queue_choices():
-    return [(queue, queue) for queue in QUEUES.keys()]
+    queue_names = get_queue_names()
+    return [(queue, queue) for queue in queue_names]
+
+
+class TaskType(models.TextChoices):
+    CRON = "CronTaskType", _("Cron Task")
+    REPEATABLE = "RepeatableTaskType", _("Repeatable Task")
+    ONCE = "OnceTaskType", _("Run once")
 
 
 class Task(models.Model):
@@ -95,8 +95,8 @@ class Task(models.Model):
         ),
     )
     queue = models.CharField(_("queue"), max_length=255, choices=get_queue_choices, help_text=_("Queue name"))
-    job_id = models.CharField(
-        _("job id"), max_length=128, editable=False, blank=True, null=True, help_text=_("Current job_id on queue")
+    job_name = models.CharField(
+        _("job name"), max_length=128, editable=False, blank=True, null=True, help_text=_("Current job_name on queue")
     )
     at_front = models.BooleanField(
         _("At front"),
@@ -180,22 +180,23 @@ class Task(models.Model):
 
     def callable_func(self):
         """Translate callable string to callable"""
-        return tools.callable_func(self.callable)
+        return utils.callable_func(self.callable)
 
     @admin.display(boolean=True, description=_("is scheduled?"))
     def is_scheduled(self) -> bool:
         """Check whether a next job for this task is queued/scheduled to be executed"""
-        if self.job_id is None:  # no job_id => is not scheduled
+        if self.job_name is None:  # no job_id => is not scheduled
             return False
         # check whether job_id is in scheduled/queued/active jobs
-        scheduled_jobs = self.rqueue.scheduled_job_registry.get_job_ids()
-        enqueued_jobs = self.rqueue.get_job_ids()
-        active_jobs = self.rqueue.started_job_registry.get_job_ids()
-        res = (self.job_id in scheduled_jobs) or (self.job_id in enqueued_jobs) or (self.job_id in active_jobs)
+        res = (
+            (self.job_name in self.rqueue.scheduled_job_registry.all())
+            or (self.job_name in self.rqueue.queued_job_registry.all())
+            or (self.job_name in self.rqueue.active_job_registry.all())
+        )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
-            self.job_id = None
+            self.job_name = None
             super(Task, self).save()
         return res
 
@@ -218,32 +219,29 @@ class Task(models.Model):
         return dict([kwarg.value() for kwarg in kwargs])
 
     def _next_job_id(self):
-        addition = uuid.uuid4().hex[-10:]
-        name = self.name.replace("/", ".")
-        return f"{self.queue}:{name}:{addition}"
+        addition = timezone.now().strftime("%Y%m%d%H%M%S%f")
+        return f"{self.queue}:{self.id}:{addition}"
 
     def _enqueue_args(self) -> Dict:
-        """Args for DjangoQueue.enqueue.
-        Set all arguments for DjangoQueue.enqueue/enqueue_at.
-        Particularly:
+        """Args for Queue.enqueue_call.
+        Set all arguments for Queue.enqueue. Particularly:
         - set job timeout and ttl
         - ensure a callback to reschedule the job next iteration.
         - Set job-id to proper format
         - set job meta
         """
         res = dict(
-            meta=dict(
-                task_type=self.task_type,
-                scheduled_task_id=self.id,
-            ),
-            on_success=success_callback,
-            on_failure=failure_callback,
-            job_id=self._next_job_id(),
+            meta=dict(),
+            task_type=self.task_type,
+            scheduled_task_id=self.id,
+            on_success=Callback(success_callback),
+            on_failure=Callback(failure_callback),
+            name=self._next_job_id(),
         )
         if self.at_front:
             res["at_front"] = self.at_front
         if self.timeout:
-            res["job_timeout"] = self.timeout
+            res["timeout"] = self.timeout
         if self.result_ttl is not None:
             res["result_ttl"] = self.result_ttl
         if self.task_type == TaskType.REPEATABLE:
@@ -252,20 +250,18 @@ class Task(models.Model):
         return res
 
     @property
-    def rqueue(self) -> DjangoQueue:
+    def rqueue(self) -> Queue:
         """Returns django-queue for job"""
         return get_queue(self.queue)
 
     def enqueue_to_run(self) -> bool:
-        """Enqueue task to run now."""
+        """Enqueue task to run now as a different instance from the scheduled task."""
         kwargs = self._enqueue_args()
-        job = self.rqueue.enqueue(
+        self.rqueue.create_and_enqueue_job(
             tools.run_task,
             args=(self.task_type, self.id),
             **kwargs,
         )
-        self.job_id = job.id
-        self.save(schedule_job=False)
         return True
 
     def unschedule(self) -> bool:
@@ -273,12 +269,9 @@ class Task(models.Model):
 
         If a job is queued to be executed or scheduled to be executed, it will remove it.
         """
-        queue = self.rqueue
-        if self.job_id is None:
-            return True
-        queue.remove(self.job_id)
-        queue.scheduled_job_registry.remove(self.job_id)
-        self.job_id = None
+        if self.job_name is not None:
+            self.rqueue.delete_job(self.job_name)
+            self.job_name = None
         self.save(schedule_job=False)
         return True
 
@@ -358,17 +351,17 @@ class Task(models.Model):
         if not self.enabled:
             logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
             return False
-        if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and self._schedule_time() < timezone.now():
-            return False
         schedule_time = self._schedule_time()
+        if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and schedule_time < timezone.now():
+            return False
         kwargs = self._enqueue_args()
-        job = self.rqueue.enqueue_at(
-            schedule_time,
+        job = self.rqueue.create_and_enqueue_job(
             tools.run_task,
             args=(self.task_type, self.id),
+            when=schedule_time,
             **kwargs,
         )
-        self.job_id = job.id
+        self.job_name = job.name
         super(Task, self).save()
         return True
 
@@ -376,7 +369,7 @@ class Task(models.Model):
         schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
         if update_fields is not None:
-            kwargs["update_fields"] = set(update_fields).union({"modified"})
+            kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super(Task, self).save(**kwargs)
         if schedule_job:
             self._schedule()
@@ -394,19 +387,19 @@ class Task(models.Model):
 
     def clean_callable(self):
         try:
-            tools.callable_func(self.callable)
+            utils.callable_func(self.callable)
         except Exception:
             raise ValidationError(
                 {"callable": ValidationError(_("Invalid callable, must be importable"), code="invalid")}
             )
 
     def clean_queue(self):
-        queue_keys = settings.QUEUES.keys()
-        if self.queue not in queue_keys:
+        queue_names = settings.get_queue_names()
+        if self.queue not in queue_names:
             raise ValidationError(
                 {
                     "queue": ValidationError(
-                        _("Invalid queue, must be one of: {}".format(", ".join(queue_keys))), code="invalid"
+                        "Invalid queue, must be one of: {}".format(", ".join(queue_names)), code="invalid"
                     )
                 }
             )

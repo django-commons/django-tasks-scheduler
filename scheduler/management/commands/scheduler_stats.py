@@ -9,13 +9,11 @@ ANSI_LIGHT_GREEN = "\033[1;32m"
 ANSI_LIGHT_WHITE = "\033[1;37m"
 ANSI_RESET = "\033[0m"
 
-KEYS = ("jobs", "started_jobs", "deferred_jobs", "finished_jobs", "canceled_jobs", "workers")
+KEYS = ("queued_jobs", "started_jobs", "finished_jobs", "canceled_jobs", "workers")
 
 
 class Command(BaseCommand):
-    """
-    Print statistics
-    """
+    """Print statistics"""
 
     help = __doc__
 
@@ -59,7 +57,7 @@ class Command(BaseCommand):
         click.echo("Django-Scheduler CLI Dashboard")
         click.echo()
         self._print_separator()
-        click.echo(f"| {'Name':<16} |    Queued |    Active |  Deferred |  Finished |  Canceled |   Workers |")
+        click.echo(f"| {'Name':<16} |    Queued |    Active |  Finished |  Canceled |   Workers |")
         self._print_separator()
         for ind, queue in enumerate(statistics["queues"]):
             vals = list((queue[k] for k in KEYS))
@@ -82,6 +80,9 @@ class Command(BaseCommand):
             click.echo("Press 'Ctrl+c' to quit")
 
     def handle(self, *args, **options):
+        if options.get("json") and options.get("yaml"):
+            click.secho("Aborting. Cannot output as both json and yaml", err=True, fg="red")
+            return
         if options.get("json"):
             import json
 

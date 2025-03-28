@@ -2,7 +2,6 @@ import sys
 from typing import Dict, Any, Optional
 
 import click
-from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
@@ -10,7 +9,6 @@ from django.utils import timezone
 
 from scheduler.models.task import TaskArg, TaskKwarg, Task
 from scheduler.models.task import TaskType
-from scheduler.tools import MODEL_NAMES
 
 
 def job_model_str(model_str: str) -> str:
@@ -139,9 +137,7 @@ class Command(BaseCommand):
             jobs = yaml.load(file, yaml.SafeLoader)
 
         if options.get("reset"):
-            for model_name in MODEL_NAMES:
-                model = apps.get_model(app_label="scheduler", model_name=model_name)
-                model.objects.all().delete()
+            Task.objects.all().delete()
 
         for job in jobs:
             create_task_from_dict(job, update=options.get("update"))
