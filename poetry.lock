@@ -618,14 +618,14 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fakeredis"
-version = "2.27.0"
+version = "2.28.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = "<4.0,>=3.7"
 groups = ["dev"]
 files = [
-    {file = "fakeredis-2.27.0-py3-none-any.whl", hash = "sha256:f4b6e0fa4193acbf00d81dac71ff5cc34fe7d7c12f1560b036f98578a103d5c3"},
-    {file = "fakeredis-2.27.0.tar.gz", hash = "sha256:7b7584ec104392592297f46864a82cb7339a23e254ee885bf5ae07cfc64fbce7"},
+    {file = "fakeredis-2.28.0-py3-none-any.whl", hash = "sha256:e19b2a72cb0d13edaae95637748cef569840866d0807d93f4d381571034d1388"},
+    {file = "fakeredis-2.28.0.tar.gz", hash = "sha256:4768a78240ca03af79f8922f0b6774efb52c6bf2d27d38a622da9a2a7e8abc8d"},
 ]
 
 [package.dependencies]

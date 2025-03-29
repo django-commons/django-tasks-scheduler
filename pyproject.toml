@@ -25,13 +25,13 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Framework :: Django',
     'Framework :: Django :: 5.0',
     'Framework :: Django :: 5.1',
+    'Framework :: Django :: 5.2',
 ]
 homepage = "https://github.com/django-commons/django-tasks-scheduler"
 documentation = "https://django-tasks-scheduler.readthedocs.io/en/latest/"
