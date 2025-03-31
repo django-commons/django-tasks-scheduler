@@ -2,7 +2,10 @@
 
 ## v4.0.0b2 🌈
 
+### 🐛 Bug Fixes
+
 - Fix bug when `SCHEDULER_CONFIG` is `SchedulerConfiguration`
+
 ## v4.0.0b1 🌈
 
 ### Breaking Changes
