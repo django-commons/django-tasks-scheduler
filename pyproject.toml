@@ -51,7 +51,7 @@ sentry-sdk = { version = "^2.19", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 time-machine = "^2.16.0"
-poetry = "^2.0.1"
+poetry = "^2.1.2"
 ruff = "^0.11"
 coverage = "^7.6"
 fakeredis = { version = "^2.21.5", extras = ['lua'] }
