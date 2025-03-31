@@ -35,15 +35,16 @@ def conf_settings():
             _QUEUES[queue_name] = QueueConfiguration(**queue_config)
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
-    if isinstance(user_settings, dict):
-        if "FAKEREDIS" in user_settings:
-            logger.warning("Configuration using FAKEREDIS is deprecated. Use BROKER='fakeredis' instead")
-            user_settings["BROKER"] = Broker.FAKEREDIS if user_settings["FAKEREDIS"] else Broker.REDIS
-            user_settings.pop("FAKEREDIS")
-        for k in user_settings:
-            if k not in SCHEDULER_CONFIG.__annotations__:
-                raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")
-            setattr(SCHEDULER_CONFIG, k, user_settings[k])
+    if isinstance(user_settings, SchedulerConfiguration):
+        return
+    if "FAKEREDIS" in user_settings:
+        logger.warning("Configuration using FAKEREDIS is deprecated. Use BROKER='fakeredis' instead")
+        user_settings["BROKER"] = Broker.FAKEREDIS if user_settings["FAKEREDIS"] else Broker.REDIS
+        user_settings.pop("FAKEREDIS")
+    for k in user_settings:
+        if k not in SCHEDULER_CONFIG.__annotations__:
+            raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")
+        setattr(SCHEDULER_CONFIG, k, getattr(user_settings, k, None))
 
 
 conf_settings()

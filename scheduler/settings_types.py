@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional, List, Tuple, Any, Self, Type
+from typing import Callable, Dict, Optional, List, Tuple, Any, Self, Type, Iterator
 
 from scheduler.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
 
@@ -35,6 +35,13 @@ class SchedulerConfiguration:
     DEFAULT_JOB_MONITORING_INTERVAL: int = 30  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
     DEATH_PENALTY_CLASS: Type["BaseDeathPenalty"] = UnixSignalDeathPenalty
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.__annotations__
+
+    def __iter__(self) -> Iterator[str]:
+        for field in self.__annotations__:
+            yield field
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
