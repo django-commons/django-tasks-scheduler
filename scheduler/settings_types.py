@@ -16,7 +16,7 @@ def _token_validation(token: str) -> bool:
 
 
 @dataclass(slots=True, kw_only=True)
-class SchedulerConfig:
+class SchedulerConfiguration:
     """Configuration for django-tasks-scheduler"""
 
     EXECUTIONS_IN_PAGE: int = 20

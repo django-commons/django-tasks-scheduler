@@ -52,9 +52,9 @@
 
 4. Optional: Configure default values for queuing jobs from code:
    ```python
-   from scheduler.settings_types import SchedulerConfig, Broker,  UnixSignalDeathPenalty
+   from scheduler.settings_types import SchedulerConfiguration, Broker,  UnixSignalDeathPenalty
 
-   SCHEDULER_CONFIG = SchedulerConfig(
+   SCHEDULER_CONFIG = SchedulerConfiguration(
     EXECUTIONS_IN_PAGE=20,
     SCHEDULER_INTERVAL=10,
     BROKER=Broker.REDIS,

@@ -43,7 +43,7 @@ You can set in `settings.py` a default value for `DEFAULT_JOB_TTL` and `DEFAULT_
 
 ```python
 # settings.py
-SCHEDULER_CONFIG = SchedulerConfig(
+SCHEDULER_CONFIG = SchedulerConfiguration(
     DEFAULT_SUCCESS_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep successful job results
     DEFAULT_FAILURE_TTL=365 * 24 * 60 * 60,  # Time To Live (TTL) in seconds to keep job failure information
     DEFAULT_JOB_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep job information

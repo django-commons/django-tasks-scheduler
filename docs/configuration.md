@@ -7,10 +7,10 @@ All default settings for scheduler can be in one dictionary in `settings.py`:
 ```python
 from typing import Dict
 
-from scheduler.settings_types import SchedulerConfig, Broker, QueueConfiguration, UnixSignalDeathPenalty
+from scheduler.settings_types import SchedulerConfiguration, Broker, QueueConfiguration, UnixSignalDeathPenalty
 
 
-SCHEDULER_CONFIG = SchedulerConfig(
+SCHEDULER_CONFIG = SchedulerConfiguration(
     EXECUTIONS_IN_PAGE=20,
     SCHEDULER_INTERVAL=10,
     BROKER=Broker.REDIS,
