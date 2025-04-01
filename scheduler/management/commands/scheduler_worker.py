@@ -6,8 +6,8 @@ import click
 from django.core.management.base import BaseCommand
 from django.db import connections
 
-from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.helpers.tools import create_worker
+from scheduler.types import ConnectionErrorTypes
+from scheduler.worker import create_worker
 from scheduler.settings import logger
 
 VERBOSITY_TO_LOG_LEVEL = {

@@ -1,7 +1,7 @@
 import os
 
 
-from scheduler.settings_types import QueueConfiguration
+from scheduler.types import QueueConfiguration
 
 BROKER_PORT = os.getenv("BROKER_PORT", "6379")
 SCHEDULER_QUEUES = {

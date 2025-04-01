@@ -3,7 +3,7 @@ from abc import ABC
 from datetime import datetime, UTC
 from typing import Self, Type, Dict, Any
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.settings import logger
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"

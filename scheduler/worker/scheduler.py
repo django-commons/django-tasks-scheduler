@@ -7,14 +7,14 @@ from threading import Thread
 from typing import List, Set, Optional, Sequence, Dict
 
 import django
-from django.apps import apps
 
-from scheduler.broker_types import ConnectionType, MODEL_NAMES
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue
 from scheduler.helpers.utils import current_timestamp
+from scheduler.models import Task
 from scheduler.redis_models import SchedulerLock, JobModel, ScheduledJobRegistry
 from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.types import ConnectionType
 
 
 class SchedulerStatus(str, Enum):
@@ -24,12 +24,10 @@ class SchedulerStatus(str, Enum):
 
 
 def _reschedule_tasks():
-    for model_name in MODEL_NAMES:
-        model = apps.get_model(app_label="scheduler", model_name=model_name)
-        enabled_jobs = model.objects.filter(enabled=True)
-        for item in enabled_jobs:
-            logger.debug(f"Rescheduling {str(item)}")
-            item.save()
+    enabled_jobs = Task.objects.filter(enabled=True)
+    for item in enabled_jobs:
+        logger.debug(f"Rescheduling {str(item)}")
+        item.save()
 
 
 class WorkerScheduler:
@@ -90,13 +88,9 @@ class WorkerScheduler:
         logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Locks acquired for {', '.join(self._locks.keys())}")
         return successful_locks
 
-    def start(self, burst=False) -> None:
+    def start(self) -> None:
         locks = self._acquire_locks()
         if len(locks) == 0:
-            return
-        if burst:
-            self.enqueue_scheduled_jobs()
-            self.release_locks()
             return
         self._status = SchedulerStatus.STARTED
         self._thread = Thread(target=run_scheduler, args=(self,), name="scheduler-thread")

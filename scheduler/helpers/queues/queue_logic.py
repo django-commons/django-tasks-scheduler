@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Tuple, Union, Self, Any
 
 from redis import WatchError
 
-from scheduler.broker_types import ConnectionType, FunctionReferenceType
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.utils import utcnow, current_timestamp
 from scheduler.redis_models import (
@@ -22,6 +21,7 @@ from scheduler.redis_models import (
 )
 from scheduler.redis_models import JobStatus, SchedulerLock, Result, ResultType, JobModel
 from scheduler.settings import logger, SCHEDULER_CONFIG
+from scheduler.types import ConnectionType, FunctionReferenceType
 
 
 class InvalidJobOperation(Exception):
@@ -100,6 +100,7 @@ class Queue:
         Removed jobs are added to the global failed job queue.
         """
         before_score = timestamp or current_timestamp()
+        self.queued_job_registry.compact()
         started_jobs: List[Tuple[str, float]] = self.active_job_registry.get_job_names_before(
             self.connection, before_score
         )
@@ -119,15 +120,12 @@ class Queue:
 
                 else:
                     logger.warning(
-                        f"{self.__class__.__name__} cleanup: Moving job to {self.failed_job_registry.key} "
-                        f"(due to AbandonedJobError)"
+                        f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)"
                     )
-                    job.set_status(JobStatus.FAILED, connection=pipeline)
                     exc_string = (
                         f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {datetime.now()}"
                     )
-                    job.save(connection=pipeline)
-                    job.expire(ttl=-1, connection=pipeline)
+                    job.status = JobStatus.FAILED
                     score = current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL
                     Result.create(
                         connection=pipeline,
@@ -138,8 +136,8 @@ class Queue:
                         exc_string=exc_string,
                     )
                     self.failed_job_registry.add(pipeline, job.name, score)
-                    job.save(connection=pipeline)
                     job.expire(connection=pipeline, ttl=SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL)
+                    job.save(connection=pipeline)
 
             for registry in self.REGISTRIES.values():
                 getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
@@ -188,24 +186,24 @@ class Queue:
         return JobModel.get_many(job_names, connection=self.connection)
 
     def create_and_enqueue_job(
-        self,
-        func: FunctionReferenceType,
-        args: Union[Tuple, List, None] = None,
-        kwargs: Optional[Dict] = None,
-        timeout: Optional[int] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        description: Optional[str] = None,
-        name: Optional[str] = None,
-        at_front: bool = False,
-        meta: Optional[Dict] = None,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
-        when: Optional[datetime] = None,
-        pipeline: Optional[ConnectionType] = None,
+            self,
+            func: FunctionReferenceType,
+            args: Union[Tuple, List, None] = None,
+            kwargs: Optional[Dict] = None,
+            timeout: Optional[int] = None,
+            result_ttl: Optional[int] = None,
+            job_info_ttl: Optional[int] = None,
+            description: Optional[str] = None,
+            name: Optional[str] = None,
+            at_front: bool = False,
+            meta: Optional[Dict] = None,
+            on_success: Optional[Callback] = None,
+            on_failure: Optional[Callback] = None,
+            on_stopped: Optional[Callback] = None,
+            task_type: Optional[str] = None,
+            scheduled_task_id: Optional[int] = None,
+            when: Optional[datetime] = None,
+            pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -312,7 +310,7 @@ class Queue:
         return job
 
     def enqueue_job(
-        self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
+            self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 
@@ -363,10 +361,10 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-        cls,
-        queues: List[Self],
-        timeout: Optional[int],
-        connection: Optional[ConnectionType] = None,
+            cls,
+            queues: List[Self],
+            timeout: Optional[int],
+            connection: Optional[ConnectionType] = None,
     ) -> Tuple[Optional[JobModel], Optional[Self]]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
@@ -382,6 +380,8 @@ class Queue:
 
         while True:
             registries = [q.queued_job_registry for q in queues]
+            for registry in registries:
+                registry.compact()
 
             registry_key, job_name = QueuedJobRegistry.pop(connection, registries, timeout)
             if job_name is None:

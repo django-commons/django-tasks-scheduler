@@ -9,7 +9,7 @@ def current_timestamp() -> int:
     return int(time.time())
 
 
-def utcnow():
+def utcnow() -> datetime.datetime:
     """Return now in UTC"""
     return datetime.datetime.now(datetime.UTC)
 

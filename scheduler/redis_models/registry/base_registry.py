@@ -2,7 +2,7 @@ import dataclasses
 from collections.abc import Sequence
 from typing import ClassVar, Optional, List, Self, Tuple, Any
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.helpers.utils import current_timestamp
 from scheduler.redis_models.base import as_str, BaseModel
 from scheduler.settings import logger
@@ -30,7 +30,6 @@ class ZSetModel(BaseModel):
     def delete(self, connection: ConnectionType, job_name: str) -> None:
         connection.zrem(self._key, job_name)
 
-
 class JobNamesRegistry(ZSetModel):
     _element_key_template: ClassVar[str] = ":registry:{}"
 
@@ -56,7 +55,7 @@ class JobNamesRegistry(ZSetModel):
         logger.debug(f"Getting jobs for registry {self._key}: {len(res)} found.")
         return res
 
-    def all_with_timestamps(self, start: int = 0, end: int = -1) -> List[tuple[str, float]]:
+    def all_with_timestamps(self, start: int = 0, end: int = -1) -> List[Tuple[str, float]]:
         """Returns list of all job names with their timestamps.
 
         :param start: Start score/timestamp, default to 0.

@@ -8,7 +8,7 @@ from scheduler import settings
 from scheduler.redis_models import JobModel
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory, _get_task_scheduled_job_from_registry
-from scheduler.helpers.tools import TaskType
+from scheduler.models import TaskType
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):

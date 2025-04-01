@@ -4,7 +4,7 @@ from typing import List, Dict
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from scheduler.settings_types import SchedulerConfiguration, Broker, QueueConfiguration
+from scheduler.types import SchedulerConfiguration, Broker, QueueConfiguration
 
 logger = logging.getLogger("scheduler")
 logging.basicConfig(level=logging.DEBUG)

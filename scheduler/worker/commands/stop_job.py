@@ -2,7 +2,7 @@ import os
 import signal
 from typing import Dict, Any
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.redis_models import WorkerModel, JobModel
 from scheduler.settings import logger
 from scheduler.worker.commands.worker_commands import WorkerCommand, WorkerCommandError

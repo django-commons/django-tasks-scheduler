@@ -15,17 +15,14 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from scheduler import settings
-from scheduler.broker_types import ConnectionType
-from scheduler.helpers import tools, utils
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue
-from scheduler.models.args import TaskArg, TaskKwarg
 from scheduler.redis_models import JobModel
-from scheduler.settings import logger, get_queue_names
-
-SCHEDULER_INTERVAL = settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL
+from scheduler.settings import logger, get_queue_names, SCHEDULER_CONFIG
+from scheduler.types import ConnectionType, TASK_TYPES
+from .args import TaskArg, TaskKwarg
+from ..helpers import utils
 
 
 def _get_task_for_job(job: JobModel) -> Optional["Task"]:
@@ -189,9 +186,9 @@ class Task(models.Model):
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-            (self.job_name in self.rqueue.scheduled_job_registry.all())
-            or (self.job_name in self.rqueue.queued_job_registry.all())
-            or (self.job_name in self.rqueue.active_job_registry.all())
+                (self.job_name in self.rqueue.scheduled_job_registry.all())
+                or (self.job_name in self.rqueue.queued_job_registry.all())
+                or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
@@ -258,7 +255,7 @@ class Task(models.Model):
         """Enqueue task to run now as a different instance from the scheduled task."""
         kwargs = self._enqueue_args()
         self.rqueue.create_and_enqueue_job(
-            tools.run_task,
+            run_task,
             args=(self.task_type, self.id),
             **kwargs,
         )
@@ -277,7 +274,7 @@ class Task(models.Model):
 
     def _schedule_time(self) -> datetime:
         if self.task_type == TaskType.CRON:
-            self.scheduled_time = tools.get_next_cron_time(self.cron_string)
+            self.scheduled_time = get_next_cron_time(self.cron_string)
         elif self.task_type == TaskType.REPEATABLE:
             _now = timezone.now()
             if self.scheduled_time >= _now:
@@ -356,7 +353,7 @@ class Task(models.Model):
             return False
         kwargs = self._enqueue_args()
         job = self.rqueue.create_and_enqueue_job(
-            tools.run_task,
+            run_task,
             args=(self.task_type, self.id),
             when=schedule_time,
             **kwargs,
@@ -394,7 +391,7 @@ class Task(models.Model):
             )
 
     def clean_queue(self):
-        queue_names = settings.get_queue_names()
+        queue_names = get_queue_names()
         if self.queue not in queue_names:
             raise ValidationError(
                 {
@@ -405,17 +402,17 @@ class Task(models.Model):
             )
 
     def clean_interval_unit(self):
-        if SCHEDULER_INTERVAL > self.interval_seconds():
+        if SCHEDULER_CONFIG.SCHEDULER_INTERVAL > self.interval_seconds():
             raise ValidationError(
                 _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)"),
                 code="invalid",
-                params={"queue": self.queue, "interval": SCHEDULER_INTERVAL},
+                params={"queue": self.queue, "interval": SCHEDULER_CONFIG.SCHEDULER_INTERVAL},
             )
-        if self.interval_seconds() % SCHEDULER_INTERVAL:
+        if self.interval_seconds() % SCHEDULER_CONFIG.SCHEDULER_INTERVAL:
             raise ValidationError(
                 _("Job interval is not a multiple of rq_scheduler's interval frequency: %(interval)ss"),
                 code="invalid",
-                params={"interval": SCHEDULER_INTERVAL},
+                params={"interval": SCHEDULER_CONFIG.SCHEDULER_INTERVAL},
             )
 
     def clean_result_ttl(self) -> None:
@@ -446,3 +443,39 @@ class Task(models.Model):
         if self.task_type == TaskType.REPEATABLE:
             self.clean_interval_unit()
             self.clean_result_ttl()
+
+
+def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime]:
+    """Calculate the next scheduled time by creating a crontab object with a cron string"""
+    if cron_string is None:
+        return None
+    now = timezone.now()
+    itr = croniter.croniter(cron_string, now)
+    next_itr = itr.get_next(timezone.datetime)
+    return next_itr
+
+
+def get_scheduled_task(task_type_str: str, task_id: int) -> Task:
+    # Try with new model names
+    if task_type_str in TASK_TYPES:
+        try:
+            task_type = TaskType(task_type_str)
+            task = Task.objects.filter(task_type=task_type, id=task_id).first()
+            if task is None:
+                raise ValueError(f"Job {task_type}:{task_id} does not exit")
+            return task
+        except ValueError:
+            raise ValueError(f"Invalid task type {task_type_str}")
+    raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
+
+
+def run_task(task_model: str, task_id: int) -> Any:
+    """Run a scheduled job"""
+    if isinstance(task_id, str):
+        task_id = int(task_id)
+    scheduled_task = get_scheduled_task(task_model, task_id)
+    logger.debug(f"Running task {str(scheduled_task)}")
+    args = scheduled_task.parse_args()
+    kwargs = scheduled_task.parse_kwargs()
+    res = scheduled_task.callable_func()(*args, **kwargs)
+    return res

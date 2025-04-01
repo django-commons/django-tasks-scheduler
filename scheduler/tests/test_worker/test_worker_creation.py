@@ -3,7 +3,7 @@ import uuid
 
 from scheduler import settings
 from scheduler.helpers.queues.getters import QueueConnectionDiscrepancyError
-from scheduler.helpers.tools import create_worker
+from scheduler.worker import create_worker
 from scheduler.tests import test_settings  # noqa
 from scheduler.tests.testtools import SchedulerBaseCase
 

@@ -9,7 +9,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from scheduler import settings
-from scheduler.models.task import TaskType, Task, TaskArg, TaskKwarg
+from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
 from scheduler.helpers.queues import get_queue
 from scheduler.helpers.queues import perform_job
 from scheduler.redis_models import JobStatus, JobModel
@@ -21,7 +21,7 @@ from scheduler.tests.testtools import (
     SchedulerBaseCase,
     _get_executions,
 )
-from scheduler.helpers.tools import run_task, create_worker
+from scheduler.worker import create_worker
 
 
 def assert_response_has_msg(response, message):

@@ -6,13 +6,11 @@ from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
 
-from scheduler.broker_types import ConnectionErrorTypes
-from scheduler.helpers import tools
 from scheduler.helpers.queues import get_queue
-from scheduler.models.args import TaskArg, TaskKwarg
-from scheduler.models.task import Task, TaskType
+from scheduler.models import TaskArg, TaskKwarg, Task, TaskType, get_next_cron_time
 from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.types import ConnectionErrorTypes
 
 
 def job_execution_of(job: JobModel, task: Task) -> bool:
@@ -142,7 +140,7 @@ class TaskAdmin(admin.ModelAdmin):
 
     @admin.display(description="Next run")
     def next_run(self, o: Task) -> str:
-        return tools.get_next_cron_time(o.cron_string)
+        return get_next_cron_time(o.cron_string)
 
     def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None):
         extra = extra_context or {}

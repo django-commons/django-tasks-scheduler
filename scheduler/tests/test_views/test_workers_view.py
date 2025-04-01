@@ -1,6 +1,6 @@
 from django.urls import reverse
 
-from scheduler.helpers.tools import create_worker
+from scheduler.worker import create_worker
 from scheduler.tests import test_settings  # noqa
 from scheduler.tests.test_views.base import BaseTestCase
 

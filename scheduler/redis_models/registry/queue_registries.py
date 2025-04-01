@@ -2,8 +2,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar, Optional, List, Tuple
 
-from scheduler.broker_types import ConnectionType
 from scheduler.helpers.utils import current_timestamp
+from scheduler.types import ConnectionType
 from .base_registry import JobNamesRegistry
 from .. import as_str
 from ..job import JobModel
@@ -21,18 +21,11 @@ class QueuedJobRegistry(JobNamesRegistry):
         and `all()` methods implemented in JobIdsRegistry."""
         pass
 
-    def compact(self):
+    def compact(self) -> None:
         """Removes all "dead" jobs from the queue by cycling through it, while guaranteeing FIFO semantics."""
-        compact_queue_name = f"{self._key}:compact"
-
         jobs_with_ts = self.all_with_timestamps()
-
-        self.connection.rename(self._key, compact_queue_name)
-
         for job_name, timestamp in jobs_with_ts:
-            if job_name is None:
-                continue
-            if JobModel.exists(job_name, self.connection):
+            if not JobModel.exists(job_name, self.connection):
                 self.delete(connection=self.connection, job_name=job_name)
 
 

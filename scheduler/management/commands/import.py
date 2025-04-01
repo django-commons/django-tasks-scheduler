@@ -7,8 +7,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from scheduler.models.task import TaskArg, TaskKwarg, Task
-from scheduler.models.task import TaskType
+from scheduler.models import TaskArg, TaskKwarg, Task
+from scheduler.models import TaskType
 
 
 def job_model_str(model_str: str) -> str:

@@ -4,8 +4,7 @@ from django import template
 from django.utils.safestring import mark_safe
 
 from scheduler.helpers.queues import Queue
-from scheduler.helpers.tools import get_scheduled_task
-from scheduler.models.task import Task
+from scheduler.models import Task, get_scheduled_task
 from scheduler.redis_models import Result, JobModel
 from scheduler.views.helpers import get_queue
 

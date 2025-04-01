@@ -12,7 +12,7 @@ except ImportError:
     valkey.Valkey = redis.Redis
     valkey.StrictValkey = redis.StrictRedis
 
-from scheduler.settings_types import Broker
+from .settings_types import Broker
 
 ConnectionErrorTypes = (redis.ConnectionError, valkey.ConnectionError)
 ResponseErrorTypes = (redis.ResponseError, valkey.ResponseError)
@@ -33,9 +33,6 @@ BrokerMetaData: Dict[Tuple[Broker, bool], BrokerMetaDataType] = {
     (Broker.VALKEY, True): BrokerMetaDataType(valkey.StrictValkey, valkey.sentinel.Sentinel),
 }
 
-MODEL_NAMES = [
-    "Task",
-]
 TASK_TYPES = ["OnceTaskType", "RepeatableTaskType", "CronTaskType"]
 
 

@@ -18,18 +18,21 @@ from types import FrameType
 from typing import List, Optional, Tuple, Any, Iterable, Self
 
 import scheduler
-from scheduler.broker_types import (
+from scheduler.helpers.queues import get_queue
+from scheduler.helpers.queues import get_queues
+from scheduler.redis_models import WorkerModel, JobModel, JobStatus, KvLock, DequeueTimeout
+from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.types import Broker
+from scheduler.types import (
     ConnectionType,
     TimeoutErrorTypes,
     ConnectionErrorTypes,
     WatchErrorTypes,
     ResponseErrorTypes,
 )
-from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import WorkerModel, JobModel, JobStatus, KvLock, DequeueTimeout
-from scheduler.settings import SCHEDULER_CONFIG, logger
 from .commands import WorkerCommandsChannelListener
 from .scheduler import WorkerScheduler
+from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
 
 try:
@@ -82,11 +85,6 @@ class DequeueStrategy(str, Enum):
     RANDOM = "random"
 
 
-class QueueLock(KvLock):
-    def __init__(self, queue_name: str) -> None:
-        super().__init__(f"queue:{queue_name}")
-
-
 class Worker:
     queue_class = Queue
 
@@ -108,18 +106,18 @@ class Worker:
         return res
 
     def __init__(
-        self,
-        queues,
-        name: str,
-        connection: Optional[ConnectionType] = None,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        disable_default_exception_handler: bool = False,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
+            self,
+            queues,
+            name: str,
+            connection: Optional[ConnectionType] = None,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            disable_default_exception_handler: bool = False,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
     ):  # noqa
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval = job_monitoring_interval
@@ -211,9 +209,9 @@ class Worker:
         signal.signal(signal.SIGTERM, self.request_stop)
 
     def work(
-        self,
-        max_jobs: Optional[int] = None,
-        max_idle_time: Optional[int] = None,
+            self,
+            max_jobs: Optional[int] = None,
+            max_idle_time: Optional[int] = None,
     ) -> bool:
         """Starts the work loop.
 
@@ -336,8 +334,12 @@ class Worker:
         self._command_listener.start()
         if self.with_scheduler:
             self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
-            self.scheduler.start(burst=self.burst)
+            self.scheduler.start()
             self._model.has_scheduler = True
+            self._model.save(connection=self.connection)
+        if self.burst and self.with_scheduler:
+            self.scheduler.stop()
+            self._model.has_scheduler = False
             self._model.save(connection=self.connection)
         qnames = [queue.name for queue in self.queues]
         logger.info(f"""[Worker {self.name}/{self._pid}]: Listening to queues {", ".join(qnames)}...""")
@@ -369,15 +371,19 @@ class Worker:
         1. Check if scheduler should be started.
         2. Cleaning registries
         """
-        if self.with_scheduler:
+        if self.with_scheduler and not self._model.has_scheduler:
             self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
-            self.scheduler.start(burst=self.burst)
+            self.scheduler.start()
             self._model.has_scheduler = True
+            self._model.save(connection=self.connection)
+        if self.burst and self.with_scheduler:
+            self.scheduler.stop()
+            self._model.has_scheduler = False
             self._model.save(connection=self.connection)
         self.clean_registries()
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[JobModel, Queue]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -552,7 +558,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -636,7 +642,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val, rusage = self.wait_for_job_execution_process()
                 break
@@ -872,7 +878,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue):
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):
@@ -904,3 +910,28 @@ def _ensure_list(obj: Any) -> List:
     """
     is_nonstring_iterable = isinstance(obj, Iterable) and not isinstance(obj, str)
     return obj if is_nonstring_iterable else [obj]
+
+
+def _calc_worker_name(existing_worker_names) -> str:
+    hostname = os.uname()[1]
+    c = 1
+    worker_name = f"{hostname}-worker.{c}"
+    while worker_name in existing_worker_names:
+        c += 1
+        worker_name = f"{hostname}-worker.{c}"
+    return worker_name
+
+
+def create_worker(*queue_names: str, **kwargs) -> Worker:
+    """Returns a Django worker for all queues or specified ones."""
+    queues = get_queues(*queue_names)
+    existing_worker_names = WorkerModel.all_names(connection=queues[0].connection)
+    kwargs.setdefault("fork_job_execution", SCHEDULER_CONFIG.BROKER != Broker.FAKEREDIS)
+    if kwargs.get("name", None) is None:
+        kwargs["name"] = _calc_worker_name(existing_worker_names)
+    if kwargs["name"] in existing_worker_names:
+        raise ValueError(f"Worker {kwargs['name']} already exists")
+    kwargs["name"] = kwargs["name"].replace("/", ".")
+    kwargs.setdefault("with_scheduler", False)
+    worker = Worker(queues, connection=queues[0].connection, **kwargs)
+    return worker

@@ -1,6 +1,6 @@
 from typing import Optional, Any
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 
 
 class KvLock(object):
@@ -29,3 +29,8 @@ class KvLock(object):
 class SchedulerLock(KvLock):
     def __init__(self, queue_name: str) -> None:
         super().__init__(f"lock:scheduler:{queue_name}")
+
+
+class QueueLock(KvLock):
+    def __init__(self, queue_name: str) -> None:
+        super().__init__(f"queue:{queue_name}")

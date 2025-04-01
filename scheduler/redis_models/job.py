@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import ClassVar, Dict, Optional, List, Callable, Any, Union, Tuple, Self
 
-from scheduler.broker_types import ConnectionType, FunctionReferenceType
+from scheduler.types import ConnectionType, FunctionReferenceType
 from scheduler.helpers import utils
 from scheduler.helpers.callback import Callback
 from scheduler.redis_models.base import HashModel, as_str
@@ -78,10 +78,6 @@ class JobModel(HashModel):
 
     def get_status(self, connection: ConnectionType) -> JobStatus:
         return self.get_field("status", connection=connection)
-
-    def set_status(self, status: JobStatus, connection: ConnectionType) -> None:
-        """Set's the Job Status"""
-        self.set_field("status", status, connection=connection)
 
     @property
     def is_queued(self) -> bool:

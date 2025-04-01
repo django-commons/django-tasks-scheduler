@@ -7,7 +7,7 @@ from typing import List, Optional, Union, Self, Dict, Collection, Any, ClassVar,
 
 from redis import Redis
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.settings import logger
 
 MAX_KEYS = 1000
@@ -146,6 +146,8 @@ class HashModel(BaseModel):
 
     @classmethod
     def exists(cls, name: str, connection: ConnectionType) -> bool:
+        if name is None:
+            return False
         return connection.exists(cls._element_key_template.format(name)) > 0
 
     @classmethod

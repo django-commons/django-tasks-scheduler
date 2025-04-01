@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from scheduler.models.args import TaskArg, TaskKwarg
+from scheduler.models import TaskArg, TaskKwarg
 from .jobs import arg_callable
 from .testtools import taskarg_factory
 

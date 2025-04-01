@@ -1,7 +1,7 @@
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.helpers.tools import create_worker
+from scheduler.worker import create_worker
 from scheduler.redis_models import JobStatus, JobModel
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.test_views.base import BaseTestCase

@@ -4,15 +4,16 @@ from unittest.mock import patch, PropertyMock
 
 from django.urls import reverse
 
-from scheduler.settings_types import QueueConfiguration
 from scheduler.helpers.queues import get_queue
-from scheduler.helpers.tools import create_worker, TaskType
+from scheduler.worker import create_worker
+from scheduler.models import TaskType
 from scheduler.redis_models import JobModel, WorkerModel
 from scheduler.tests import test_settings  # noqa
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.test_task_types.test_task_model import assert_response_has_msg
 from scheduler.tests.test_views.base import BaseTestCase
 from scheduler.tests.testtools import assert_message_in_response, task_factory, _get_task_scheduled_job_from_registry
+from scheduler.types import QueueConfiguration
 
 
 class TestViewJobDetails(BaseTestCase):

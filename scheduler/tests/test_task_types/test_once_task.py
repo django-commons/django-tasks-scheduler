@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models.task import TaskType
+from scheduler.models import TaskType
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory
 

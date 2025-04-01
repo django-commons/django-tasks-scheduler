@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Self, ClassVar, Any, Generator
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import HashModel, MAX_KEYS
 from scheduler.settings import logger

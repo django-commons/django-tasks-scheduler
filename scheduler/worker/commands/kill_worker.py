@@ -3,7 +3,7 @@ import os
 import signal
 from typing import Optional
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.redis_models import WorkerModel
 from scheduler.settings import logger
 from scheduler.worker.commands.worker_commands import WorkerCommand
@@ -19,7 +19,7 @@ class KillWorkerCommand(WorkerCommand):
         self.worker_pid: Optional[int] = None
 
     def process_command(self, connection: ConnectionType) -> None:
-        from scheduler.worker.worker import Worker
+        from scheduler.worker import Worker
 
         logger.info("Received kill-worker command.")
         worker_model = WorkerModel.get(self.worker_name, connection)

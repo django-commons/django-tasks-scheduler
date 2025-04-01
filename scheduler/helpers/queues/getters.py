@@ -1,6 +1,6 @@
 from typing import List, Set
 
-from scheduler.broker_types import ConnectionErrorTypes, BrokerMetaData
+from scheduler.types import ConnectionErrorTypes, BrokerMetaData
 from scheduler.redis_models.worker import WorkerModel
 from scheduler.settings import (
     SCHEDULER_CONFIG,

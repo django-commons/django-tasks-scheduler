@@ -3,8 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
-from scheduler.helpers.tools import get_scheduled_task
-from scheduler.models.task import TaskType
+from scheduler.models import TaskType, get_scheduled_task
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
 

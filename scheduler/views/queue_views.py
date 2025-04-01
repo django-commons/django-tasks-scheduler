@@ -11,7 +11,7 @@ from django.urls import reverse, resolve
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 
-from scheduler.broker_types import ConnectionErrorTypes, ResponseErrorTypes
+from scheduler.types import ConnectionErrorTypes, ResponseErrorTypes
 from scheduler.helpers.queues import Queue, get_all_workers
 from scheduler.redis_models import JobModel, JobNamesRegistry, WorkerModel
 from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, logger

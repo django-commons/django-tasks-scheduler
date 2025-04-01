@@ -3,14 +3,16 @@ from datetime import timedelta
 import time_machine
 from django.utils import timezone
 
-from scheduler.helpers.tools import create_worker
-from scheduler.models.task import TaskType
+from scheduler.settings import SCHEDULER_CONFIG
+from scheduler.worker import create_worker
+from scheduler.models import TaskType
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
-from scheduler.worker.scheduler import WorkerScheduler
+from scheduler.worker import WorkerScheduler
 
 
 class TestWorkerScheduler(SchedulerBaseCase):
     def test_create_worker_with_scheduler__scheduler_started(self):
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         worker = create_worker("default", name="test", burst=True, with_scheduler=True)
         worker.bootstrap()
         self.assertIsNotNone(worker.scheduler)

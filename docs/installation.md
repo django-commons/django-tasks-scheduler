@@ -19,8 +19,9 @@
    Note that the usage of `QueueConfiguration` is optional, you can use a simple dictionary, but `QueueConfiguration`
    helps preventing configuration errors.
    ```python
+    import os
     from typing import Dict
-    from scheduler.settings_types import QueueConfiguration
+    from scheduler.types import QueueConfiguration
        
     SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
      'default': QueueConfiguration(
@@ -52,7 +53,7 @@
 
 4. Optional: Configure default values for queuing jobs from code:
    ```python
-   from scheduler.settings_types import SchedulerConfiguration, Broker,  UnixSignalDeathPenalty
+   from scheduler.types import SchedulerConfiguration, Broker
 
    SCHEDULER_CONFIG = SchedulerConfiguration(
     EXECUTIONS_IN_PAGE=20,
@@ -69,7 +70,6 @@
     DEFAULT_MAINTENANCE_TASK_INTERVAL=10 * 60,  # The interval to run maintenance tasks in seconds. 10 minutes.
     DEFAULT_JOB_MONITORING_INTERVAL=30,  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS=120,  # Period (secs) to wait before requiring to reacquire locks
-    DEATH_PENALTY_CLASS=UnixSignalDeathPenalty,
    )
    ```
 

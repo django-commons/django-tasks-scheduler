@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, Union
 
-from scheduler.broker_types import ConnectionType
+from scheduler.types import ConnectionType
 from scheduler.helpers.callback import Callback
 
 JOB_METHODS_LIST = list()

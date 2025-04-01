@@ -3,7 +3,7 @@ import sys
 import click
 from django.core.management.base import BaseCommand
 
-from scheduler.models.task import Task
+from scheduler.models import Task
 
 
 class Command(BaseCommand):

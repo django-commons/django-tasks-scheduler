@@ -1,8 +1,7 @@
 from django.contrib import admin
 
 from scheduler import views
-from scheduler.models.queue import Queue
-from scheduler.models.worker import Worker
+from scheduler.models.ephemeral_models import Queue, Worker
 
 
 class ImmutableAdmin(admin.ModelAdmin):

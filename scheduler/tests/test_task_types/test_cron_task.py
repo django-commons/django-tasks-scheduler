@@ -2,11 +2,11 @@ from django.core.exceptions import ValidationError
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from scheduler.models.task import TaskType
+from scheduler.models import TaskType
 from scheduler.redis_models import JobModel
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory
-from scheduler.helpers.tools import create_worker
+from scheduler.worker import create_worker
 
 
 class TestCronTask(BaseTestCases.TestBaseTask):

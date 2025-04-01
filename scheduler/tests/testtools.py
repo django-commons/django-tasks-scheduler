@@ -11,11 +11,11 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.admin.task_admin import job_execution_of
 from scheduler.helpers.queues import get_queue
-from scheduler.helpers.tools import create_worker
-from scheduler.models.args import TaskKwarg
-from scheduler.models.task import Task, TaskType
+from scheduler.worker import create_worker
+from scheduler.models import TaskKwarg
+from scheduler.models import Task, TaskType
 from scheduler.redis_models import JobModel
-from scheduler.worker.worker import Worker
+from scheduler.worker import Worker
 
 multiprocessing.set_start_method("fork")
 
