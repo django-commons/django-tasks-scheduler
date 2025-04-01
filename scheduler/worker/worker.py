@@ -31,7 +31,7 @@ from scheduler.types import (
     ResponseErrorTypes,
 )
 from .commands import WorkerCommandsChannelListener
-from .scheduler import WorkerScheduler
+from .scheduler import WorkerScheduler, SchedulerStatus
 from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
 
@@ -337,8 +337,8 @@ class Worker:
             self.scheduler.start()
             self._model.has_scheduler = True
             self._model.save(connection=self.connection)
-        if self.burst and self.with_scheduler:
-            self.scheduler.stop()
+        if self.with_scheduler and self.burst:
+            self.scheduler.request_stop_and_wait()
             self._model.has_scheduler = False
             self._model.save(connection=self.connection)
         qnames = [queue.name for queue in self.queues]
@@ -371,16 +371,19 @@ class Worker:
         1. Check if scheduler should be started.
         2. Cleaning registries
         """
-        if self.with_scheduler and not self._model.has_scheduler:
+        self.clean_registries()
+        if not self.with_scheduler:
+            return
+        if self.scheduler is None:
             self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
+        if self.scheduler.status == SchedulerStatus.STOPPED:
             self.scheduler.start()
             self._model.has_scheduler = True
             self._model.save(connection=self.connection)
-        if self.burst and self.with_scheduler:
-            self.scheduler.stop()
+        if self.burst:
+            self.scheduler.request_stop_and_wait()
             self._model.has_scheduler = False
             self._model.save(connection=self.connection)
-        self.clean_registries()
 
     def dequeue_job_and_maintain_ttl(
         self, timeout: Optional[int], max_idle_time: Optional[int] = None

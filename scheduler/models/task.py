@@ -19,7 +19,8 @@ from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import JobModel
-from scheduler.settings import logger, get_queue_names, SCHEDULER_CONFIG
+from scheduler.settings import logger, get_queue_names
+from scheduler import settings
 from scheduler.types import ConnectionType, TASK_TYPES
 from .args import TaskArg, TaskKwarg
 from ..helpers import utils
@@ -402,17 +403,18 @@ class Task(models.Model):
             )
 
     def clean_interval_unit(self):
-        if SCHEDULER_CONFIG.SCHEDULER_INTERVAL > self.interval_seconds():
+        config = settings.SCHEDULER_CONFIG
+        if config.SCHEDULER_INTERVAL > self.interval_seconds():
             raise ValidationError(
                 _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)"),
                 code="invalid",
-                params={"queue": self.queue, "interval": SCHEDULER_CONFIG.SCHEDULER_INTERVAL},
+                params={"queue": self.queue, "interval": config.SCHEDULER_INTERVAL},
             )
-        if self.interval_seconds() % SCHEDULER_CONFIG.SCHEDULER_INTERVAL:
+        if self.interval_seconds() % config.SCHEDULER_INTERVAL:
             raise ValidationError(
                 _("Job interval is not a multiple of rq_scheduler's interval frequency: %(interval)ss"),
                 code="invalid",
-                params={"interval": SCHEDULER_CONFIG.SCHEDULER_INTERVAL},
+                params={"interval": config.SCHEDULER_INTERVAL},
             )
 
     def clean_result_ttl(self) -> None:

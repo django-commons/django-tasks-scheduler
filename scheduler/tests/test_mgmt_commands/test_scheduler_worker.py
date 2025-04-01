@@ -10,6 +10,7 @@ from scheduler.tests.jobs import failing_job
 
 class SchedulerWorkerTestCase(TestCase):
     def test_scheduler_worker__no_queues_params(self):
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         queue = get_queue("default")
 
         # enqueue some jobs that will fail
@@ -25,6 +26,7 @@ class SchedulerWorkerTestCase(TestCase):
         for job_name in job_names:
             job = JobModel.get(name=job_name, connection=queue.connection)
             self.assertTrue(job.is_failed)
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10
 
     def test_scheduler_worker__run_jobs(self):
         SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
@@ -43,8 +45,10 @@ class SchedulerWorkerTestCase(TestCase):
         for job_name in job_names:
             job = JobModel.get(name=job_name, connection=queue.connection)
             self.assertTrue(job.is_failed)
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10
 
     def test_scheduler_worker__worker_with_two_queues(self):
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         queue = get_queue("default")
         queue2 = get_queue("django_tasks_scheduler_test")
 
@@ -63,8 +67,10 @@ class SchedulerWorkerTestCase(TestCase):
         for job_name in job_names:
             job = JobModel.get(name=job_name, connection=queue.connection)
             self.assertTrue(job.is_failed)
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10
 
     def test_scheduler_worker__worker_with_one_queue__does_not_perform_other_queue_job(self):
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         queue = get_queue("default")
         queue2 = get_queue("django_tasks_scheduler_test")
 
@@ -80,3 +86,4 @@ class SchedulerWorkerTestCase(TestCase):
         other_job = JobModel.get(other_job.name, connection=queue.connection)
 
         self.assertTrue(other_job.is_queued, f"Expected other job to be queued but status={other_job.status}")
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10

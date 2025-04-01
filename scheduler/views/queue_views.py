@@ -14,13 +14,14 @@ from django.views.decorators.cache import never_cache
 from scheduler.types import ConnectionErrorTypes, ResponseErrorTypes
 from scheduler.helpers.queues import Queue, get_all_workers
 from scheduler.redis_models import JobModel, JobNamesRegistry, WorkerModel
-from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, logger
+from scheduler.settings import get_queue_names, logger
+from scheduler import settings
 from scheduler.views.helpers import get_queue
 from scheduler.worker.commands import StopJobCommand, send_command
 
 
 def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> Tuple[List[JobModel], int, range]:
-    items_per_page = SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
+    items_per_page = settings.SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = registry.count(queue.connection)
     job_list = list()
 
@@ -85,7 +86,7 @@ def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
 
 def stats_json(request: HttpRequest) -> Union[JsonResponse, HttpResponseNotFound]:
     auth_token = request.headers.get("Authorization")
-    token_validation_func = SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
+    token_validation_func = settings.SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
     if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):
         return JsonResponse(get_statistics())
 

@@ -24,7 +24,7 @@ class SchedulerStatus(str, Enum):
 
 
 def _reschedule_tasks():
-    enabled_jobs = Task.objects.filter(enabled=True)
+    enabled_jobs = list(Task.objects.filter(enabled=True))
     for item in enabled_jobs:
         logger.debug(f"Rescheduling {str(item)}")
         item.save()
@@ -48,7 +48,7 @@ class WorkerScheduler:
         self.connection = connection
         self.interval = interval
         self._stop_requested = False
-        self._status = SchedulerStatus.STOPPED
+        self.status = SchedulerStatus.STOPPED
         self._thread = None
         self._pid: Optional[int] = None
         self.worker_name = worker_name
@@ -92,7 +92,7 @@ class WorkerScheduler:
         locks = self._acquire_locks()
         if len(locks) == 0:
             return
-        self._status = SchedulerStatus.STARTED
+        self.status = SchedulerStatus.STARTED
         self._thread = Thread(target=run_scheduler, args=(self,), name="scheduler-thread")
         self._thread.start()
 
@@ -117,7 +117,7 @@ class WorkerScheduler:
             f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}..."
         )
         self.release_locks()
-        self._status = SchedulerStatus.STOPPED
+        self.status = SchedulerStatus.STOPPED
 
     def release_locks(self):
         """Release acquired locks"""
@@ -145,7 +145,7 @@ class WorkerScheduler:
 
     def enqueue_scheduled_jobs(self) -> None:
         """Enqueue jobs whose timestamp is in the past"""
-        self._status = SchedulerStatus.WORKING
+        self.status = SchedulerStatus.WORKING
         _reschedule_tasks()
 
         for registry in self._scheduled_job_registries:
@@ -163,7 +163,7 @@ class WorkerScheduler:
                     if job is not None:
                         queue.enqueue_job(job, connection=pipeline, at_front=bool(job.at_front))
                 pipeline.execute()
-        self._status = SchedulerStatus.STARTED
+        self.status = SchedulerStatus.STARTED
 
 
 def run_scheduler(scheduler: WorkerScheduler):

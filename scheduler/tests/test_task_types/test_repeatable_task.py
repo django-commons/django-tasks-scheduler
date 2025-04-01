@@ -9,6 +9,7 @@ from scheduler.redis_models import JobModel
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory, _get_task_scheduled_job_from_registry
 from scheduler.models import TaskType
+from scheduler.types import SchedulerConfiguration
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
@@ -41,7 +42,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         job.interval_unit = "seconds"
         self.assertIsNone(job.clean())
 
-    @override_settings(SCHEDULER_CONFIG={"SCHEDULER_INTERVAL": 10})
+    @override_settings(SCHEDULER_CONFIG=SchedulerConfiguration(SCHEDULER_INTERVAL=10))
     def test_clean_too_frequent(self):
         job = task_factory(self.task_type)
         job.queue = self.queue_name
@@ -52,6 +53,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         with self.assertRaises(ValidationError):
             job.clean_interval_unit()
 
+    @override_settings(SCHEDULER_CONFIG=SchedulerConfiguration(SCHEDULER_INTERVAL=10))
     def test_clean_not_multiple(self):
         job = task_factory(self.task_type)
         job.queue = self.queue_name

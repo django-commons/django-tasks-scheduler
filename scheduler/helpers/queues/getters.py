@@ -1,6 +1,6 @@
 from typing import List, Set
 
-from scheduler.types import ConnectionErrorTypes, BrokerMetaData
+from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
 from scheduler.redis_models.worker import WorkerModel
 from scheduler.settings import (
     SCHEDULER_CONFIG,
@@ -8,7 +8,6 @@ from scheduler.settings import (
     get_queue_configuration,
     QueueConfiguration,
     logger,
-    Broker,
 )
 from .queue_logic import Queue
 
@@ -22,9 +21,6 @@ _BAD_QUEUE_CONFIGURATION = set()
 
 def _get_connection(config: QueueConfiguration, use_strict_broker=False):
     """Returns a Broker connection to use based on parameters in SCHEDULER_QUEUES"""
-    """
-        Returns a redis connection from a connection config
-        """
     if SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS:
         import fakeredis
 
