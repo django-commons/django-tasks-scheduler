@@ -3,8 +3,9 @@
 ## v4.0.0b3 🌈
 
 Refactor the code to make it more organized and easier to maintain. This includes:
-- All types are under `types`.
-- A
+
+- All types are under `types` instead of separated to `broker_types` and `settings_types`.
+- Added `__all__` to `models`, and other packages.
 
 ## v4.0.0b2 🌈
 
