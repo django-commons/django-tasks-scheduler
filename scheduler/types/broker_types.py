@@ -34,7 +34,3 @@ BrokerMetaData: Dict[Tuple[Broker, bool], BrokerMetaDataType] = {
 }
 
 TASK_TYPES = ["OnceTaskType", "RepeatableTaskType", "CronTaskType"]
-
-
-def is_pipeline(conn: ConnectionType) -> bool:
-    return isinstance(conn, redis.client.Pipeline) or isinstance(conn, valkey.client.Pipeline)
