@@ -23,20 +23,21 @@ def conf_settings():
 
     app_queues = getattr(settings, "SCHEDULER_QUEUES", None)
     if app_queues is None:
-        logger.warning("Configuration using RQ_QUEUES is deprecated. Use SCHEDULER_QUEUES instead")
-        app_queues = getattr(settings, "RQ_QUEUES", None)
-    if app_queues is None:
         raise ImproperlyConfigured("You have to define SCHEDULER_QUEUES in settings.py")
 
     for queue_name, queue_config in app_queues.items():
         if isinstance(queue_config, QueueConfiguration):
             _QUEUES[queue_name] = queue_config
-        else:
+        elif isinstance(queue_config, dict):
             _QUEUES[queue_name] = QueueConfiguration(**queue_config)
+        else:
+            raise ImproperlyConfigured(f"Queue {queue_name} configuration should be a QueueConfiguration or dict")
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     if isinstance(user_settings, SchedulerConfiguration):
         return
+    if not isinstance(user_settings, dict):
+        raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
     if "FAKEREDIS" in user_settings:
         logger.warning("Configuration using FAKEREDIS is deprecated. Use BROKER='fakeredis' instead")
         user_settings["BROKER"] = Broker.FAKEREDIS if user_settings["FAKEREDIS"] else Broker.REDIS

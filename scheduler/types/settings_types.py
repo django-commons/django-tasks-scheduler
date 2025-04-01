@@ -36,14 +36,6 @@ class SchedulerConfiguration:
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
     DEATH_PENALTY_CLASS: Type["BaseDeathPenalty"] = UnixSignalDeathPenalty
 
-    def __contains__(self, item: str) -> bool:
-        return item in self.__annotations__
-
-    def __iter__(self) -> Iterator[str]:
-        for field in self.__annotations__:
-            yield field
-
-
 @dataclass(slots=True, frozen=True, kw_only=True)
 class QueueConfiguration:
     __CONNECTION_FIELDS__ = {
