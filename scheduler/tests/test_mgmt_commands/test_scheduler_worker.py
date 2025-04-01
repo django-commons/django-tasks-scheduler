@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import JobModel
+from scheduler.settings import SCHEDULER_CONFIG
 from scheduler.tests import test_settings  # noqa
 from scheduler.tests.jobs import failing_job
 
@@ -26,6 +27,7 @@ class SchedulerWorkerTestCase(TestCase):
             self.assertTrue(job.is_failed)
 
     def test_scheduler_worker__run_jobs(self):
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
         queue = get_queue("default")
 
         # enqueue some jobs that will fail

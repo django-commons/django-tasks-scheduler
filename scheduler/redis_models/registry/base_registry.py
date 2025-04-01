@@ -30,6 +30,7 @@ class ZSetModel(BaseModel):
     def delete(self, connection: ConnectionType, job_name: str) -> None:
         connection.zrem(self._key, job_name)
 
+
 class JobNamesRegistry(ZSetModel):
     _element_key_template: ClassVar[str] = ":registry:{}"
 
