@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from django.core.exceptions import ImproperlyConfigured
+from django.test import override_settings
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
@@ -37,3 +39,41 @@ class TestInternals(SchedulerBaseCase):
         with self.assertRaises(CallbackSetupError) as cm:
             Callback(1)
         self.assertEqual(str(cm.exception), "Callback `func` must be a string or function, received 1")
+
+
+class TestConfSettings(SchedulerBaseCase):
+    @override_settings(SCHEDULER_CONFIG=[])
+    def test_conf_settings__bad_scheduler_config(self):
+        from scheduler import settings
+
+        with self.assertRaises(ImproperlyConfigured) as cm:
+            settings.conf_settings()
+
+        self.assertEqual(str(cm.exception), "SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
+
+    @override_settings(SCHEDULER_QUEUES=[])
+    def test_conf_settings__bad_scheduler_queues_config(self):
+        from scheduler import settings
+
+        with self.assertRaises(ImproperlyConfigured) as cm:
+            settings.conf_settings()
+
+        self.assertEqual(str(cm.exception), "You have to define SCHEDULER_QUEUES in settings.py as dict")
+
+    @override_settings(SCHEDULER_QUEUES={"default": []})
+    def test_conf_settings__bad_queue_config(self):
+        from scheduler import settings
+
+        with self.assertRaises(ImproperlyConfigured) as cm:
+            settings.conf_settings()
+
+        self.assertEqual(str(cm.exception), "Queue default configuration should be a QueueConfiguration or dict")
+
+    @override_settings(SCHEDULER_CONFIG={"UNKNOWN_SETTING": 10})
+    def test_conf_settings__unknown_setting(self):
+        from scheduler import settings
+
+        with self.assertRaises(ImproperlyConfigured) as cm:
+            settings.conf_settings()
+
+        self.assertEqual(str(cm.exception), "Unknown setting UNKNOWN_SETTING in SCHEDULER_CONFIG")

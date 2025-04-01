@@ -4,7 +4,7 @@ from typing import List, Dict
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from scheduler.types import SchedulerConfiguration, Broker, QueueConfiguration
+from scheduler.types import SchedulerConfiguration, QueueConfiguration
 
 logger = logging.getLogger("scheduler")
 logging.basicConfig(level=logging.DEBUG)
@@ -22,8 +22,8 @@ def conf_settings():
     global SCHEDULER_CONFIG
 
     app_queues = getattr(settings, "SCHEDULER_QUEUES", None)
-    if app_queues is None:
-        raise ImproperlyConfigured("You have to define SCHEDULER_QUEUES in settings.py")
+    if app_queues is None or not isinstance(app_queues, dict):
+        raise ImproperlyConfigured("You have to define SCHEDULER_QUEUES in settings.py as dict")
 
     for queue_name, queue_config in app_queues.items():
         if isinstance(queue_config, QueueConfiguration):
@@ -38,10 +38,6 @@ def conf_settings():
         return
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
-    if "FAKEREDIS" in user_settings:
-        logger.warning("Configuration using FAKEREDIS is deprecated. Use BROKER='fakeredis' instead")
-        user_settings["BROKER"] = Broker.FAKEREDIS if user_settings["FAKEREDIS"] else Broker.REDIS
-        user_settings.pop("FAKEREDIS")
     for k in user_settings:
         if k not in SCHEDULER_CONFIG.__annotations__:
             raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")

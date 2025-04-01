@@ -4,7 +4,7 @@
 
 Refactor the code to make it more organized and easier to maintain. This includes:
 - All types are under `types`.
-- 
+- A
 
 ## v4.0.0b2 🌈
 
