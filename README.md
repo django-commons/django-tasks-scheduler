@@ -4,7 +4,7 @@ Django Tasks Scheduler
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunla/b756396efb895f0e34558c980f1ca0c7/raw/django-tasks-scheduler-4.json)
 [![badge](https://img.shields.io/pypi/dm/django-tasks-scheduler)](https://pypi.org/project/django-tasks-scheduler/)
 
-Documentation can be found in https://django-tasks-scheduler.readthedocs.io/en/latest/
+Documentation can be found in https://django-tasks-scheduler.readthedocs.io/
 
 # Sponsor
 
