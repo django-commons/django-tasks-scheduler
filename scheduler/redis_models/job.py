@@ -3,13 +3,13 @@ import inspect
 import numbers
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, Dict, Optional, List, Callable, Any, Union, Tuple, Self
+from typing import ClassVar, Dict, Optional, List, Callable, Any, Union, Tuple
 
-from scheduler.types import ConnectionType, FunctionReferenceType
 from scheduler.helpers import utils
 from scheduler.helpers.callback import Callback
 from scheduler.redis_models.base import HashModel, as_str
 from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.types import ConnectionType, Self, FunctionReferenceType
 from .registry.base_registry import JobNamesRegistry
 from ..helpers.utils import current_timestamp
 
@@ -125,12 +125,12 @@ class JobModel(HashModel):
         self.save(connection=connection)
 
     def after_execution(
-        self,
-        job_info_ttl: int,
-        status: JobStatus,
-        connection: ConnectionType,
-        prev_registry: Optional[JobNamesRegistry] = None,
-        new_registry: Optional[JobNamesRegistry] = None,
+            self,
+            job_info_ttl: int,
+            status: JobStatus,
+            connection: ConnectionType,
+            prev_registry: Optional[JobNamesRegistry] = None,
+            new_registry: Optional[JobNamesRegistry] = None,
     ) -> None:
         """After the job is executed, update the status, heartbeat, and other metadata."""
         self.status = status
@@ -168,26 +168,26 @@ class JobModel(HashModel):
 
     @classmethod
     def create(
-        cls,
-        connection: ConnectionType,
-        func: FunctionReferenceType,
-        queue_name: str,
-        args: Union[List[Any], Optional[Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        status: Optional[JobStatus] = None,
-        description: Optional[str] = None,
-        timeout: Optional[int] = None,
-        name: Optional[str] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        *,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        at_front: Optional[bool] = None,
+            cls,
+            connection: ConnectionType,
+            func: FunctionReferenceType,
+            queue_name: str,
+            args: Union[List[Any], Optional[Tuple]] = None,
+            kwargs: Optional[Dict[str, Any]] = None,
+            result_ttl: Optional[int] = None,
+            job_info_ttl: Optional[int] = None,
+            status: Optional[JobStatus] = None,
+            description: Optional[str] = None,
+            timeout: Optional[int] = None,
+            name: Optional[str] = None,
+            task_type: Optional[str] = None,
+            scheduled_task_id: Optional[int] = None,
+            meta: Optional[Dict[str, Any]] = None,
+            *,
+            on_success: Optional[Callback] = None,
+            on_failure: Optional[Callback] = None,
+            on_stopped: Optional[Callback] = None,
+            at_front: Optional[bool] = None,
     ) -> Self:
         """Creates a new job-model for the given function, arguments, and keyword arguments.
         :returns: A job-model instance.
@@ -261,7 +261,7 @@ class JobModel(HashModel):
 
 
 def _get_call_string(
-    func_name: Optional[str], args: Any, kwargs: Dict[Any, Any], max_length: Optional[int] = None
+        func_name: Optional[str], args: Any, kwargs: Dict[Any, Any], max_length: Optional[int] = None
 ) -> Optional[str]:
     """
     Returns a string representation of the call, formatted as a regular

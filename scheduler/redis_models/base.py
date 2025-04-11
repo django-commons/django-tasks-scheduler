@@ -1,14 +1,14 @@
 import dataclasses
 import json
 from collections.abc import Sequence
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Union, Self, Dict, Collection, Any, ClassVar, Set, Type
+from typing import List, Optional, Union, Dict, Collection, Any, ClassVar, Set, Type
 
 from redis import Redis
 
-from scheduler.types import ConnectionType
 from scheduler.settings import logger
+from scheduler.types import ConnectionType, Self
 
 MAX_KEYS = 1000
 
@@ -228,7 +228,7 @@ class StreamModel(BaseModel):
 
     def __init__(self, name: str, parent: str, created_at: Optional[datetime] = None):
         self.name = name
-        self.created_at: datetime = created_at or datetime.now(UTC)
+        self.created_at: datetime = created_at or datetime.now(timezone.utc)
         self.parent: str = parent
 
     @property

@@ -11,7 +11,7 @@ def current_timestamp() -> int:
 
 def utcnow() -> datetime.datetime:
     """Return now in UTC"""
-    return datetime.datetime.now(datetime.UTC)
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 def callable_func(callable_str: str) -> Callable:

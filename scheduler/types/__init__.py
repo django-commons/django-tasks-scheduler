@@ -12,6 +12,7 @@ __all__ = [
     "Broker",
     "SchedulerConfiguration",
     "QueueConfiguration",
+    "Self",
 ]
 
 from .broker_types import (
@@ -26,4 +27,4 @@ from .broker_types import (
     BrokerMetaData,
     TASK_TYPES,
 )
-from .settings_types import Broker, SchedulerConfiguration, QueueConfiguration
+from .settings_types import Broker, SchedulerConfiguration, QueueConfiguration, Self

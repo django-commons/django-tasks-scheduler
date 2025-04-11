@@ -41,7 +41,7 @@ documentation = "https://django-tasks-scheduler.readthedocs.io/"
 "Funding" = "https://github.com/sponsors/cunla"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 django = ">=5"
 croniter = ">=2.0"
 click = "^8.1"
@@ -54,7 +54,7 @@ time-machine = "^2.16.0"
 poetry = "^2.1.2"
 ruff = "^0.11"
 coverage = "^7.6"
-fakeredis = { version = "^2.21.5", extras = ['lua'] }
+fakeredis = { version = "^2.21", extras = ['lua'] }
 pyyaml = "^6"
 freezegun = "^1.5"
 

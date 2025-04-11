@@ -1,8 +1,14 @@
+import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional, List, Tuple, Any, Self, Type
+from typing import Callable, Dict, Optional, List, Tuple, Any, Type
 
 from scheduler.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class Broker(Enum):

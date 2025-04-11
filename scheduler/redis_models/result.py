@@ -1,11 +1,11 @@
 import dataclasses
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, Self, ClassVar, List
+from typing import Optional, Any, ClassVar, List
 
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import StreamModel, decode_dict
-from scheduler.types import ConnectionType
+from scheduler.types import ConnectionType, Self
 
 
 class ResultType(Enum):
@@ -31,14 +31,14 @@ class Result(StreamModel):
 
     @classmethod
     def create(
-        cls,
-        connection: ConnectionType,
-        job_name: str,
-        worker_name: str,
-        _type: ResultType,
-        ttl: int,
-        return_value: Any = None,
-        exc_string: Optional[str] = None,
+            cls,
+            connection: ConnectionType,
+            job_name: str,
+            worker_name: str,
+            _type: ResultType,
+            ttl: int,
+            return_value: Any = None,
+            exc_string: Optional[str] = None,
     ) -> Self:
         result = cls(
             parent=job_name,

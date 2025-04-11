@@ -15,13 +15,13 @@ from enum import Enum
 from random import shuffle
 from resource import struct_rusage
 from types import FrameType
-from typing import List, Optional, Tuple, Any, Iterable, Self
+from typing import List, Optional, Tuple, Any, Iterable
 
 import scheduler
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import WorkerModel, JobModel, JobStatus, DequeueTimeout
 from scheduler.settings import SCHEDULER_CONFIG, logger, get_queue_configuration
-from scheduler.types import Broker
+from scheduler.types import Broker, Self
 from scheduler.types import (
     ConnectionType,
     TimeoutErrorTypes,

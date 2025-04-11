@@ -1,10 +1,10 @@
 import json
 from abc import ABC
-from datetime import datetime, UTC
-from typing import Self, Type, Dict, Any
+from datetime import datetime, timezone
+from typing import Type, Dict, Any
 
-from scheduler.types import ConnectionType
 from scheduler.settings import logger
+from scheduler.types import ConnectionType, Self
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"
 
@@ -28,7 +28,7 @@ class WorkerCommand(ABC):
             "command": self.command_name,
             "worker_name": self.worker_name,
             "channel_name": commands_channel,
-            "created_at": datetime.now(tz=UTC).isoformat(),
+            "created_at": datetime.now(tz=timezone.utc).isoformat(),
         }
         if kwargs:
             payload.update(kwargs)
