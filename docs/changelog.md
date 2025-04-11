@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.0.0 🌈
+
+See breaking changes in 4.0.0 beta versions.
+
 ## v4.0.0b3 🌈
 
 Refactor the code to make it more organized and easier to maintain. This includes:

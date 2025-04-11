@@ -109,18 +109,18 @@ class Worker:
         return res
 
     def __init__(
-        self,
-        queues,
-        name: str,
-        connection: Optional[ConnectionType] = None,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        disable_default_exception_handler: bool = False,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
+            self,
+            queues,
+            name: str,
+            connection: Optional[ConnectionType] = None,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            disable_default_exception_handler: bool = False,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
     ):  # noqa
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval = job_monitoring_interval
@@ -212,9 +212,9 @@ class Worker:
         signal.signal(signal.SIGTERM, self.request_stop)
 
     def work(
-        self,
-        max_jobs: Optional[int] = None,
-        max_idle_time: Optional[int] = None,
+            self,
+            max_jobs: Optional[int] = None,
+            max_idle_time: Optional[int] = None,
     ) -> bool:
         """Starts the work loop.
 
@@ -351,13 +351,13 @@ class Worker:
         """Check to see if workers have been suspended by `rq suspend`"""
         before_state = None
         notified = False
-        while self._model.shutdown_requested_date is not None and self._model.is_suspended:
+        while self._model.is_suspended:
             if burst:
                 logger.info(
                     f"[Worker {self.name}/{self._pid}]: Suspended in burst mode, exiting, "
                     f"Note: There could still be unfinished jobs on the queue"
                 )
-                raise StopRequested
+                raise StopRequested()
 
             if not notified:
                 logger.info(f"[Worker {self.name}/{self._pid}]: Worker suspended, trigger ResumeCommand")
@@ -389,7 +389,7 @@ class Worker:
             self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[JobModel, Queue]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -564,7 +564,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -595,7 +595,7 @@ class Worker:
         """
         self._model = WorkerModel.get(self.name, connection=self.connection)
         if self._model is None:
-            msg = f"[Worker {self.name}/{self._pid}]: Worker {self.name} not found, quitting..."
+            msg = f"[Worker {self.name}/{self._pid}]: Worker broker record for {self.name} not found, quitting..."
             logger.error(msg)
             raise WorkerNotFound(msg)
         if update_queues:
@@ -648,7 +648,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val, rusage = self.wait_for_job_execution_process()
                 break
@@ -884,7 +884,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue):
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):

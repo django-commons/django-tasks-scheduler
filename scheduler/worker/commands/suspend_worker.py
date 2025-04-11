@@ -10,7 +10,7 @@ class SuspendWorkCommand(WorkerCommand):
     command_name = "suspend"
 
     def process_command(self, connection: ConnectionType) -> None:
-        logger.debug(f"Received command to suspend worker {self.job_name}")
+        logger.debug(f"Received command to suspend worker {self.worker_name}")
         worker_model = WorkerModel.get(self.worker_name, connection)
         if worker_model is None:
             logger.warning(f"Worker {self.worker_name} not found")
