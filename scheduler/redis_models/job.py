@@ -126,7 +126,7 @@ class JobModel(HashModel):
 
     def after_execution(
         self,
-        result_ttl: int,
+        job_info_ttl: int,
         status: JobStatus,
         connection: ConnectionType,
         prev_registry: Optional[JobNamesRegistry] = None,
@@ -138,8 +138,8 @@ class JobModel(HashModel):
         self.last_heartbeat = self.ended_at
         if prev_registry is not None:
             prev_registry.delete(connection, self.name)
-        if new_registry is not None and result_ttl != 0:
-            new_registry.add(connection, self.name, current_timestamp() + result_ttl)
+        if new_registry is not None and job_info_ttl != 0:
+            new_registry.add(connection, self.name, current_timestamp() + job_info_ttl)
         self.save(connection=connection)
 
     @property

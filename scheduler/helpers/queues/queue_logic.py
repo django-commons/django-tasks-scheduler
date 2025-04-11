@@ -244,10 +244,12 @@ class Queue:
             raise TypeError(f"Invalid type for when=`{when}`")
         return job_model
 
-    def job_handle_success(self, job: JobModel, result: Any, result_ttl: int, connection: ConnectionType):
+    def job_handle_success(
+        self, job: JobModel, result: Any, job_info_ttl: int, result_ttl: int, connection: ConnectionType
+    ):
         """Saves and cleanup job after successful execution"""
         job.after_execution(
-            result_ttl,
+            job_info_ttl,
             JobStatus.FINISHED,
             prev_registry=self.active_job_registry,
             new_registry=self.finished_job_registry,
@@ -280,34 +282,20 @@ class Queue:
             exc_string=exc_string,
         )
 
-    def run_job(self, job: JobModel) -> JobModel:
-        """Run the job
-        :param job: The job to run
-        :returns: The job result
-        """
-        try:
-            result = perform_job(job, self.connection)
-
-            result_ttl = job.success_ttl
-            with self.connection.pipeline() as pipeline:
-                self.job_handle_success(job, result=result, result_ttl=result_ttl, connection=pipeline)
-                job.expire(result_ttl, connection=pipeline)
-                pipeline.execute()
-        except Exception as e:
-            logger.warning(f"Job {job.name} failed with exception: {e}")
-            with self.connection.pipeline() as pipeline:
-                exc_string = "".join(traceback.format_exception(*sys.exc_info()))
-                self.job_handle_failure(JobStatus.FAILED, job, exc_string, pipeline)
-                pipeline.execute()
-        return job
-
     def run_sync(self, job: JobModel) -> JobModel:
         """Run a job synchronously, meaning on the same process the method was called."""
         job.prepare_for_execution("sync", self.active_job_registry, self.connection)
-
         try:
-            self.run_job(job)
-        except:  # noqa
+            result = perform_job(job, self.connection)
+
+            with self.connection.pipeline() as pipeline:
+                self.job_handle_success(
+                    job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl, connection=pipeline
+                )
+
+                pipeline.execute()
+        except Exception as e:  # noqa
+            logger.warning(f"Job {job.name} failed with exception: {e}")
             with self.connection.pipeline() as pipeline:
                 exc_string = "".join(traceback.format_exception(*sys.exc_info()))
                 self.job_handle_failure(JobStatus.FAILED, job, exc_string, pipeline)

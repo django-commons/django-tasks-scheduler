@@ -88,9 +88,7 @@ class SingleJobActionViewsTest(BaseTestCase):
             job = queue.create_and_enqueue_job(test_job)
             job_list.append(job)
 
-        # This job is deferred
-
-        self.assertEqual(job_list[-1].get_status(connection=queue.connection), JobStatus.FAILED)
+        self.assertEqual(job_list[-1].status, JobStatus.FINISHED)
         self.assertIsNotNone(job_list[-1].enqueued_at)
 
         # Try to force enqueue last job should do nothing
@@ -102,3 +100,4 @@ class SingleJobActionViewsTest(BaseTestCase):
         tmp = JobModel.get(job_list[-1].name, connection=queue.connection)
         self.assertEqual(tmp.get_status(connection=queue.connection), JobStatus.FINISHED)
         self.assertIsNotNone(tmp.enqueued_at)
+        self.assertGreater(tmp.enqueued_at, job_list[-1].enqueued_at)

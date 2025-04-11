@@ -792,7 +792,13 @@ class Worker:
         with self.connection.pipeline() as pipeline:
             while True:
                 try:
-                    queue.job_handle_success(job, result=return_value, result_ttl=job.success_ttl, connection=pipeline)
+                    queue.job_handle_success(
+                        job,
+                        result=return_value,
+                        job_info_ttl=job.job_info_ttl,
+                        result_ttl=job.success_ttl,
+                        connection=pipeline,
+                    )
                     self._model.current_job_name = None
                     self._model.successful_job_count += 1
                     self._model.completed_jobs += 1
@@ -801,7 +807,6 @@ class Worker:
 
                     job.expire(job.success_ttl, connection=pipeline)
                     logger.debug(f"[Worker {self.name}/{self._pid}]: Removing job {job.name} from active_job_registry")
-                    queue.active_job_registry.delete(pipeline, job.name)
                     pipeline.execute()
                     logger.debug(
                         f"[Worker {self.name}/{self._pid}]: Finished handling successful execution of job {job.name}"
