@@ -10,7 +10,7 @@ from django.views.decorators.cache import never_cache
 
 from scheduler.redis_models import JobModel
 from scheduler.settings import logger
-from scheduler.views.helpers import get_queue, _check_next_url
+from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
 from scheduler.worker.commands import StopJobCommand, send_command
 
 
@@ -38,7 +38,7 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
             queue.delete_job(job.name)
         messages.info(request, f"You have successfully deleted {len(job_names)} jobs!")
     elif action == QueueJobAction.REQUEUE:
-        requeued_jobs_count = queue.requeue_jobs(*job_names)
+        requeued_jobs_count = _enqueue_multiple_jobs(queue, job_names)
         messages.info(request, f"You have successfully re-queued {requeued_jobs_count}/{len(job_names)}  jobs!")
     elif action == QueueJobAction.STOP:
         cancelled_jobs = 0

@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from scheduler.helpers.queues import Queue
 from scheduler.redis_models import JobModel, JobNamesRegistry
 from scheduler.types import ResponseErrorTypes
-from scheduler.views.helpers import get_queue, _check_next_url
+from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
 
 
 class QueueRegistryActions(str, Enum):
@@ -21,14 +21,11 @@ class QueueRegistryActions(str, Enum):
 
 def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, registry: JobNamesRegistry):
     try:
-        if registry is queue:
-            queue.empty()
-        elif isinstance(registry, JobNamesRegistry):
-            job_names = registry.all()
-            for job_name in job_names:
-                registry.delete(registry.connection, job_name)
-                job_model = JobModel.get(job_name, connection=registry.connection)
-                job_model.delete(connection=registry.connection)
+        job_names = registry.all()
+        for job_name in job_names:
+            registry.delete(registry.connection, job_name)
+            job_model = JobModel.get(job_name, connection=registry.connection)
+            job_model.delete(connection=registry.connection)
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")
@@ -38,7 +35,7 @@ def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, regi
 def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str):
     registry = queue.get_registry(registry_name)
     job_names = registry.all()
-    jobs_requeued_count = queue.requeue_jobs(*job_names)
+    jobs_requeued_count = _enqueue_multiple_jobs(queue, job_names)
     messages.info(request, f"You have successfully re-queued {jobs_requeued_count} jobs!")
 
 

@@ -10,7 +10,7 @@ from scheduler.tests.jobs import test_job
 class RunJobTest(TestCase):
     def test_run_job__should_schedule_job(self):
         queue = get_queue("default")
-        queue.empty()
+        queue.queued_job_registry.empty()
         func_name = f"{test_job.__module__}.{test_job.__name__}"
         # act
         call_command("run_job", func_name, queue="default")

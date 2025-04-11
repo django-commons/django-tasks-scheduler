@@ -11,12 +11,11 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.admin.task_admin import job_execution_of
 from scheduler.helpers.queues import get_queue
-from scheduler.settings import QueueNotFoundError
-from scheduler.worker import create_worker
-from scheduler.models import TaskKwarg
 from scheduler.models import Task, TaskType
+from scheduler.models import TaskKwarg
 from scheduler.redis_models import JobModel
 from scheduler.worker import Worker
+from scheduler.worker import create_worker
 
 multiprocessing.set_start_method("fork")
 
@@ -48,7 +47,7 @@ seq = sequence_gen()
 
 
 def task_factory(
-    task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
+        task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = dict(
         name="Scheduled Job %d" % next(seq),
@@ -135,8 +134,3 @@ class SchedulerBaseCase(TestCase):
 
     def tearDown(self) -> None:
         super(SchedulerBaseCase, self).tearDown()
-        try:
-            queue = get_queue("default")
-            queue.empty()
-        except QueueNotFoundError:
-            pass

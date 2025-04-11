@@ -29,13 +29,13 @@ class TestInternals(SchedulerBaseCase):
         self.assertEqual(str(cm.exception), "Callback `timeout` must be a positive int, but received 1m")
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("scheduler.tests.jobs.non_existing_method")
-        self.assertEqual(str(cm.exception), "Invalid attribute name: non_existing_method")
+        self.assertEqual(str(cm.exception), "Callback `func` is not callable: scheduler.tests.jobs.non_existing_method")
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("scheduler.tests.non_existing_module.non_existing_method")
-        self.assertEqual(str(cm.exception), "Invalid attribute name: non_existing_method")
+        self.assertEqual(str(cm.exception), "Callback `func` is not callable: scheduler.tests.non_existing_module.non_existing_method")
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("non_existing_method")
-        self.assertEqual(str(cm.exception), "Invalid attribute name: non_existing_method")
+        self.assertEqual(str(cm.exception), "Callback `func` is not callable: non_existing_method")
         with self.assertRaises(CallbackSetupError) as cm:
             Callback(1)
         self.assertEqual(str(cm.exception), "Callback `func` must be a string or function, received 1")

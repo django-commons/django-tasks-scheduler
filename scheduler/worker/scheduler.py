@@ -32,11 +32,11 @@ def _reschedule_tasks():
 
 class WorkerScheduler:
     def __init__(
-        self,
-        queues: Sequence[Queue],
-        connection: ConnectionType,
-        worker_name: str,
-        interval: Optional[int] = None,
+            self,
+            queues: Sequence[Queue],
+            connection: ConnectionType,
+            worker_name: str,
+            interval: Optional[int] = None,
     ) -> None:
         interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._queues = queues
@@ -151,17 +151,14 @@ class WorkerScheduler:
         for registry in self._scheduled_job_registries:
             timestamp = current_timestamp()
             job_names = registry.get_jobs_to_schedule(timestamp)
-
-            if not job_names:
+            if len(job_names) == 0:
                 continue
-
             queue = get_queue(registry.name)
-
             jobs = JobModel.get_many(job_names, connection=self.connection)
             with self.connection.pipeline() as pipeline:
                 for job in jobs:
                     if job is not None:
-                        queue.enqueue_job(job, connection=pipeline, at_front=bool(job.at_front))
+                        queue.enqueue_job(job, connection=pipeline, at_front=job.at_front)
                 pipeline.execute()
         self.status = SchedulerStatus.STARTED
 

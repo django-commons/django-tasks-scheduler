@@ -25,19 +25,6 @@ class SingleJobActionViewsTest(BaseTestCase):
         res = self.client.get(reverse("job_detail_action", args=[job.name, "unknown"]), follow=True)
         self.assertEqual(400, res.status_code)
 
-    def test_single_job_action_requeue_job(self):
-        queue = get_queue("default")
-        job = queue.create_and_enqueue_job(failing_job)
-        worker = create_worker("default", burst=True)
-        worker.work()
-        job = JobModel.get(job.name, connection=queue.connection)
-        self.assertTrue(job.is_failed)
-        res = self.client.get(reverse("job_detail_action", args=[job.name, "requeue"]), follow=True)
-        self.assertEqual(200, res.status_code)
-        self.client.post(reverse("job_detail_action", args=[job.name, "requeue"]), {"requeue": "Requeue"}, follow=True)
-        self.assertIn(job, JobModel.get_many(queue.queued_job_registry.all(), queue.connection))
-        queue.delete_job(job.name)
-
     def test_single_job_action_delete_job(self):
         queue = get_queue("default")
         job = queue.create_and_enqueue_job(test_job, job_info_ttl=0)
@@ -79,8 +66,6 @@ class SingleJobActionViewsTest(BaseTestCase):
         for _ in range(0, 3):
             job = queue.create_and_enqueue_job(test_job)
             job_list.append(job)
-
-        # This job is deferred
 
         self.assertEqual(job_list[-1].get_status(connection=queue.connection), JobStatus.QUEUED)
         self.assertIsNotNone(job_list[-1].enqueued_at)

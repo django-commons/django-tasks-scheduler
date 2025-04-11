@@ -1,3 +1,4 @@
+from enum import Enum
 from html import escape
 
 from django.contrib import admin, messages
@@ -12,6 +13,12 @@ from scheduler.redis_models import Result
 from scheduler.settings import logger
 from scheduler.views.helpers import _find_job
 from scheduler.worker.commands import send_command, StopJobCommand
+
+
+class JobDetailAction(str, Enum):
+    DELETE = "delete"
+    ENQUEUE = "enqueue"
+    CANCEL = "cancel"
 
 
 @never_cache
@@ -43,9 +50,6 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     return render(request, "admin/scheduler/job_detail.html", context_data)
 
 
-SUPPORTED_JOB_ACTIONS = {"requeue", "delete", "enqueue", "cancel"}
-
-
 @never_cache
 @staff_member_required
 def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse:
@@ -53,7 +57,7 @@ def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse
     if job is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
-    if action not in SUPPORTED_JOB_ACTIONS:
+    if action not in JobDetailAction:
         return HttpResponseBadRequest(f"Action {escape(action)} is not supported")
 
     if request.method != "POST":
@@ -66,23 +70,16 @@ def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse
         return render(request, "admin/scheduler/single_job_action.html", context_data)
 
     try:
-        if action == "requeue":
-            requeued_jobs_count = queue.requeue_jobs(job.name)
-            if requeued_jobs_count == 0:
-                messages.warning(request, f"Could not requeue {job.name}")
-            else:
-                messages.info(request, f"You have successfully re-queued {job.name}")
-            return redirect("job_details", job_name)
-        elif action == "delete":
+        if action == JobDetailAction.DELETE:
             queue.delete_job(job.name)
             messages.info(request, f"You have successfully deleted {job.name}")
             return redirect("queue_registry_jobs", queue.name, "queued")
-        elif action == "enqueue":
+        elif action == JobDetailAction.ENQUEUE:
             queue.delete_job(job.name, expire_job_model=False)
             queue.enqueue_job(job)
             messages.info(request, f"You have successfully enqueued {job.name}")
             return redirect("job_details", job_name)
-        elif action == "cancel":
+        elif action == JobDetailAction.CANCEL:
             send_command(
                 connection=queue.connection, command=StopJobCommand(job_name=job.name, worker_name=job.worker_name)
             )

@@ -28,6 +28,15 @@ class QueuedJobRegistry(JobNamesRegistry):
             if not JobModel.exists(job_name, self.connection):
                 self.delete(connection=self.connection, job_name=job_name)
 
+    def empty(self) -> None:
+        queued_jobs_count = self.count(connection=self.connection)
+        with self.connection.pipeline() as pipe:
+            for offset in range(0, queued_jobs_count, 1000):
+                job_names = self.all(offset, 1000)
+                for job_name in job_names:
+                    self.delete(connection=pipe, job_name=job_name)
+                JobModel.delete_many(job_names, connection=pipe)
+            pipe.execute()
 
 class FinishedJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:finished_jobs"

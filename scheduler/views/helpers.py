@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from typing import Tuple
 from urllib.parse import urlparse
 
@@ -46,9 +46,9 @@ def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
     next_url = request.POST.get("next_url", default_next_url)
     next_url = next_url.replace("\\", "")
     if (
-        not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)
-        or urlparse(next_url).netloc
-        or urlparse(next_url).scheme
+            not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)
+            or urlparse(next_url).netloc
+            or urlparse(next_url).scheme
     ):
         messages.warning(request, "Bad followup URL")
         next_url = default_next_url
@@ -58,3 +58,17 @@ def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
         messages.warning(request, "Bad followup URL")
         next_url = default_next_url
     return next_url
+
+
+def _enqueue_multiple_jobs(queue: Queue, job_names: List[str], at_front: bool = False) -> int:
+    jobs = JobModel.get_many(job_names, connection=queue.connection)
+    jobs_requeued = 0
+    with queue.connection.pipeline() as pipe:
+        for job in jobs:
+            if job is None:
+                continue
+            job.save(connection=pipe)
+            queue.enqueue_job(job, connection=pipe, at_front=at_front)
+            jobs_requeued += 1
+        pipe.execute()
+    return jobs_requeued

@@ -2,7 +2,6 @@ import asyncio
 import sys
 import traceback
 from datetime import datetime
-from functools import total_ordering
 from typing import Dict, List, Optional, Tuple, Union, Self, Any
 
 from redis import WatchError
@@ -56,7 +55,6 @@ def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
 _job_stack = []
 
 
-@total_ordering
 class Queue:
     REGISTRIES = dict(
         finished="finished_job_registry",
@@ -146,17 +144,6 @@ class Queue:
     def first_queued_job_name(self) -> Optional[str]:
         return self.queued_job_registry.get_first()
 
-    def empty(self):
-        """Removes all queued jobs from the queue."""
-        queued_jobs_count = self.queued_job_registry.count(connection=self.connection)
-        with self.connection.pipeline() as pipe:
-            for offset in range(0, queued_jobs_count, 1000):
-                job_names = self.queued_job_registry.all(offset, 1000)
-                for job_name in job_names:
-                    self.queued_job_registry.delete(connection=pipe, job_name=job_name)
-                JobModel.delete_many(job_names, connection=pipe)
-            pipe.execute()
-
     @property
     def count(self) -> int:
         """Returns a count of all messages in the queue."""
@@ -186,24 +173,24 @@ class Queue:
         return JobModel.get_many(job_names, connection=self.connection)
 
     def create_and_enqueue_job(
-        self,
-        func: FunctionReferenceType,
-        args: Union[Tuple, List, None] = None,
-        kwargs: Optional[Dict] = None,
-        when: Optional[datetime] = None,
-        timeout: Optional[int] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        description: Optional[str] = None,
-        name: Optional[str] = None,
-        at_front: bool = False,
-        meta: Optional[Dict] = None,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
-        pipeline: Optional[ConnectionType] = None,
+            self,
+            func: FunctionReferenceType,
+            args: Union[Tuple, List, None] = None,
+            kwargs: Optional[Dict] = None,
+            when: Optional[datetime] = None,
+            timeout: Optional[int] = None,
+            result_ttl: Optional[int] = None,
+            job_info_ttl: Optional[int] = None,
+            description: Optional[str] = None,
+            name: Optional[str] = None,
+            at_front: bool = False,
+            meta: Optional[Dict] = None,
+            on_success: Optional[Callback] = None,
+            on_failure: Optional[Callback] = None,
+            on_stopped: Optional[Callback] = None,
+            task_type: Optional[str] = None,
+            scheduled_task_id: Optional[int] = None,
+            pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -309,43 +296,6 @@ class Queue:
                 pipeline.execute()
         return job
 
-    def enqueue_job(
-        self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
-    ) -> JobModel:
-        """Enqueues a job for delayed execution without checking dependencies.
-
-        If Queue is instantiated with is_async=False, job is executed immediately.
-        :param job_model: The job redis model
-        :param connection: The Redis Pipeline
-        :param at_front: Whether to enqueue the job at the front
-
-        :returns: The enqueued JobModel
-        """
-
-        pipe = connection if connection is not None else self.connection.pipeline()
-
-        # Add Queue key set
-        job_model.status = JobStatus.QUEUED
-        job_model.enqueued_at = utcnow()
-        job_model.save(connection=pipe)
-
-        if self._is_async:
-            if at_front:
-                score = current_timestamp()
-            else:
-                score = self.queued_job_registry.get_last_timestamp() or current_timestamp()
-            self.scheduled_job_registry.delete(connection=pipe, job_name=job_model.name)
-            self.queued_job_registry.add(connection=pipe, score=score, job_name=job_model.name)
-            pipe.execute()
-            logger.debug(f"Pushed job {job_model.name} into {self.name} queued-jobs registry")
-        else:  # sync mode
-            pipe.execute()
-            job_model = self.run_sync(job_model)
-            job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
-            pipe.execute()
-
-        return job_model
-
     def run_sync(self, job: JobModel) -> JobModel:
         """Run a job synchronously, meaning on the same process the method was called."""
         job.prepare_for_execution("sync", self.active_job_registry, self.connection)
@@ -361,10 +311,10 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-        cls,
-        queues: List[Self],
-        timeout: Optional[int],
-        connection: Optional[ConnectionType] = None,
+            cls,
+            queues: List[Self],
+            timeout: Optional[int],
+            connection: Optional[ConnectionType] = None,
     ) -> Tuple[Optional[JobModel], Optional[Self]]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
@@ -397,19 +347,6 @@ class Queue:
                 continue
             return job, queue
         return None, None
-
-    def __eq__(self, other: Self) -> bool:
-        if not isinstance(other, Queue):
-            raise TypeError("Cannot compare queues to other objects")
-        return self.name == other.name
-
-    def __lt__(self, other: Self) -> bool:
-        if not isinstance(other, Queue):
-            raise TypeError("Cannot compare queues to other objects")
-        return self.name < other.name
-
-    def __hash__(self) -> int:
-        return hash(self.name)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name!r})"
@@ -479,17 +416,39 @@ class Queue:
             except WatchError:
                 pass
 
-    def requeue_jobs(self, *job_names: str, at_front: bool = False) -> int:
-        jobs = JobModel.get_many(job_names, connection=self.connection)
-        jobs_requeued = 0
-        with self.connection.pipeline() as pipe:
-            for job in jobs:
-                if job is None:
-                    continue
-                job.started_at = None
-                job.ended_at = None
-                job.save(connection=pipe)
-                self.enqueue_job(job, connection=pipe, at_front=at_front)
-                jobs_requeued += 1
+    def enqueue_job(
+            self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
+    ) -> JobModel:
+        """Enqueues a job for delayed execution without checking dependencies.
+
+        If Queue is instantiated with is_async=False, job is executed immediately.
+        :param job_model: The job redis model
+        :param connection: The Redis Pipeline
+        :param at_front: Whether to enqueue the job at the front
+
+        :returns: The enqueued JobModel
+        """
+
+        pipe = connection if connection is not None else self.connection.pipeline()
+        job_model.started_at = None
+        job_model.ended_at = None
+        job_model.status = JobStatus.QUEUED
+        job_model.enqueued_at = utcnow()
+        job_model.save(connection=pipe)
+
+        if self._is_async:
+            if at_front:
+                score = current_timestamp()
+            else:
+                score = self.queued_job_registry.get_last_timestamp() or current_timestamp()
+            self.scheduled_job_registry.delete(connection=pipe, job_name=job_model.name)
+            self.queued_job_registry.add(connection=pipe, score=score, job_name=job_model.name)
             pipe.execute()
-        return jobs_requeued
+            logger.debug(f"Pushed job {job_model.name} into {self.name} queued-jobs registry")
+        else:  # sync mode
+            pipe.execute()
+            job_model = self.run_sync(job_model)
+            job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
+            pipe.execute()
+
+        return job_model
