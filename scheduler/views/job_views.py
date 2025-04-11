@@ -20,7 +20,6 @@ class JobDetailAction(str, Enum):
     ENQUEUE = "enqueue"
     CANCEL = "cancel"
 
-
 @never_cache
 @staff_member_required
 def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
@@ -57,7 +56,7 @@ def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse
     if job is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
-    if action not in JobDetailAction:
+    if action not in [item.value for item in JobDetailAction]:
         return HttpResponseBadRequest(f"Action {escape(action)} is not supported")
 
     if request.method != "POST":

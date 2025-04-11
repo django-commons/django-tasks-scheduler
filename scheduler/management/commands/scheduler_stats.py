@@ -84,7 +84,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options.get("json") and options.get("yaml"):
             click.secho("Aborting. Cannot output as both json and yaml", err=True, fg="red")
-            return
+            exit(1)
         if options.get("json"):
             import json
 

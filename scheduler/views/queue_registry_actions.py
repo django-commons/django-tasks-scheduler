@@ -48,7 +48,7 @@ def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name:
     if registry is None:
         return HttpResponseNotFound()
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, registry_name]))
-    if action not in QueueRegistryActions:
+    if action not in [item.value for item in QueueRegistryActions]:
         return redirect(next_url)
     if request.method == "POST":
         if action == QueueRegistryActions.EMPTY.value:

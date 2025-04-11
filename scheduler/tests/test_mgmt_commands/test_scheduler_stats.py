@@ -85,7 +85,8 @@ Django-Scheduler CLI Dashboard
         sys.stderr = StringIO()
         sys.stdout = StringIO()
         # act
-        call_command("scheduler_stats", "-y", "-j")
+        with self.assertRaises(SystemExit):
+            call_command("scheduler_stats", "-y", "-j")
         # assert
         res = sys.stdout.getvalue()
         self.assertEqual(res, """""")

@@ -31,7 +31,7 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
     action = request.POST.get("action", False)
     job_names = request.POST.get("job_names", False)
-    if request.method != "POST" or not action or not job_names or action not in QueueJobAction:
+    if request.method != "POST" or not action or not job_names or action not in [item.value for item in QueueJobAction]:
         return redirect(next_url)
     job_names = request.POST.getlist("job_names")
     if action == QueueJobAction.DELETE.value:
