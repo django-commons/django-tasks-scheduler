@@ -15,7 +15,7 @@ from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multipl
 from scheduler.worker.commands import StopJobCommand, send_command
 
 
-class QueueJobAction(str, Enum):
+class QueueJobAction(Enum):
     DELETE = "delete"
     REQUEUE = "requeue"
     STOP = "stop"
@@ -31,17 +31,17 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     if request.method != "POST" or not action or not job_names or action not in QueueJobAction:
         return redirect(next_url)
     job_names = request.POST.getlist("job_names")
-    if action == QueueJobAction.DELETE:
+    if action == QueueJobAction.DELETE.value:
         jobs = JobModel.get_many(job_names, connection=queue.connection)
         for job in jobs:
             if job is None:
                 continue
             queue.delete_job(job.name)
         messages.info(request, f"You have successfully deleted {len(job_names)} jobs!")
-    elif action == QueueJobAction.REQUEUE:
+    elif action == QueueJobAction.REQUEUE.value:
         requeued_jobs_count = _enqueue_multiple_jobs(queue, job_names)
         messages.info(request, f"You have successfully re-queued {requeued_jobs_count}/{len(job_names)}  jobs!")
-    elif action == QueueJobAction.STOP:
+    elif action == QueueJobAction.STOP.value:
         cancelled_jobs = 0
         jobs = JobModel.get_many(job_names, connection=queue.connection)
         for job in jobs:
