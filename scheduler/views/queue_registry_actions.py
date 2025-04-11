@@ -1,4 +1,5 @@
 """list_registry_jobs actions on all jobs in the registry"""
+
 from enum import Enum
 
 from django.contrib import admin, messages

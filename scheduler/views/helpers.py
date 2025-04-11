@@ -46,9 +46,9 @@ def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
     next_url = request.POST.get("next_url", default_next_url)
     next_url = next_url.replace("\\", "")
     if (
-            not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)
-            or urlparse(next_url).netloc
-            or urlparse(next_url).scheme
+        not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)
+        or urlparse(next_url).netloc
+        or urlparse(next_url).scheme
     ):
         messages.warning(request, "Bad followup URL")
         next_url = default_next_url

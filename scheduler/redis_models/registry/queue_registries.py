@@ -38,6 +38,7 @@ class QueuedJobRegistry(JobNamesRegistry):
                 JobModel.delete_many(job_names, connection=pipe)
             pipe.execute()
 
+
 class FinishedJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:finished_jobs"
 

@@ -32,7 +32,10 @@ class TestInternals(SchedulerBaseCase):
         self.assertEqual(str(cm.exception), "Callback `func` is not callable: scheduler.tests.jobs.non_existing_method")
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("scheduler.tests.non_existing_module.non_existing_method")
-        self.assertEqual(str(cm.exception), "Callback `func` is not callable: scheduler.tests.non_existing_module.non_existing_method")
+        self.assertEqual(
+            str(cm.exception),
+            "Callback `func` is not callable: scheduler.tests.non_existing_module.non_existing_method",
+        )
         with self.assertRaises(CallbackSetupError) as cm:
             Callback("non_existing_method")
         self.assertEqual(str(cm.exception), "Callback `func` is not callable: non_existing_method")

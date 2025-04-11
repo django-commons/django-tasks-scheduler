@@ -173,24 +173,24 @@ class Queue:
         return JobModel.get_many(job_names, connection=self.connection)
 
     def create_and_enqueue_job(
-            self,
-            func: FunctionReferenceType,
-            args: Union[Tuple, List, None] = None,
-            kwargs: Optional[Dict] = None,
-            when: Optional[datetime] = None,
-            timeout: Optional[int] = None,
-            result_ttl: Optional[int] = None,
-            job_info_ttl: Optional[int] = None,
-            description: Optional[str] = None,
-            name: Optional[str] = None,
-            at_front: bool = False,
-            meta: Optional[Dict] = None,
-            on_success: Optional[Callback] = None,
-            on_failure: Optional[Callback] = None,
-            on_stopped: Optional[Callback] = None,
-            task_type: Optional[str] = None,
-            scheduled_task_id: Optional[int] = None,
-            pipeline: Optional[ConnectionType] = None,
+        self,
+        func: FunctionReferenceType,
+        args: Union[Tuple, List, None] = None,
+        kwargs: Optional[Dict] = None,
+        when: Optional[datetime] = None,
+        timeout: Optional[int] = None,
+        result_ttl: Optional[int] = None,
+        job_info_ttl: Optional[int] = None,
+        description: Optional[str] = None,
+        name: Optional[str] = None,
+        at_front: bool = False,
+        meta: Optional[Dict] = None,
+        on_success: Optional[Callback] = None,
+        on_failure: Optional[Callback] = None,
+        on_stopped: Optional[Callback] = None,
+        task_type: Optional[str] = None,
+        scheduled_task_id: Optional[int] = None,
+        pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -311,10 +311,10 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-            cls,
-            queues: List[Self],
-            timeout: Optional[int],
-            connection: Optional[ConnectionType] = None,
+        cls,
+        queues: List[Self],
+        timeout: Optional[int],
+        connection: Optional[ConnectionType] = None,
     ) -> Tuple[Optional[JobModel], Optional[Self]]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
@@ -417,7 +417,7 @@ class Queue:
                 pass
 
     def enqueue_job(
-            self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
+        self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 
