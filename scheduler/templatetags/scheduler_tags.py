@@ -5,6 +5,7 @@ from django.utils.safestring import mark_safe
 
 from scheduler.helpers.queues import Queue
 from scheduler.models import Task, get_scheduled_task
+from scheduler.models.task import run_task
 from scheduler.redis_models import Result, JobModel
 from scheduler.views.helpers import get_queue
 
@@ -15,7 +16,7 @@ register = template.Library()
 def show_func_name(job: JobModel) -> str:
     try:
         res = job.func_name
-        if res == "scheduler.helpers.tools.run_task":
+        if job.func == run_task:
             task = get_scheduled_task(*job.args)
             res = task.function_string()
         return mark_safe(res)
