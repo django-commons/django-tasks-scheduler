@@ -20,6 +20,9 @@ class QueueJobAction(Enum):
     REQUEUE = "requeue"
     STOP = "stop"
 
+    def __contains__(self, item) -> bool:
+        return item in [a.value for a in self.__class__]
+
 
 @never_cache
 @staff_member_required
