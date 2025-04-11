@@ -60,10 +60,13 @@ class ScheduledJobRegistry(JobNamesRegistry):
         and `all()` methods implemented in JobIdsRegistry."""
         pass
 
-    def schedule(self, connection: ConnectionType, job: JobModel, scheduled_datetime: datetime):
-        """
-        Adds job to registry, scored by its execution time (in UTC).
+    def schedule(self, connection: ConnectionType, job_name: str, scheduled_datetime: datetime) -> int:
+        """Adds job_name to registry, scored by its execution time (in UTC).
         If datetime has no tzinfo, it will assume localtimezone.
+
+        :param connection: Broker connection
+        :param job_name: Job name to schedule
+        :param scheduled_datetime: datetime to schedule job
         """
         # If datetime has no timezone, assume server's local timezone
         if not scheduled_datetime.tzinfo:
@@ -71,7 +74,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
             scheduled_datetime = scheduled_datetime.replace(tzinfo=tz)
 
         timestamp = scheduled_datetime.timestamp()
-        return connection.zadd(self._key, {job.name: timestamp})
+        return self.add(connection=connection, job_name=job_name, score=timestamp)
 
     def get_jobs_to_schedule(self, timestamp: int, chunk_size: int = 1000) -> List[str]:
         """Gets a list of job names that should be scheduled.

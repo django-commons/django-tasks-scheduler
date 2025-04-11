@@ -5,16 +5,30 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler import settings
+from scheduler.models import TaskType, Task
 from scheduler.redis_models import JobModel
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
 from scheduler.tests.testtools import task_factory, _get_task_scheduled_job_from_registry
-from scheduler.models import TaskType
 from scheduler.types import SchedulerConfiguration
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
     task_type = TaskType.REPEATABLE
     queue_name = settings.get_queue_names()[0]
+
+    def test_create_task_error(self):
+        scheduled_time = timezone.now()
+
+        Task.objects.create(
+            name="konichiva_every_2s",
+            callable="chat.task_scheduler.konichiva_func",
+            task_type="REPEATABLE",
+            interval=2,
+            interval_unit="seconds",
+            queue="default",
+            enabled=True,
+            scheduled_time=scheduled_time,
+        )
 
     def test_unschedulable_old_job(self):
         job = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1), repeat=0)
@@ -145,7 +159,7 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         task = task_factory(self.task_type, scheduled_time=base_time - timedelta(minutes=29), repeat=None)
         task.interval = 120
         task.interval_unit = "seconds"
-        task._schedule()
+        task.save()
         self.assertTrue(task.scheduled_time > base_time)
         self.assertTrue(task.is_scheduled())
 

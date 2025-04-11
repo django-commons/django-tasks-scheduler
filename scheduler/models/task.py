@@ -347,6 +347,7 @@ class Task(models.Model):
             return False
         schedule_time = self._schedule_time()
         if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and schedule_time < timezone.now():
+            logger.debug(f"Task {str(self)} scheduled time is in the past, not scheduling")
             return False
         kwargs = self._enqueue_args()
         job = self.rqueue.create_and_enqueue_job(
@@ -356,7 +357,6 @@ class Task(models.Model):
             **kwargs,
         )
         self.job_name = job.name
-        super(Task, self).save()
         return True
 
     def save(self, **kwargs):

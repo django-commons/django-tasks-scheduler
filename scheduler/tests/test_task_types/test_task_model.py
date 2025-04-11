@@ -102,7 +102,7 @@ class BaseTestCases:
 
         def test_is_schedulable_already_scheduled(self):
             task = task_factory(self.task_type)
-            task._schedule()
+            task.save()
             self.assertTrue(task.is_scheduled())
 
         def test_is_schedulable_disabled(self):

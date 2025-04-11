@@ -237,9 +237,11 @@ class Queue:
         )
         if when is None:
             job_model = self.enqueue_job(job_model, connection=pipeline, at_front=at_front)
-        else:
+        elif isinstance(when, datetime):
             job_model.save(connection=self.connection)
-            self.scheduled_job_registry.schedule(self.connection, job_model, when)
+            self.scheduled_job_registry.schedule(self.connection, job_model.name, when)
+        else:
+            raise TypeError(f"Invalid type for when=`{when}`")
         return job_model
 
     def job_handle_success(self, job: JobModel, result: Any, result_ttl: int, connection: ConnectionType):
