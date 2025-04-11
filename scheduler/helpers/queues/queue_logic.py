@@ -16,7 +16,6 @@ from scheduler.redis_models import (
     CanceledJobRegistry,
     ScheduledJobRegistry,
     QueuedJobRegistry,
-    NoSuchJobError,
 )
 from scheduler.redis_models import JobStatus, SchedulerLock, Result, ResultType, JobModel
 from scheduler.settings import logger, SCHEDULER_CONFIG
@@ -24,6 +23,10 @@ from scheduler.types import ConnectionType, FunctionReferenceType
 
 
 class InvalidJobOperation(Exception):
+    pass
+
+
+class NoSuchJobError(Exception):
     pass
 
 

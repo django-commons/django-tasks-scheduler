@@ -15,7 +15,6 @@ __all__ = [
     "CanceledJobRegistry",
     "ScheduledJobRegistry",
     "QueuedJobRegistry",
-    "NoSuchJobError",
 ]
 
 from .base import as_str
@@ -29,7 +28,6 @@ from .registry.queue_registries import (
     CanceledJobRegistry,
     ScheduledJobRegistry,
     QueuedJobRegistry,
-    NoSuchJobError,
 )
 from .result import Result, ResultType
 from .worker import WorkerModel

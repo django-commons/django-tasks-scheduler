@@ -68,7 +68,4 @@ def job_runtime(job: JobModel):
 
 @register.filter
 def job_scheduled_time(job: JobModel, queue: Queue):
-    try:
-        return queue.scheduled_job_registry.get_scheduled_time(job.name)
-    except Exception:
-        return None
+    return queue.scheduled_job_registry.get_scheduled_time(job.name)

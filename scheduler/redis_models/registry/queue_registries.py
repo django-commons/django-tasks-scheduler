@@ -9,10 +9,6 @@ from .. import as_str
 from ..job import JobModel
 
 
-class NoSuchJobError(Exception):
-    pass
-
-
 class QueuedJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:queued_jobs"
 
@@ -87,17 +83,16 @@ class ScheduledJobRegistry(JobNamesRegistry):
         jobs_to_schedule = self.connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
         return [as_str(job_name) for job_name in jobs_to_schedule]
 
-    def get_scheduled_time(self, job_name: str) -> datetime:
+    def get_scheduled_time(self, job_name: str) -> Optional[datetime]:
         """Returns datetime (UTC) at which job is scheduled to be enqueued
 
         :param job_name: Job name
-        :raises NoSuchJobError: If the job was not found
-        :returns: The scheduled time as datetime object
+        :returns: The scheduled time as datetime object, or None if job is not found
         """
 
-        score = self.connection.zscore(self._key, job_name)
+        score: Optional[float] = self.connection.zscore(self._key, job_name)
         if not score:
-            raise NoSuchJobError
+            return None
 
         return datetime.fromtimestamp(score, tz=timezone.utc)
 
