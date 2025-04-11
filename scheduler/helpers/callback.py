@@ -22,7 +22,7 @@ class Callback:
             try:
                 func_str = func
                 func = callable_func(func)
-            except (TypeError, AttributeError, ModuleNotFoundError, ValueError) as e:
+            except (TypeError, AttributeError, ModuleNotFoundError, ValueError):
                 raise CallbackSetupError(f"Callback `func` is not callable: {func_str}")
         self.func: Callable[..., Any] = func
 

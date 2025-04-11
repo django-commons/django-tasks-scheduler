@@ -270,8 +270,8 @@ class BaseTestCases:
         def test_admin_list_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(self.task_type)
-            url = reverse(f"admin:scheduler_task_changelist")
+            task_factory(self.task_type)
+            url = reverse("admin:scheduler_task_changelist")
             # act
             res = self.client.get(url)
             # assert
@@ -283,7 +283,7 @@ class BaseTestCases:
             task = task_factory(
                 self.task_type,
             )
-            url = reverse(f"admin:scheduler_task_changelist")
+            url = reverse("admin:scheduler_task_changelist")
             # act
             res = self.client.post(
                 url,
@@ -301,7 +301,7 @@ class BaseTestCases:
             # arrange
             self.client.login(username="admin", password="admin")
             task = task_factory(self.task_type)
-            url = reverse(f"admin:scheduler_task_changelist")
+            url = reverse("admin:scheduler_task_changelist")
             # act
             res = self.client.post(
                 url,
@@ -326,7 +326,7 @@ class BaseTestCases:
                 self.task_type,
             )
             url = reverse(
-                f"admin:scheduler_task_change",
+                "admin:scheduler_task_change",
                 args=[
                     task.pk,
                 ],
@@ -342,7 +342,7 @@ class BaseTestCases:
             task = task_factory(self.task_type, queue="test2", instance_only=True)
             task.save(schedule_job=False)
             url = reverse(
-                f"admin:scheduler_task_change",
+                "admin:scheduler_task_change",
                 args=[
                     task.pk,
                 ],
@@ -401,7 +401,7 @@ class BaseTestCases:
                     task.id,
                 ],
             }
-            url = reverse(f"admin:scheduler_task_changelist")
+            url = reverse("admin:scheduler_task_changelist")
             # act
             res = self.client.post(url, data=data, follow=True)
             # assert
@@ -422,7 +422,7 @@ class BaseTestCases:
                     task.id,
                 ],
             }
-            url = reverse(f"admin:scheduler_task_changelist")
+            url = reverse("admin:scheduler_task_changelist")
             self.assertTrue(task.is_scheduled())
             # act
             res = self.client.post(url, data=data, follow=True)
@@ -466,7 +466,7 @@ class BaseTestCases:
                 ],
                 "post": "yes",
             }
-            url = reverse(f"admin:scheduler_task_changelist")
+            url = reverse("admin:scheduler_task_changelist")
             # act
             res = self.client.post(url, data=data, follow=True)
             # assert

@@ -8,7 +8,6 @@ from django.test import TestCase, override_settings
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from scheduler.worker.worker import get_queues
 
 
 @override_settings(SCHEDULER_QUEUES=dict(default={"HOST": "localhost", "PORT": 6379, "DB": 0}))

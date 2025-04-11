@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import Set
 
 from scheduler.redis_models.worker import WorkerModel
 from scheduler.settings import (
