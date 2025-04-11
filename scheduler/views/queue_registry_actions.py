@@ -15,7 +15,7 @@ from scheduler.types import ResponseErrorTypes
 from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
 
 
-class QueueRegistryActions(str, Enum):
+class QueueRegistryActions(Enum):
     EMPTY = "empty"
     REQUEUE = "requeue"
 
@@ -51,9 +51,9 @@ def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name:
     if action not in QueueRegistryActions:
         return redirect(next_url)
     if request.method == "POST":
-        if action == QueueRegistryActions.EMPTY:
+        if action == QueueRegistryActions.EMPTY.value:
             _clear_registry(request, queue, registry_name, registry)
-        elif action == QueueRegistryActions.REQUEUE:
+        elif action == QueueRegistryActions.REQUEUE.value:
             _requeue_job_names(request, queue, registry_name)
         return redirect("queue_registry_jobs", queue_name, registry_name)
     job_names = registry.all()
