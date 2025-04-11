@@ -1,3 +1,4 @@
+"""list_registry_jobs actions on all jobs in the registry"""
 from enum import Enum
 
 from django.contrib import admin, messages
@@ -66,43 +67,6 @@ def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name:
         "action": action,
         "jobs": job_list,
         "next_url": next_url,
-        "action_url": reverse(
-            "queue_registry_action",
-            args=[
-                queue_name,
-                registry_name,
-                action
-            ],
-        ),
-    }
-    return render(request, "admin/scheduler/confirm_action.html", context_data)
-
-
-@never_cache
-@staff_member_required
-def queue_confirm_action(request: HttpRequest, queue_name: str) -> HttpResponse:
-    queue = get_queue(queue_name)
-    next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
-    if request.method != "POST":
-        return redirect(next_url)
-    action = request.POST.get("action", None)
-    job_names = request.POST.getlist("_selected_action", None)
-    if action is None or job_names is None:
-        return redirect(next_url)
-
-    # confirm action
-    context_data = {
-        **admin.site.each_context(request),
-        "action": action,
-        "jobs": [JobModel.get(job_name, connection=queue.connection) for job_name in job_names],
-        "total_jobs": len(job_names),
-        "queue": queue,
-        "next_url": next_url,
-        "action_url": reverse(
-            "queue_actions",
-            args=[
-                queue_name,
-            ],
-        ),
+        "action_url": reverse("queue_registry_action", args=[queue_name, registry_name, action]),
     }
     return render(request, "admin/scheduler/confirm_action.html", context_data)

@@ -1,11 +1,11 @@
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.worker import create_worker
 from scheduler.redis_models import JobStatus, JobModel
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.test_views.base import BaseTestCase
 from scheduler.tests.testtools import assert_message_in_response
+from scheduler.worker import create_worker
 
 
 class QueueActionsViewsTest(BaseTestCase):
@@ -20,12 +20,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # remove those jobs using view
         res = self.client.post(
-            reverse(
-                "queue_actions",
-                args=[
-                    queue.name,
-                ],
-            ),
+            reverse("queue_job_actions", args=[queue.name]),
             {
                 "action": "delete",
                 "job_names": job_names,
@@ -51,12 +46,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # remove those jobs using view
         res = self.client.post(
-            reverse(
-                "queue_actions",
-                args=[
-                    queue.name,
-                ],
-            ),
+            reverse("queue_job_actions", args=[queue.name]),
             {"action": "delete", "job_names": job_names},
             follow=True,
         )
@@ -87,7 +77,7 @@ class QueueActionsViewsTest(BaseTestCase):
             self.assertTrue(job.is_failed)
 
         # re-nqueue failed jobs from failed queue
-        self.client.post(reverse("queue_actions", args=[queue_name]), {"action": "requeue", "job_names": job_names})
+        self.client.post(reverse("queue_job_actions", args=[queue_name]), {"action": "requeue", "job_names": job_names})
 
         # check if we requeue all failed jobs
         for job_name in job_names:
@@ -115,7 +105,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # Stop those jobs using the view
         self.assertEqual(len(queue.active_job_registry), len(job_names))
-        self.client.post(reverse("queue_actions", args=[queue_name]), {"action": "stop", "job_names": job_names})
+        self.client.post(reverse("queue_job_actions", args=[queue_name]), {"action": "stop", "job_names": job_names})
         self.assertEqual(0, len(queue.active_job_registry))
 
         self.assertEqual(0, len(queue.canceled_job_registry))

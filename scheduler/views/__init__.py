@@ -4,7 +4,7 @@ __all__ = [
     "stats",
     "stats_json",
     "queue_registry_actions",
-    "queue_confirm_action",
+    "queue_confirm_job_action",
     "queue_workers",
     "queue_job_actions",
     "list_registry_jobs",
@@ -14,8 +14,8 @@ __all__ = [
 ]
 
 from .job_views import job_detail, job_action
-from .queue_job_actions import queue_job_actions
-from .queue_registry_actions import queue_registry_actions, queue_confirm_action
+from .queue_job_actions import queue_job_actions, queue_confirm_job_action
+from .queue_registry_actions import queue_registry_actions
 from .queue_views import (
     stats,
     stats_json,

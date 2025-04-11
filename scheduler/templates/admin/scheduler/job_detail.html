@@ -149,11 +149,11 @@
         </fieldset>
         <div class="submit-row">
             <div class="deletelink-box">
-                <a href="{% url 'queue_job_action' job.name 'delete' %}" class="deletelink">Delete</a>
+                <a href="{% url 'job_detail_action' job.name 'delete' %}" class="deletelink">Delete</a>
             </div>
             {% if job.is_started %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.name 'cancel' %}">
+                    <form method='POST' action="{% url 'job_detail_action' job.name 'cancel' %}">
                         {% csrf_token %}
                         <input type="submit" value="cancel" class="default" name="cancel">
                     </form>
@@ -161,7 +161,7 @@
             {% endif %}
             {% if job.is_failed %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.name 'requeue' %}">
+                    <form method='POST' action="{% url 'job_detail_action' job.name 'requeue' %}">
                         {% csrf_token %}
                         <input type="submit" value="Requeue" class="default" name="requeue">
                     </form>
@@ -169,7 +169,7 @@
             {% endif %}
             {% if not job.is_queued and not job.is_failed %}
                 <div class="deletelink-box">
-                    <form method='POST' action="{% url 'queue_job_action' job.name 'enqueue' %}">
+                    <form method='POST' action="{% url 'job_detail_action' job.name 'enqueue' %}">
                         {% csrf_token %}
                         <input type="submit" value="Enqueue" class="default" name="Requeue">
                     </form>

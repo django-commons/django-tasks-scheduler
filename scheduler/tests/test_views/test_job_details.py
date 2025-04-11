@@ -114,8 +114,9 @@ class TestViewJobDetails(BaseTestCase):
         self.assertEqual(200, res.status_code)
         self.assertEqual(res.context["jobs"], [job])
 
-        res = self.client.post(reverse("queue_registry_action", args=[queue.name, "scheduled", "empty"]),
-                               {"post": "yes"}, follow=True)
+        res = self.client.post(
+            reverse("queue_registry_action", args=[queue.name, "scheduled", "empty"]), {"post": "yes"}, follow=True
+        )
         assert_message_in_response(res, f"You have successfully cleared the scheduled jobs in queue {queue.name}")
         self.assertEqual(200, res.status_code)
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection))

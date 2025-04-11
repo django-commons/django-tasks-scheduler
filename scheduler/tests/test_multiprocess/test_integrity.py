@@ -22,7 +22,7 @@ class MultiProcessTest(BaseTestCase):
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertEqual(JobStatus.STARTED, job.status)
         # act
-        res = self.client.post(reverse("queue_job_action", args=[job.name, "cancel"]), {"post": "yes"}, follow=True)
+        res = self.client.post(reverse("job_detail_action", args=[job.name, "cancel"]), {"post": "yes"}, follow=True)
 
         # assert
         self.assertEqual(200, res.status_code)

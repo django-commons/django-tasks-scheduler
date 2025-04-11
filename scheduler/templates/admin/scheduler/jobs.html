@@ -31,7 +31,7 @@
             <li><a href="{% url 'queue_registry_action' queue.name registry_name 'empty' %}" class="deletelink">Empty Queue</a></li>
         </ul>
         <div class="module" id="changelist">
-            <form id="changelist-form" action="{% url 'queue_confirm_action' queue.name %}" method="post">
+            <form id="changelist-form" action="{% url 'queue_confirm_job_action' queue.name %}" method="post">
                 {% csrf_token %}
                 <div class="actions">
                     <label>Actions:

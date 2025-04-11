@@ -12,7 +12,6 @@ from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
 from .queue_logic import Queue
 
 
-
 _BAD_QUEUE_CONFIGURATION = set()
 
 
@@ -77,5 +76,3 @@ def get_all_workers() -> Set[WorkerModel]:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
             _BAD_QUEUE_CONFIGURATION.add(queue_name)
     return workers_set
-
-

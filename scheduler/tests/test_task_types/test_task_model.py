@@ -340,7 +340,7 @@ class BaseTestCases:
             # arrange
             self.client.login(username="admin", password="admin")
             task = task_factory(self.task_type, queue="test2", instance_only=True)
-            task.save(schedule_job=False)            
+            task.save(schedule_job=False)
             url = reverse(
                 f"admin:scheduler_task_change",
                 args=[
