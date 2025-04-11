@@ -98,9 +98,9 @@ class WorkerModel(HashModel):
                 pipeline.exists(worker_key)
             worker_exist = pipeline.execute()
             invalid_workers = list()
-            for i, worker_key in enumerate(worker_keys):
+            for i, worker_name in enumerate(worker_names):
                 if not worker_exist[i]:
-                    invalid_workers.append(worker_key)
+                    invalid_workers.append(worker_name)
             if len(invalid_workers) == 0:
                 return
             for invalid_subset in _split_list(invalid_workers, MAX_KEYS):

@@ -3,9 +3,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, Any, Self, ClassVar, List
 
-from scheduler.types import ConnectionType
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import StreamModel, decode_dict
+from scheduler.types import ConnectionType
 
 
 class ResultType(Enum):
@@ -31,14 +31,14 @@ class Result(StreamModel):
 
     @classmethod
     def create(
-        cls,
-        connection: ConnectionType,
-        job_name: str,
-        worker_name: str,
-        _type: ResultType,
-        ttl: int,
-        return_value: Any = None,
-        exc_string: Optional[str] = None,
+            cls,
+            connection: ConnectionType,
+            job_name: str,
+            worker_name: str,
+            _type: ResultType,
+            ttl: int,
+            return_value: Any = None,
+            exc_string: Optional[str] = None,
     ) -> Self:
         result = cls(
             parent=job_name,
@@ -65,15 +65,3 @@ class Result(StreamModel):
         result_id, payload = response[0]
         res = cls.deserialize(decode_dict(payload, set()))
         return res
-
-    def __repr__(self):
-        return f"Result(name={self.name}, type={self.type.name})"
-
-    def __eq__(self, other: Self) -> bool:
-        try:
-            return self.name == other.name
-        except AttributeError:
-            return False
-
-    def __bool__(self) -> bool:
-        return bool(self.name)

@@ -2,6 +2,7 @@ import os
 import uuid
 
 from scheduler import settings
+from scheduler.redis_models import WorkerModel
 from scheduler.worker import create_worker
 from scheduler.tests import test_settings  # noqa
 from scheduler.tests.testtools import SchedulerBaseCase
@@ -41,3 +42,15 @@ class TestWorker(SchedulerBaseCase):
         self.assertEqual(worker.scheduler.interval, 1)
         settings.SCHEDULER_CONFIG.SCHEDULER_INTERVAL = prev
         worker.teardown()
+
+    def test_create_worker__cleanup(self):
+        worker = create_worker("default", name="test", burst=True, with_scheduler=False)
+        worker.bootstrap()
+        worker.connection.delete(WorkerModel.key_for(worker.name))
+        all_names = WorkerModel.all_names(worker.connection)
+        self.assertIn(worker.name, all_names)
+        # act
+        WorkerModel.cleanup(worker.connection, "default")
+        # assert
+        all_names = WorkerModel.all_names(worker.connection)
+        self.assertNotIn(worker.name, all_names)

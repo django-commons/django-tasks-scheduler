@@ -24,7 +24,7 @@ def as_str(v: Union[bytes, str]) -> Optional[str]:
         return v
     if isinstance(v, bytes):
         return v.decode("utf-8")
-    raise ValueError("Unknown type %r" % type(v))
+    raise ValueError(f"Unknown type {type(v)} for `{v}`.")
 
 
 def decode_dict(d: Dict[bytes, bytes], exclude_keys: Set[str]) -> Dict[str, str]:
