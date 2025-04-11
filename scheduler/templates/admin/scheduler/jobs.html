@@ -25,10 +25,10 @@
     <div id="content-main">
         <ul class="object-tools">
             {% if job_status == 'Failed' %}
-                <li><a href="{% url 'queue_requeue_all' queue.name registry_name %}" class="requeuelink">Requeue All</a>
+                <li><a href="{% url 'queue_registry_action' queue.name registry_name 'requeue' %}" class="requeuelink">Requeue All</a>
                 </li>
             {% endif %}
-            <li><a href="{% url 'queue_clear' queue.name registry_name %}" class="deletelink">Empty Queue</a></li>
+            <li><a href="{% url 'queue_registry_action' queue.name registry_name 'empty' %}" class="deletelink">Empty Queue</a></li>
         </ul>
         <div class="module" id="changelist">
             <form id="changelist-form" action="{% url 'queue_confirm_action' queue.name %}" method="post">

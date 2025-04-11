@@ -15,12 +15,12 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from scheduler import settings
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import JobModel
 from scheduler.settings import logger, get_queue_names
-from scheduler import settings
 from scheduler.types import ConnectionType, TASK_TYPES
 from .args import TaskArg, TaskKwarg
 from ..helpers import utils
@@ -255,11 +255,7 @@ class Task(models.Model):
     def enqueue_to_run(self) -> bool:
         """Enqueue task to run now as a different instance from the scheduled task."""
         kwargs = self._enqueue_args()
-        self.rqueue.create_and_enqueue_job(
-            run_task,
-            args=(self.task_type, self.id),
-            **kwargs,
-        )
+        self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=None, **kwargs)
         return True
 
     def unschedule(self) -> bool:

@@ -190,6 +190,7 @@ class Queue:
         func: FunctionReferenceType,
         args: Union[Tuple, List, None] = None,
         kwargs: Optional[Dict] = None,
+        when: Optional[datetime] = None,
         timeout: Optional[int] = None,
         result_ttl: Optional[int] = None,
         job_info_ttl: Optional[int] = None,
@@ -202,7 +203,6 @@ class Queue:
         on_stopped: Optional[Callback] = None,
         task_type: Optional[str] = None,
         scheduled_task_id: Optional[int] = None,
-        when: Optional[datetime] = None,
         pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.

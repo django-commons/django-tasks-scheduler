@@ -11,6 +11,7 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.admin.task_admin import job_execution_of
 from scheduler.helpers.queues import get_queue
+from scheduler.settings import QueueNotFoundError
 from scheduler.worker import create_worker
 from scheduler.models import TaskKwarg
 from scheduler.models import Task, TaskType
@@ -134,5 +135,8 @@ class SchedulerBaseCase(TestCase):
 
     def tearDown(self) -> None:
         super(SchedulerBaseCase, self).tearDown()
-        queue = get_queue("default")
-        queue.empty()
+        try:
+            queue = get_queue("default")
+            queue.empty()
+        except QueueNotFoundError:
+            pass

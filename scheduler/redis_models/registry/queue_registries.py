@@ -54,7 +54,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         and `all()` methods implemented in JobIdsRegistry."""
         pass
 
-    def schedule(self, connection: ConnectionType, job: JobModel, scheduled_datetime):
+    def schedule(self, connection: ConnectionType, job: JobModel, scheduled_datetime: datetime):
         """
         Adds job to registry, scored by its execution time (in UTC).
         If datetime has no tzinfo, it will assume localtimezone.

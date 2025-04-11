@@ -1,6 +1,5 @@
 from typing import List, Set
 
-from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
 from scheduler.redis_models.worker import WorkerModel
 from scheduler.settings import (
     SCHEDULER_CONFIG,
@@ -9,11 +8,9 @@ from scheduler.settings import (
     QueueConfiguration,
     logger,
 )
+from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
 from .queue_logic import Queue
 
-
-class QueueConnectionDiscrepancyError(Exception):
-    pass
 
 
 _BAD_QUEUE_CONFIGURATION = set()
@@ -82,19 +79,3 @@ def get_all_workers() -> Set[WorkerModel]:
     return workers_set
 
 
-def get_queues(*queue_names: str) -> List[Queue]:
-    """Return queue instances from specified queue names. All instances must use the same Broker configuration."""
-
-    queue_config = get_queue_configuration(queue_names[0])
-    queues = [get_queue(queue_names[0])]
-    # perform consistency checks while building return list
-    for queue_name in queue_names[1:]:
-        curr_queue_config = get_queue_configuration(queue_name)
-        if not queue_config.same_connection_params(curr_queue_config):
-            raise QueueConnectionDiscrepancyError(
-                f'Queues must have the same broker connection. "{queue_name}" and "{queue_names[0]}" have different connection settings'
-            )
-        queue = get_queue(queue_name)
-        queues.append(queue)
-
-    return queues

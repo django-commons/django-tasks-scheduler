@@ -32,6 +32,6 @@ class Command(BaseCommand):
         queue = get_queue(options.get("queue"))
         func = options.get("callable")
         args = options.get("args")
-        job = queue.create_and_enqueue_job(func, args=args, timeout=timeout, result_ttl=result_ttl)
+        job = queue.create_and_enqueue_job(func, args=args, timeout=timeout, result_ttl=result_ttl, when=None)
         if verbosity:
             click.echo(f"Job {job.name} created")

@@ -90,6 +90,7 @@ class job:
                 on_failure=self.on_failure,
                 on_success=self.on_success,
                 on_stopped=self.on_stopped,
+                when=None,
             )
 
         JOB_METHODS_LIST.append(f"{f.__module__}.{f.__name__}")

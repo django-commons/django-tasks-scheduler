@@ -5,7 +5,6 @@ from unittest.mock import patch, PropertyMock
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.worker import create_worker
 from scheduler.models import TaskType
 from scheduler.redis_models import JobModel, WorkerModel
 from scheduler.tests import test_settings  # noqa
@@ -14,6 +13,7 @@ from scheduler.tests.test_task_types.test_task_model import assert_response_has_
 from scheduler.tests.test_views.base import BaseTestCase
 from scheduler.tests.testtools import assert_message_in_response, task_factory, _get_task_scheduled_job_from_registry
 from scheduler.types import QueueConfiguration
+from scheduler.worker import create_worker
 
 
 class TestViewJobDetails(BaseTestCase):
@@ -69,10 +69,10 @@ class TestViewJobDetails(BaseTestCase):
         worker = create_worker("default", burst=True)
         worker.work()
 
-        res = self.client.get(reverse("queue_requeue_all", args=[queue_name, "failed"]))
+        res = self.client.get(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
         self.assertEqual(res.context["total_jobs"], 2)
         # After requeue_all is called, jobs are enqueued
-        res = self.client.post(reverse("queue_requeue_all", args=[queue_name, "failed"]))
+        res = self.client.post(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
         self.assertEqual(len(queue), 4)
 
     def test_requeue_all_if_deleted_job(self):
@@ -86,23 +86,23 @@ class TestViewJobDetails(BaseTestCase):
         worker = create_worker("default", burst=True)
         worker.work()
 
-        res = self.client.get(reverse("queue_requeue_all", args=[queue_name, "failed"]))
+        res = self.client.get(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
         self.assertEqual(res.context["total_jobs"], 2)
         queue.delete_job(job.name)
 
         # After requeue_all is called, jobs are enqueued
-        res = self.client.post(reverse("queue_requeue_all", args=[queue_name, "failed"]))
+        res = self.client.post(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
         self.assertEqual(len(queue.queued_job_registry), 1)
 
     def test_clear_queue_unknown_registry(self):
         queue_name = "django_tasks_scheduler_test"
-        res = self.client.post(reverse("queue_clear", args=[queue_name, "unknown"]), {"post": "yes"})
+        res = self.client.post(reverse("queue_registry_action", args=[queue_name, "unknown", "empty"]), {"post": "yes"})
         self.assertEqual(404, res.status_code)
 
     def test_clear_queue_enqueued(self):
         queue = get_queue("django_tasks_scheduler_test")
         job = queue.create_and_enqueue_job(test_job)
-        self.client.post(reverse("queue_clear", args=[queue.name, "queued"]), {"post": "yes"})
+        self.client.post(reverse("queue_registry_action", args=[queue.name, "queued", "empty"]), {"post": "yes"})
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection), f"job {job.name} exists")
         self.assertNotIn(job.name, queue.queued_job_registry.all())
 
@@ -110,11 +110,12 @@ class TestViewJobDetails(BaseTestCase):
         queue = get_queue("django_tasks_scheduler_test")
         job = queue.create_and_enqueue_job(test_job, when=datetime.now())
 
-        res = self.client.get(reverse("queue_clear", args=[queue.name, "scheduled"]), follow=True)
+        res = self.client.get(reverse("queue_registry_action", args=[queue.name, "scheduled", "empty"]), follow=True)
         self.assertEqual(200, res.status_code)
         self.assertEqual(res.context["jobs"], [job])
 
-        res = self.client.post(reverse("queue_clear", args=[queue.name, "scheduled"]), {"post": "yes"}, follow=True)
+        res = self.client.post(reverse("queue_registry_action", args=[queue.name, "scheduled", "empty"]),
+                               {"post": "yes"}, follow=True)
         assert_message_in_response(res, f"You have successfully cleared the scheduled jobs in queue {queue.name}")
         self.assertEqual(200, res.status_code)
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection))

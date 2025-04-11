@@ -19,9 +19,8 @@ from typing import List, Optional, Tuple, Any, Iterable, Self
 
 import scheduler
 from scheduler.helpers.queues import get_queue
-from scheduler.helpers.queues import get_queues
 from scheduler.redis_models import WorkerModel, JobModel, JobStatus, DequeueTimeout
-from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.settings import SCHEDULER_CONFIG, logger, get_queue_configuration
 from scheduler.types import Broker
 from scheduler.types import (
     ConnectionType,
@@ -62,6 +61,10 @@ class StopRequested(Exception):
 
 
 class WorkerNotFound(Exception):
+    pass
+
+
+class QueueConnectionDiscrepancyError(Exception):
     pass
 
 
@@ -106,18 +109,18 @@ class Worker:
         return res
 
     def __init__(
-        self,
-        queues,
-        name: str,
-        connection: Optional[ConnectionType] = None,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        disable_default_exception_handler: bool = False,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
+            self,
+            queues,
+            name: str,
+            connection: Optional[ConnectionType] = None,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            disable_default_exception_handler: bool = False,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
     ):  # noqa
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval = job_monitoring_interval
@@ -209,9 +212,9 @@ class Worker:
         signal.signal(signal.SIGTERM, self.request_stop)
 
     def work(
-        self,
-        max_jobs: Optional[int] = None,
-        max_idle_time: Optional[int] = None,
+            self,
+            max_jobs: Optional[int] = None,
+            max_idle_time: Optional[int] = None,
     ) -> bool:
         """Starts the work loop.
 
@@ -386,7 +389,7 @@ class Worker:
             self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[JobModel, Queue]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -561,7 +564,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -645,7 +648,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val, rusage = self.wait_for_job_execution_process()
                 break
@@ -881,7 +884,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue):
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):
@@ -923,6 +926,24 @@ def _calc_worker_name(existing_worker_names) -> str:
         c += 1
         worker_name = f"{hostname}-worker.{c}"
     return worker_name
+
+
+def get_queues(*queue_names: str) -> List[Queue]:
+    """Return queue instances from specified queue names. All instances must use the same connection configuration."""
+
+    queue_config = get_queue_configuration(queue_names[0])
+    queues = [get_queue(queue_names[0])]
+    # perform consistency checks while building return list
+    for queue_name in queue_names[1:]:
+        curr_queue_config = get_queue_configuration(queue_name)
+        if not queue_config.same_connection_params(curr_queue_config):
+            raise QueueConnectionDiscrepancyError(
+                f'Queues must have the same broker connection. "{queue_name}" and "{queue_names[0]}" have different connection settings'
+            )
+        queue = get_queue(queue_name)
+        queues.append(queue)
+
+    return queues
 
 
 def create_worker(*queue_names: str, **kwargs) -> Worker:

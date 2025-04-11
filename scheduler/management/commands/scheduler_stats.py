@@ -50,7 +50,7 @@ class Command(BaseCommand):
     def _print_separator(self):
         click.echo("-" * self.table_width)
 
-    def _print_stats_dashboard(self, statistics, prev_stats=None):
+    def _print_stats_dashboard(self, statistics, prev_stats=None, with_color:bool = True):
         if self.interval:
             click.clear()
         click.echo()
@@ -62,6 +62,8 @@ class Command(BaseCommand):
         for ind, queue in enumerate(statistics["queues"]):
             vals = list((queue[k] for k in KEYS))
             # Deal with colors
+            if not with_color:
+                colors = ["" for _ in KEYS]
             if prev_stats and len(prev_stats["queues"]) > ind:
                 prev = prev_stats["queues"][ind]
                 prev_vals = tuple(prev[k] for k in KEYS)
@@ -71,7 +73,7 @@ class Command(BaseCommand):
             else:
                 colors = [ANSI_LIGHT_WHITE for _ in range(len(vals))]
             to_print = " | ".join([f"{colors[i]}{vals[i]:9}{ANSI_RESET}" for i in range(len(vals))])
-            click.echo(f"| {queue['name']:<16} | {to_print} |", color=True)
+            click.echo(f"| {queue['name']:<16} | {to_print} |", color=with_color)
 
         self._print_separator()
 
@@ -98,22 +100,20 @@ class Command(BaseCommand):
                 click.secho("Aborting. yaml not supported", err=True, fg="red")
                 return
 
-            click.secho(
-                yaml.dump(get_statistics(), default_flow_style=False),
-            )
+            click.secho(yaml.dump(get_statistics(), default_flow_style=False))
             return
 
         self.interval = options.get("interval")
 
         if not self.interval or self.interval < 0:
-            self._print_stats_dashboard(get_statistics())
+            self._print_stats_dashboard(get_statistics(), with_color=not options.get("no_color"))
             return
 
         try:
             prev = None
             while True:
                 statistics = get_statistics()
-                self._print_stats_dashboard(statistics, prev)
+                self._print_stats_dashboard(statistics, prev, with_color=not options.get("no_color"))
                 prev = statistics
                 time.sleep(self.interval)
         except KeyboardInterrupt:
