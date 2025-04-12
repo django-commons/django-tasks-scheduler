@@ -20,6 +20,7 @@ class JobDetailAction(str, Enum):
     ENQUEUE = "enqueue"
     CANCEL = "cancel"
 
+
 @never_cache
 @staff_member_required
 def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:

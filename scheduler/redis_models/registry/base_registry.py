@@ -86,7 +86,7 @@ class JobNamesRegistry(ZSetModel):
 
     @classmethod
     def pop(
-            cls, connection: ConnectionType, registries: Sequence[Self], timeout: Optional[int]
+        cls, connection: ConnectionType, registries: Sequence[Self], timeout: Optional[int]
     ) -> Tuple[Optional[str], Optional[str]]:
         """Helper method to abstract away from some Redis API details
 

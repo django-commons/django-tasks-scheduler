@@ -118,4 +118,4 @@ def _split_list(a_list: List[str], segment_size: int) -> Generator[list[str], An
     :returns: The list split into smaller lists
     """
     for i in range(0, len(a_list), segment_size):
-        yield a_list[i: i + segment_size]
+        yield a_list[i : i + segment_size]
