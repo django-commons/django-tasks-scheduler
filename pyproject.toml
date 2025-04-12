@@ -25,6 +25,7 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
+    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
@@ -51,12 +52,11 @@ sentry-sdk = { version = "^2.19", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 time-machine = "^2.16.0"
-poetry = "^2.1.2"
+poetry = "^2.1"
 ruff = "^0.11"
 coverage = "^7.6"
-fakeredis = { version = "^2.21", extras = ['lua'] }
+fakeredis = "^2.28"
 pyyaml = "^6"
-freezegun = "^1.5"
 
 [tool.poetry.extras]
 yaml = ["pyyaml"]
