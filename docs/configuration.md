@@ -9,7 +9,6 @@ import os
 from typing import Dict
 from scheduler.types import SchedulerConfiguration, Broker, QueueConfiguration
 
-
 SCHEDULER_CONFIG = SchedulerConfiguration(
     EXECUTIONS_IN_PAGE=20,
     SCHEDULER_INTERVAL=10,
@@ -48,17 +47,6 @@ Number of job executions to show in a page in a ScheduledJob admin view.
 
 Default: `20`.
 
-### SCHEDULER_CONFIG: `DEFAULT_RESULT_TTL`
-
-Default time to live for job execution result.
-
-Default: `600` (10 minutes).
-
-### SCHEDULER_CONFIG: `DEFAULT_TIMEOUT`
-
-Default timeout for job when it is not mentioned in queue.
-Default: `300` (5 minutes).
-
 ### SCHEDULER_CONFIG: `SCHEDULER_INTERVAL`
 
 Default scheduler interval, a scheduler is a subprocess of a worker and
@@ -66,18 +54,58 @@ will check which job executions are pending.
 
 Default: `10` (10 seconds).
 
+### SCHEDULER_CONFIG: `BROKER`
+
+### SCHEDULER_CONFIG: `CALLBACK_TIMEOUT`
+
+### SCHEDULER_CONFIG: `DEFAULT_SUCCESS_TTL`
+
+Default time to live for job execution result when it is successful.
+
+Default: `600` (10 minutes).
+
+### SCHEDULER_CONFIG: `DEFAULT_FAILURE_TTL`
+
+Default time to live for job execution result when it is failed.
+
+Default: `600` (10 minutes).
+
+### SCHEDULER_CONFIG: `DEFAULT_JOB_TTL`
+
+Default timeout for job info.
+
+Default: `300` (5 minutes).
+
+### SCHEDULER_CONFIG: `DEFAULT_JOB_TIMEOUT`
+
+timeout (seconds) for a job.
+
+Default: `300` (5 minutes).
+
+### SCHEDULER_CONFIG: `DEFAULT_WORKER_TTL`
+
+Time To Live (TTL) in seconds to keep worker information after last heartbeat.
+Default: `600` (10 minutes).
+
+### SCHEDULER_CONFIG: `DEFAULT_MAINTENANCE_TASK_INTERVAL`
+
+The interval to run worker maintenance tasks in seconds.
+Default: `600` 10 minutes.
+
+### SCHEDULER_CONFIG: `DEFAULT_JOB_MONITORING_INTERVAL`
+
+The interval to monitor jobs in seconds.
+
+### SCHEDULER_CONFIG: `SCHEDULER_FALLBACK_PERIOD_SECS`
+
+Period (secs) to wait before requiring to reacquire locks.
+
 ### SCHEDULER_CONFIG: `TOKEN_VALIDATION_METHOD`
 
 Method to validate request `Authorization` header with.
 Enables checking stats using API token.
 
 Default: no tokens allowed.
-
-### SCHEDULER_CONFIG: `BROKER`
-
-Broker driver to use for the scheduler. Can be `redis` or `valkey` or `fakeredis`.
-
-Default: `redis`.
 
 ### `SCHEDULER_QUEUES`
 
