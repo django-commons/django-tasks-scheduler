@@ -104,6 +104,7 @@ class JobDecoratorTest(TestCase):
 
     def test_job_decorator_bad_queue(self):
         with self.assertRaises(settings.QueueNotFoundError):
+
             @job("bad-queue")
             def test_job_bad_queue():
                 time.sleep(1)

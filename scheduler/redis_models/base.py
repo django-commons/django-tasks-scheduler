@@ -95,19 +95,15 @@ class BaseModel:
             self, dict_factory=lambda fields: {key: value for (key, value) in fields if not key.startswith("_")}
         )
         if not with_nones:
-            data = {k: v for k, v in data.items() if v is not None}
+            data = {k: v for k, v in data.items() if v is not None and k not in self._non_serializable_fields}
         for k in data:
-            if k in self._non_serializable_fields:
-                continue
             data[k] = _serialize(data[k])
         return data
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> Self:
-        types = {f.name: f.type for f in dataclasses.fields(cls)}
+        types = {f.name: f.type for f in dataclasses.fields(cls) if f.name not in cls._non_serializable_fields}
         for k in data:
-            if k in cls._non_serializable_fields:
-                continue
             if k not in types:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
