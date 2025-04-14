@@ -6,7 +6,9 @@ from scheduler import settings
 from scheduler.helpers.queues import get_queue
 from . import test_settings  # noqa
 from ..decorators import JOB_METHODS_LIST, job
+from ..redis_models import JobStatus
 from ..redis_models.job import JobModel
+from ..worker import create_worker
 
 
 @job()
@@ -32,12 +34,27 @@ def test_job_result_ttl():
     return 1 + 1
 
 
+class MyClass:
+    def run(self):
+        print("Hello")
+
+    def __eq__(self, other):
+        if not isinstance(other, MyClass):
+            return False
+        return True
+
+
+@job()
+def long_running_func(x):
+    x.run()
+
+
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(4, len(JOB_METHODS_LIST))
+        self.assertEqual(5, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()
@@ -92,3 +109,18 @@ class JobDecoratorTest(TestCase):
             def test_job_bad_queue():
                 time.sleep(1)
                 return 1 + 1
+
+    def test_job_decorator_delay_with_param(self):
+        queue_name = "default"
+        long_running_func.delay(MyClass())
+
+        worker = create_worker(queue_name, burst=True)
+        worker.work()
+
+        jobs_list = worker.queues[0].get_all_jobs()
+        self.assertEqual(1, len(jobs_list))
+        job = jobs_list[0]
+        self.assertEqual(job.func, long_running_func)
+        self.assertEqual(job.kwargs, {})
+        self.assertEqual(job.status, JobStatus.FINISHED)
+        self.assertEqual(job.args, (MyClass(),))

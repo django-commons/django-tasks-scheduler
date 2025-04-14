@@ -4,6 +4,10 @@
 
 See breaking changes in 4.0.0 beta versions.
 
+### 🐛 Bug Fixes
+
+- Fix issue with non-primitive parameters for @job #249
+
 ## v4.0.0b3 🌈
 
 Refactor the code to make it more organized and easier to maintain. This includes:

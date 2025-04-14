@@ -1,17 +1,17 @@
 import zoneinfo
 from datetime import datetime, timedelta
 
+import time_machine
 from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from freezegun import freeze_time
 
 from scheduler import settings
-from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
 from scheduler.helpers.queues import get_queue
 from scheduler.helpers.queues import perform_job
+from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
 from scheduler.redis_models import JobStatus, JobModel
 from scheduler.tests import jobs, test_settings  # noqa
 from scheduler.tests.testtools import (
@@ -480,14 +480,14 @@ class BaseTestCases:
         # Currently ScheduledJob and RepeatableJob
         task_type = TaskType.ONCE
 
-        @freeze_time("2016-12-25")
+        @time_machine.travel(datetime(2016, 12, 25))
         @override_settings(USE_TZ=False)
         def test_schedule_time_no_tz(self):
             task = task_factory(self.task_type)
             task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=None)
             self.assertEqual("2016-12-25T08:00:00", task._schedule_time().isoformat())
 
-        @freeze_time("2016-12-25")
+        @time_machine.travel(datetime(2016, 12, 25))
         @override_settings(USE_TZ=True)
         def test_schedule_time_with_tz(self):
             task = task_factory(self.task_type)
