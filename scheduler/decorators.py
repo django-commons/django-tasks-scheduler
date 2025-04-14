@@ -1,10 +1,10 @@
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union, List
 
-from scheduler.types import ConnectionType
 from scheduler.helpers.callback import Callback
+from scheduler.types import ConnectionType
 
-JOB_METHODS_LIST = list()
+JOB_METHODS_LIST: List[str] = list()
 
 
 class job:
