@@ -1,6 +1,8 @@
+import base64
 import dataclasses
 import inspect
 import numbers
+import pickle
 from datetime import datetime
 from enum import Enum
 from typing import ClassVar, Dict, Optional, List, Callable, Any, Union, Tuple
@@ -35,13 +37,15 @@ class JobModel(HashModel):
     _list_key: ClassVar[str] = ":jobs:ALL:"
     _children_key_template: ClassVar[str] = ":{}:jobs:"
     _element_key_template: ClassVar[str] = ":jobs:{}"
+    _non_serializable_fields = {"args", "kwargs"}
+
+    args: List[Any]
+    kwargs: Dict[str, str]
 
     queue_name: str
     description: str
     func_name: str
 
-    args: List[Any]
-    kwargs: Dict[str, str]
     timeout: int = SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT
     success_ttl: int = SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL
     job_info_ttl: int = SCHEDULER_CONFIG.DEFAULT_JOB_TTL
@@ -62,10 +66,6 @@ class JobModel(HashModel):
     stopped_callback_timeout: int = SCHEDULER_CONFIG.CALLBACK_TIMEOUT
     task_type: Optional[str] = None
     scheduled_task_id: Optional[int] = None
-
-    def serialize(self, with_nones: bool = False) -> Dict[str, str]:
-        res = super(JobModel, self).serialize()
-        return res
 
     def __hash__(self):
         return hash(self.name)
@@ -125,12 +125,12 @@ class JobModel(HashModel):
         self.save(connection=connection)
 
     def after_execution(
-        self,
-        job_info_ttl: int,
-        status: JobStatus,
-        connection: ConnectionType,
-        prev_registry: Optional[JobNamesRegistry] = None,
-        new_registry: Optional[JobNamesRegistry] = None,
+            self,
+            job_info_ttl: int,
+            status: JobStatus,
+            connection: ConnectionType,
+            prev_registry: Optional[JobNamesRegistry] = None,
+            new_registry: Optional[JobNamesRegistry] = None,
     ) -> None:
         """After the job is executed, update the status, heartbeat, and other metadata."""
         self.status = status
@@ -166,28 +166,43 @@ class JobModel(HashModel):
     def get_call_string(self):
         return _get_call_string(self.func_name, self.args, self.kwargs)
 
+    def serialize(self, with_nones: bool = False) -> Dict[str, str]:
+        """Serialize the job model to a dictionary."""
+        res = super(JobModel, self).serialize(with_nones=with_nones)
+        res["args"] = base64.encodebytes(pickle.dumps(self.args)).decode("utf-8")
+        res["kwargs"] = base64.encodebytes(pickle.dumps(self.kwargs)).decode("utf-8")
+        return res
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, Any]) -> Self:
+        """Deserialize the job model from a dictionary."""
+        res = super(JobModel, cls).deserialize(data)
+        res.args = pickle.loads(base64.decodebytes(data.get("args").encode("utf-8")))
+        res.kwargs = pickle.loads(base64.decodebytes(data.get("kwargs").encode("utf-8")))
+        return res
+
     @classmethod
     def create(
-        cls,
-        connection: ConnectionType,
-        func: FunctionReferenceType,
-        queue_name: str,
-        args: Union[List[Any], Optional[Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        status: Optional[JobStatus] = None,
-        description: Optional[str] = None,
-        timeout: Optional[int] = None,
-        name: Optional[str] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        *,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        at_front: Optional[bool] = None,
+            cls,
+            connection: ConnectionType,
+            func: FunctionReferenceType,
+            queue_name: str,
+            args: Union[List[Any], Optional[Tuple]] = None,
+            kwargs: Optional[Dict[str, Any]] = None,
+            result_ttl: Optional[int] = None,
+            job_info_ttl: Optional[int] = None,
+            status: Optional[JobStatus] = None,
+            description: Optional[str] = None,
+            timeout: Optional[int] = None,
+            name: Optional[str] = None,
+            task_type: Optional[str] = None,
+            scheduled_task_id: Optional[int] = None,
+            meta: Optional[Dict[str, Any]] = None,
+            *,
+            on_success: Optional[Callback] = None,
+            on_failure: Optional[Callback] = None,
+            on_stopped: Optional[Callback] = None,
+            at_front: Optional[bool] = None,
     ) -> Self:
         """Creates a new job-model for the given function, arguments, and keyword arguments.
         :returns: A job-model instance.
@@ -261,7 +276,7 @@ class JobModel(HashModel):
 
 
 def _get_call_string(
-    func_name: Optional[str], args: Any, kwargs: Dict[Any, Any], max_length: Optional[int] = None
+        func_name: Optional[str], args: Any, kwargs: Dict[Any, Any], max_length: Optional[int] = None
 ) -> Optional[str]:
     """
     Returns a string representation of the call, formatted as a regular

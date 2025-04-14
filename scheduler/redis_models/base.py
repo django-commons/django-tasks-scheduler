@@ -63,7 +63,7 @@ def _deserialize(value: str, _type: Type) -> Any:
             return int(value)
         elif _type is float or _type == Optional[float]:
             return float(value)
-        elif _type in {List[Any], List[str], Dict[str, str]}:
+        elif _type in {List[str], Dict[str, str]}:
             return json.loads(value)
         elif _type == Optional[Any]:
             return json.loads(value)
@@ -78,6 +78,9 @@ def _deserialize(value: str, _type: Type) -> Any:
 class BaseModel:
     name: str
     _element_key_template: ClassVar[str] = ":element:{}"
+    # fields that are not serializable using method above and should be dealt with in the subclass
+    # e.g. args/kwargs for a job
+    _non_serializable_fields: ClassVar[Set[str]] = set()
 
     @classmethod
     def key_for(cls, name: str) -> str:
@@ -94,6 +97,8 @@ class BaseModel:
         if not with_nones:
             data = {k: v for k, v in data.items() if v is not None}
         for k in data:
+            if k in self._non_serializable_fields:
+                continue
             data[k] = _serialize(data[k])
         return data
 
@@ -101,6 +106,8 @@ class BaseModel:
     def deserialize(cls, data: Dict[str, Any]) -> Self:
         types = {f.name: f.type for f in dataclasses.fields(cls)}
         for k in data:
+            if k in cls._non_serializable_fields:
+                continue
             if k not in types:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
