@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.0.1 🌈
+
+### 🐛 Bug Fixes
+
+- Add type hint for `JOB_METHODS_LIST`
+
+### 🧰 Maintenance
+
+- Update dependencies to latest versions
+
 ## v4.0.0 🌈
 
 See breaking changes in 4.0.0 beta versions.
