@@ -21,20 +21,20 @@ runs:
       shell: bash
       run: |
         cd testproject
-        poetry run coverage run manage.py test --exclude-tag multiprocess scheduler
+        uv run coverage run manage.py test --exclude-tag multiprocess scheduler
     - name: Coverage report
       id: coverage_report
       shell: bash
       run: |
         mv testproject/.coverage .
         echo 'REPORT<<EOF' >> $GITHUB_ENV
-        poetry run coverage report >> $GITHUB_ENV
+        uv run coverage report >> $GITHUB_ENV
         echo 'EOF' >> $GITHUB_ENV
     - name: json report
       id: json-report
       shell: bash
       run: |
-        poetry run coverage json
+        uv run coverage json
         echo "COVERAGE=$(jq '.totals.percent_covered_display|tonumber' coverage.json)" >> $GITHUB_ENV
     - uses: mshick/add-pr-comment@v2
       if: ${{ github.event_name == 'pull_request' }}

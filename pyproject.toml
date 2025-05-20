@@ -1,67 +1,73 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
+[project]
 name = "django-tasks-scheduler"
-packages = [
-    { include = "scheduler" },
-]
-version = "4.0.1"
+version = "4.0.2"
 description = "An async job scheduler for django using redis/valkey brokers"
+authors = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
+requires-python = "~=3.10"
 readme = "README.md"
-keywords = ["redis", "valkey", "django", "background-jobs", "job-queue", "task-queue", "redis-queue", "scheduled-jobs"]
-authors = [
-    "Daniel Moran <daniel@moransoftware.ca>",
-]
-maintainers = [
-    "Daniel Moran <daniel@moransoftware.ca>",
-]
 license = "MIT"
-classifiers = [
-    'Development Status :: 5 - Production/Stable',
-    'Environment :: Web Environment',
-    'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
-    'Operating System :: OS Independent',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13',
-    'Framework :: Django',
-    'Framework :: Django :: 5.0',
-    'Framework :: Django :: 5.1',
-    'Framework :: Django :: 5.2',
+maintainers = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
+keywords = [
+    "redis",
+    "valkey",
+    "django",
+    "background-jobs",
+    "job-queue",
+    "task-queue",
+    "redis-queue",
+    "scheduled-jobs",
 ]
-homepage = "https://github.com/django-commons/django-tasks-scheduler"
-documentation = "https://django-tasks-scheduler.readthedocs.io/"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+]
+dependencies = [
+    "django>=5",
+    "croniter>=2.0",
+    "click~=8.2",
+]
 
-[tool.poetry.urls]
+[project.optional-dependencies]
+yaml = ["pyyaml~=6.0"]
+valkey = ["valkey>=6.0.2,<7"]
+sentry = ["sentry-sdk~=2.19"]
+
+[project.urls]
+Homepage = "https://github.com/django-commons/django-tasks-scheduler"
+Documentation = "https://django-tasks-scheduler.readthedocs.io/"
 "Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"
-"Funding" = "https://github.com/sponsors/cunla"
+Funding = "https://github.com/sponsors/cunla"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-django = ">=5"
-croniter = ">=2.0"
-click = "^8.2"
-pyyaml = { version = "^6.0", optional = true }
-valkey = { version = "^6.0.2", optional = true }
-sentry-sdk = { version = "^2.19", optional = true }
+[dependency-groups]
+dev = [
+    "time-machine>=2.16.0,<3",
+    "ruff>=0.11",
+    "coverage~=7.6",
+    "fakeredis~=2.28",
+    "pyyaml>=6,<7",
+]
 
-[tool.poetry.group.dev.dependencies]
-time-machine = "^2.16.0"
-poetry = "^2.1"
-ruff = "^0.11"
-coverage = "^7.6"
-fakeredis = "^2.28"
-pyyaml = "^6"
+[tool.hatch.build.targets.sdist]
+include = ["scheduler"]
 
-[tool.poetry.extras]
-yaml = ["pyyaml"]
-valkey = ["valkey"]
-sentry = ["sentry-sdk"]
+[tool.hatch.build.targets.wheel]
+include = ["scheduler"]
 
 [tool.ruff]
 line-length = 120

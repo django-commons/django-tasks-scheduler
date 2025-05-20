@@ -9,6 +9,7 @@
 ### 🧰 Maintenance
 
 - Update dependencies to latest versions
+- Migrate to use `uv` instead of `poetry` for package management
 
 ## v4.0.0 🌈
 
