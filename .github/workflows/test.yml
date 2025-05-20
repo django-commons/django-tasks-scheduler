@@ -16,16 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: "Setup Python, Poetry and Dependencies"
-        uses: dsoftwareinc/setup-python-poetry-action@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          poetry-version: "2.1.1"
-
+          cache-dependency-path: uv.lock
+          python-version: "3.13"
       - name: Run ruff
         shell: bash
         run: |
-          poetry run ruff check
+          uv run ruff check
 
   test-regular:
     needs: [ 'ruff' ]
@@ -69,36 +69,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: "Setup Python, Poetry and Dependencies"
-        uses: dsoftwareinc/setup-python-poetry-action@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
         with:
+          cache-dependency-path: uv.lock
           python-version: "${{ matrix.python-version }}"
-          poetry-version: "2.1.1"
-          poetry-install-additional-args: "-E yaml"
 
       - name: Install django version
         shell: bash
         run: |
-          python -m pip --quiet install poetry
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
           if [ ${{ matrix.broker == 'valkey' }} == true ]; then
-            additional_args="-E valkey"
+            additional_args="--extra valkey"
           fi
-          poetry install -E yaml $additional_args
-          poetry run pip install django==${{ matrix.django-version }}
+          uv sync --extra yaml $additional_args
+          uv pip install django==${{ matrix.django-version }}
 
       - name: Get version
         id: getVersion
         shell: bash
         run: |
-          VERSION=$(poetry version -s --no-ansi -n)
+          VERSION=$(uv version --short)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check for missing migrations
         run: |
           cd testproject
-          poetry run python manage.py makemigrations --check
+          uv run python manage.py makemigrations --check
 
       - name: Run Tests without coverage
         if: ${{ matrix.coverage != 'yes' }}
@@ -110,7 +107,7 @@ jobs:
           else
             export BROKER_PORT=6379
           fi
-          poetry run python manage.py test --exclude-tag multiprocess scheduler
+          uv run python manage.py test --exclude-tag multiprocess scheduler
 
       # Steps for coverage check
       - name: Run tests with coverage
