@@ -5,6 +5,7 @@
 ### 🐛 Bug Fixes
 
 - Add type hint for `JOB_METHODS_LIST`
+- Fix issue creating new `ONCE` task without a scheduled time #270
 
 ### 🧰 Maintenance
 

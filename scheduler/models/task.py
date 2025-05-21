@@ -441,6 +441,12 @@ class Task(models.Model):
         if self.task_type == TaskType.REPEATABLE:
             self.clean_interval_unit()
             self.clean_result_ttl()
+        if self.task_type == TaskType.ONCE and self.scheduled_time is None:
+            raise ValidationError({"scheduled_time": ValidationError(_("Scheduled time is required"), code="invalid")})
+        if self.task_type == TaskType.ONCE and self.scheduled_time < timezone.now():
+            raise ValidationError(
+                {"scheduled_time": ValidationError(_("Scheduled time must be in the future"), code="invalid")}
+            )
 
 
 def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime]:
