@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.core.management import call_command
 from django.test import TestCase
 
@@ -27,6 +29,26 @@ class SchedulerWorkerTestCase(TestCase):
             job = JobModel.get(name=job_name, connection=queue.connection)
             self.assertTrue(job.is_failed)
         SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10
+
+    @mock.patch("scheduler.worker.create_worker")
+    def test_scheduler_worker__without_scheduler(self, mock_create_worker):
+        queue = get_queue("default")
+
+        # Create a worker to execute these jobs
+        call_command("scheduler_worker", "default", "--without-scheduler")
+        mock_create_worker.assert_called_once_with(
+            'default', name=None, fork_job_execution=True, burst=False, with_scheduler=False,
+        )
+
+    @mock.patch("scheduler.worker.create_worker")
+    def test_scheduler_worker__with_scheduler(self, mock_create_worker):
+        queue = get_queue("default")
+
+        # Create a worker to execute these jobs
+        call_command("scheduler_worker", "default")
+        mock_create_worker.assert_called_once_with(
+            'default', name=None, fork_job_execution=True, burst=False, with_scheduler=True,
+        )
 
     def test_scheduler_worker__run_jobs(self):
         SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1

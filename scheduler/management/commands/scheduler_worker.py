@@ -83,11 +83,11 @@ class Command(BaseCommand):
             help="Maximum number of seconds to wait for new job before terminating worker",
         )
         parser.add_argument(
-            "--with-scheduler",
-            action="store_true",
+            "--without-scheduler",
+            action="store_false",
             default=True,
             dest="with_scheduler",
-            help="Run worker with scheduler, default to True",
+            help="Run worker without scheduler, default to with scheduler",
         )
 
     def add_arguments(self, parser):

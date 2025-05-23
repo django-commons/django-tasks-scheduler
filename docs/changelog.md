@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.0.3 🌈
+
+### 🐛 Bug Fixes
+
+- Updated `scheduler_worker` management command argument to `--without-scheduler` since the worker has a scheduler by
+  default.
+
 ## v4.0.2 🌈
 
 ### 🐛 Bug Fixes

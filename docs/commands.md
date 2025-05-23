@@ -8,8 +8,11 @@ If no queues are specified, will run on default queue only.
 All queues must have the same redis settings on `SCHEDULER_QUEUES`.
 
 ```shell
-usage: manage.py scheduler_worker [-h] [--pid PIDFILE] [--name NAME] [--worker-ttl WORKER_TTL] [--fork-job-execution FORK_JOB_EXECUTION] [--sentry-dsn SENTRY_DSN] [--sentry-debug] [--sentry-ca-certs SENTRY_CA_CERTS] [--burst]
-                                  [--max-jobs MAX_JOBS] [--max-idle-time MAX_IDLE_TIME] [--with-scheduler] [--version] [-v {0,1,2,3}] [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
+usage: manage.py scheduler_worker [-h] [--pid PIDFILE] [--name NAME] [--worker-ttl WORKER_TTL]
+                                  [--fork-job-execution FORK_JOB_EXECUTION] [--sentry-dsn SENTRY_DSN] [--sentry-debug]
+                                  [--sentry-ca-certs SENTRY_CA_CERTS] [--burst] [--max-jobs MAX_JOBS]
+                                  [--max-idle-time MAX_IDLE_TIME] [--without-scheduler] [--version] [-v {0,1,2,3}]
+                                  [--settings SETTINGS] [--pythonpath PYTHONPATH] [--traceback] [--no-color] [--force-color]
                                   [--skip-checks]
                                   [queues ...]
 
@@ -33,14 +36,15 @@ options:
   --max-jobs MAX_JOBS   Maximum number of jobs to execute before terminating worker
   --max-idle-time MAX_IDLE_TIME
                         Maximum number of seconds to wait for new job before terminating worker
-  --with-scheduler      Run worker with scheduler, default to True
+  --without-scheduler   Run worker without scheduler, default to with scheduler
   --version             Show program's version number and exit.
-  -v {0,1,2,3}, --verbosity {0,1,2,3}
+  -v, --verbosity {0,1,2,3}
                         Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very verbose output
-  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
+  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this isn't provided, the
+                        DJANGO_SETTINGS_MODULE environment variable will be used.
   --pythonpath PYTHONPATH
                         A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
-  --traceback           Raise on CommandError exceptions.
+  --traceback           Display a full stack trace on CommandError exceptions.
   --no-color            Don't colorize the command output.
   --force-color         Force colorization of the command output.
   --skip-checks         Skip system checks.
