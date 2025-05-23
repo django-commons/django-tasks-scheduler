@@ -30,7 +30,7 @@ class SchedulerWorkerTestCase(TestCase):
             self.assertTrue(job.is_failed)
         SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 10
 
-    @mock.patch("scheduler.worker.create_worker")
+    @mock.patch("scheduler.management.commands.scheduler_worker.create_worker")
     def test_scheduler_worker__without_scheduler(self, mock_create_worker):
         # Create a worker to execute these jobs
         call_command("scheduler_worker", "default", "--burst", "--without-scheduler")
@@ -42,7 +42,7 @@ class SchedulerWorkerTestCase(TestCase):
             with_scheduler=False,
         )
 
-    @mock.patch("scheduler.worker.create_worker")
+    @mock.patch("scheduler.management.commands.scheduler_worker.create_worker")
     def test_scheduler_worker__with_scheduler(self, mock_create_worker):
         # Create a worker to execute these jobs
         call_command("scheduler_worker", "default", "--burst")
