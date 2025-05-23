@@ -32,22 +32,26 @@ class SchedulerWorkerTestCase(TestCase):
 
     @mock.patch("scheduler.worker.create_worker")
     def test_scheduler_worker__without_scheduler(self, mock_create_worker):
-        queue = get_queue("default")
-
         # Create a worker to execute these jobs
         call_command("scheduler_worker", "default", "--without-scheduler")
         mock_create_worker.assert_called_once_with(
-            'default', name=None, fork_job_execution=True, burst=False, with_scheduler=False,
+            "default",
+            name=None,
+            fork_job_execution=True,
+            burst=False,
+            with_scheduler=False,
         )
 
     @mock.patch("scheduler.worker.create_worker")
     def test_scheduler_worker__with_scheduler(self, mock_create_worker):
-        queue = get_queue("default")
-
         # Create a worker to execute these jobs
         call_command("scheduler_worker", "default")
         mock_create_worker.assert_called_once_with(
-            'default', name=None, fork_job_execution=True, burst=False, with_scheduler=True,
+            "default",
+            name=None,
+            fork_job_execution=True,
+            burst=False,
+            with_scheduler=True,
         )
 
     def test_scheduler_worker__run_jobs(self):
