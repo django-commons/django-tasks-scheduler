@@ -99,7 +99,7 @@ class _job:
 
 
 def job(
-    func_or_queue: Union[FunctionReferenceType, "Queue", str],
+    func_or_queue: Union[FunctionReferenceType, str],
     *args: Any,
     **kwargs: Any,
 ) -> _job:
