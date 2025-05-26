@@ -74,11 +74,7 @@ def task_factory(
             )
         )
     elif task_type == TaskType.CRON:
-        values.update(
-            dict(
-                cron_string="0 0 * * *",
-            )
-        )
+        values.update(dict(cron_string="0 0 * * *"))
     values.update(kwargs)
     if instance_only:
         instance = Task(task_type=task_type, **values)

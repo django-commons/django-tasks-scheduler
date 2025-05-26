@@ -16,11 +16,5 @@ __all__ = [
 from .job_views import job_detail, job_action
 from .queue_job_actions import queue_job_actions, queue_confirm_job_action
 from .queue_registry_actions import queue_registry_actions
-from .queue_views import (
-    stats,
-    stats_json,
-    queue_workers,
-    list_registry_jobs,
-    get_statistics,
-)
+from .queue_views import stats, stats_json, queue_workers, list_registry_jobs, get_statistics
 from .worker_views import workers_list, worker_details

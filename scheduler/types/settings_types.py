@@ -40,7 +40,7 @@ class SchedulerConfiguration:
     DEFAULT_MAINTENANCE_TASK_INTERVAL: int = 10 * 60  # The interval to run maintenance tasks in seconds. 10 minutes.
     DEFAULT_JOB_MONITORING_INTERVAL: int = 30  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
-    DEATH_PENALTY_CLASS: Type["BaseDeathPenalty"] = UnixSignalDeathPenalty
+    DEATH_PENALTY_CLASS: Type[BaseDeathPenalty] = UnixSignalDeathPenalty
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)

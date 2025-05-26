@@ -77,11 +77,7 @@ class ImportTest(TestCase):
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
-        call_command(
-            "import",
-            filename=self.tmpfile.name,
-            reset=True,
-        )
+        call_command("import", filename=self.tmpfile.name, reset=True)
         # assert
         self.assertEqual(1, Task.objects.filter(task_type=TaskType.ONCE).count())
         db_job = Task.objects.filter(task_type=TaskType.ONCE).first()
@@ -102,11 +98,7 @@ class ImportTest(TestCase):
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
-        call_command(
-            "import",
-            filename=self.tmpfile.name,
-            update=True,
-        )
+        call_command("import", filename=self.tmpfile.name, update=True)
         # assert
         self.assertEqual(2, Task.objects.filter(task_type=TaskType.ONCE).count())
         db_job = Task.objects.filter(task_type=TaskType.ONCE).get(name=tasks[0].name)
@@ -122,10 +114,7 @@ class ImportTest(TestCase):
         self.tmpfile.write(res)
         self.tmpfile.flush()
         # act
-        call_command(
-            "import",
-            filename=self.tmpfile.name,
-        )
+        call_command("import", filename=self.tmpfile.name)
         # assert
         self.assertEqual(2, Task.objects.filter(task_type=TaskType.ONCE).count())
         db_job = Task.objects.get(name=tasks[0].name)

@@ -41,9 +41,7 @@ class TestViewJobDetails(BaseTestCase):
 
         url = reverse(
             "job_details",
-            args=[
-                job.name,
-            ],
+            args=[job.name],
         )
         res = self.client.get(url, follow=True)
         self.assertIn("job", res.context)

@@ -1,13 +1,7 @@
 from typing import Set
 
 from scheduler.redis_models.worker import WorkerModel
-from scheduler.settings import (
-    SCHEDULER_CONFIG,
-    get_queue_names,
-    get_queue_configuration,
-    QueueConfiguration,
-    logger,
-)
+from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, get_queue_configuration, QueueConfiguration, logger
 from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
 from .queue_logic import Queue
 

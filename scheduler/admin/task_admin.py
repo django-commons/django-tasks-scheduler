@@ -48,22 +48,12 @@ class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
 
     class Media:
-        js = (
-            "admin/js/jquery.init.js",
-            "admin/js/select-fields.js",
-        )
+        js = ("admin/js/jquery.init.js", "admin/js/select-fields.js")
 
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
-    actions = [
-        "disable_selected",
-        "enable_selected",
-        "enqueue_job_now",
-    ]
-    inlines = [
-        JobArgInline,
-        JobKwargInline,
-    ]
+    actions = ["disable_selected", "enable_selected", "enqueue_job_now"]
+    inlines = [JobArgInline, JobKwargInline]
     list_filter = ("enabled", "task_type", "queue")
     list_display = (
         "enabled",

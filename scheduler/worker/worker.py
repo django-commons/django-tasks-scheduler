@@ -22,13 +22,7 @@ from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import WorkerModel, JobModel, JobStatus, DequeueTimeout
 from scheduler.settings import SCHEDULER_CONFIG, logger, get_queue_configuration
 from scheduler.types import Broker, Self
-from scheduler.types import (
-    ConnectionType,
-    TimeoutErrorTypes,
-    ConnectionErrorTypes,
-    WatchErrorTypes,
-    ResponseErrorTypes,
-)
+from scheduler.types import ConnectionType, TimeoutErrorTypes, ConnectionErrorTypes, WatchErrorTypes, ResponseErrorTypes
 from .commands import WorkerCommandsChannelListener
 from .scheduler import WorkerScheduler, SchedulerStatus
 from ..redis_models.lock import QueueLock
@@ -42,10 +36,7 @@ except ImportError:
 from contextlib import suppress
 
 from scheduler.helpers.queues import Queue, perform_job
-from scheduler.timeouts import (
-    JobExecutionMonitorTimeoutException,
-    JobTimeoutException,
-)
+from scheduler.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
 from scheduler.helpers.utils import utcnow, current_timestamp
 
 try:

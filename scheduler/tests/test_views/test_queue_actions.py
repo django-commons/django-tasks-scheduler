@@ -21,11 +21,7 @@ class QueueActionsViewsTest(BaseTestCase):
         # remove those jobs using view
         res = self.client.post(
             reverse("queue_job_actions", args=[queue.name]),
-            {
-                "action": "delete",
-                "job_names": job_names,
-                "next_url": "bad_url",
-            },
+            {"action": "delete", "job_names": job_names, "next_url": "bad_url"},
             follow=True,
         )
         assert_message_in_response(res, "Bad followup URL")
@@ -46,9 +42,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # remove those jobs using view
         res = self.client.post(
-            reverse("queue_job_actions", args=[queue.name]),
-            {"action": "delete", "job_names": job_names},
-            follow=True,
+            reverse("queue_job_actions", args=[queue.name]), {"action": "delete", "job_names": job_names}, follow=True
         )
 
         # check if jobs are removed

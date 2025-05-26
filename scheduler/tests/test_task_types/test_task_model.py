@@ -111,9 +111,7 @@ class BaseTestCases:
             self.assertFalse(task.enabled)
 
         def test_schedule(self):
-            task = task_factory(
-                self.task_type,
-            )
+            task = task_factory(self.task_type)
             self.assertTrue(task.is_scheduled())
             self.assertIsNotNone(task.job_name)
 

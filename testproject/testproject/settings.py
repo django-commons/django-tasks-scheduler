@@ -1,6 +1,5 @@
 import os
 
-
 from scheduler.types import QueueConfiguration
 
 BROKER_PORT = os.getenv("BROKER_PORT", "6379")
@@ -23,7 +22,7 @@ SECRET_KEY = "h0_r$4#4@hgdxy_r0*n8+$(wf0&ie9&4-=(d394n!bo=9rt+85"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 

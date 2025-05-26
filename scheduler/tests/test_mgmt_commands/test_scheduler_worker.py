@@ -47,11 +47,7 @@ class SchedulerWorkerTestCase(TestCase):
         # Create a worker to execute these jobs
         call_command("scheduler_worker", "default", "--burst")
         mock_create_worker.assert_called_once_with(
-            "default",
-            name=None,
-            fork_job_execution=True,
-            burst=True,
-            with_scheduler=True,
+            "default", name=None, fork_job_execution=True, burst=True, with_scheduler=True
         )
 
     def test_scheduler_worker__run_jobs(self):
