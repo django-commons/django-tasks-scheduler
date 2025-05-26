@@ -7,7 +7,7 @@ from scheduler.types import ConnectionType, FunctionReferenceType
 JOB_METHODS_LIST: List[str] = list()
 
 
-class _job:
+class job:
     def __init__(
         self,
         queue: Union["Queue", str, None] = None,  # noqa: F821
@@ -96,21 +96,3 @@ class _job:
         JOB_METHODS_LIST.append(f"{f.__module__}.{f.__name__}")
         f.delay = delay
         return f
-
-
-def job(
-    func_or_queue: Union[FunctionReferenceType, str],
-    *args: Any,
-    **kwargs: Any,
-) -> _job:
-    if callable(func_or_queue):
-        func = func_or_queue
-        queue_name: str = "default"
-    else:
-        func = None
-        queue_name = func_or_queue
-
-    decorator = _job(queue_name, *args, **kwargs)
-    if func:
-        return decorator(func)
-    return decorator
