@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Optional, Union, List
 
 from scheduler.helpers.callback import Callback
-from scheduler.types import ConnectionType, FunctionReferenceType
+from scheduler.types import ConnectionType
 
 JOB_METHODS_LIST: List[str] = list()
 
