@@ -10,13 +10,15 @@ env:
   PYPI_TEST_URL: https://test.pypi.org/p/django-tasks-scheduler
 
 jobs:
-
   build:
     name: Build distribution 📦
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
