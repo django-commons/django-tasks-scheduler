@@ -11,8 +11,10 @@ __all__ = [
     "workers_list",
     "worker_details",
     "get_statistics",
+    "list_callables",
 ]
 
+from .callables import list_callables
 from .job_views import job_detail, job_action
 from .queue_job_actions import queue_job_actions, queue_confirm_job_action
 from .queue_registry_actions import queue_registry_actions
