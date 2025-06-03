@@ -6,4 +6,4 @@ from scheduler.decorators import JOB_METHODS_LIST
 
 @staff_member_required
 def list_callables(request: HttpRequest) -> HttpResponse:
-    return JsonResponse({"items": JOB_METHODS_LIST})
+    return JsonResponse({"results": JOB_METHODS_LIST})

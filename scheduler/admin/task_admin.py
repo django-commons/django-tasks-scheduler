@@ -1,5 +1,6 @@
 from typing import List
 
+from django import forms
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
@@ -43,13 +44,33 @@ def get_message_bit(rows_updated: int) -> str:
     return message_bit
 
 
+class TaskAdminForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = "__all__"
+
+    callable = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "autocomplete-callable"}),
+        required=True,
+        label="Callable",
+    )
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
 
     class Media:
-        js = ("admin/js/jquery.init.js", "admin/js/select-fields.js")
+        js = ("vendor/jquery/jquery.min.js",
+              "admin/js/jquery-ui.min.js",
+              "admin/js/jquery.init.js",
+              "admin/js/select-fields.js",
+              "admin/js/autocomplete-callable.js",)
+        css = {
+            "all": ("admin/css/jquery-ui.min.css",)
+        }
 
+    form = TaskAdminForm
     save_on_top = True
     change_form_template = "admin/scheduler/change_form.html"
     actions = ["disable_selected", "enable_selected", "enqueue_job_now"]
