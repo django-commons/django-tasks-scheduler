@@ -11,11 +11,12 @@ from scheduler.types import Broker, SchedulerConfiguration
 class TestWorkerAdmin(SchedulerBaseCase):
 
     def setUp(self):
-        self.old_settings = settings.SCHEDULER_CONFIG
+        from scheduler.settings import SCHEDULER_CONFIG
+        self.old_settings = SCHEDULER_CONFIG
 
     def tearDown(self):
-        from scheduler import settings
-        settings.SCHEDULER_CONFIG = self.old_settings
+        from scheduler import settings as scheduler_settings
+        scheduler_settings.SCHEDULER_CONFIG = self.old_settings
 
     def test_scheduler_config_as_dict(self):
         from scheduler.settings import SCHEDULER_CONFIG
