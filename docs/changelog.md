@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.0.4 🌈
+### 🐛 Bug Fixes
+- Issue when `SCHEDULER_CONFIG` is a `dict`
 ## v4.0.3 🌈
 
 ### 🐛 Bug Fixes
