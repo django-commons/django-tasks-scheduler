@@ -1,7 +1,7 @@
 from django.core.management import call_command
 
 from scheduler.helpers.queues import get_queue
-from scheduler.tests import test_settings  # noqa
+from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job
 from scheduler.worker import create_worker
 from scheduler.tests.test_views.base import BaseTestCase

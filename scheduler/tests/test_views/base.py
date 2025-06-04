@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.test.client import Client
 
 from scheduler.helpers.queues import get_queue
-from scheduler.tests import test_settings  # noqa
+from scheduler.tests import conf  # noqa
 
 
 class BaseTestCase(TestCase):

@@ -4,7 +4,7 @@ import uuid
 from scheduler import settings
 from scheduler.redis_models import WorkerModel
 from scheduler.worker import create_worker
-from scheduler.tests import test_settings  # noqa
+from scheduler.tests import conf  # noqa
 from scheduler.tests.testtools import SchedulerBaseCase
 from scheduler.worker.worker import QueueConnectionDiscrepancyError
 
