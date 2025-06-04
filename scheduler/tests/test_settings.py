@@ -10,9 +10,15 @@ from scheduler.types import Broker, SchedulerConfiguration
 
 class TestWorkerAdmin(SchedulerBaseCase):
 
+    def setUp(self):
+        self.old_settings = settings.SCHEDULER_CONFIG
+
+    def tearDown(self):
+        from scheduler import settings
+        settings.SCHEDULER_CONFIG = self.old_settings
+
     def test_scheduler_config_as_dict(self):
         from scheduler.settings import SCHEDULER_CONFIG
-
         settings.SCHEDULER_CONFIG = dict(
             EXECUTIONS_IN_PAGE=SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE + 1,
             SCHEDULER_INTERVAL=SCHEDULER_CONFIG.SCHEDULER_INTERVAL + 1,
@@ -58,9 +64,7 @@ class TestWorkerAdmin(SchedulerBaseCase):
         for key, value in dataclasses.asdict(settings.SCHEDULER_CONFIG).items():
             self.assertEqual(getattr(SCHEDULER_CONFIG, key), value)
 
-
     def test_scheduler_config_as_dict_bad_param(self):
-
         settings.SCHEDULER_CONFIG = dict(
             EXECUTIONS_IN_PAGE=1,
             SCHEDULER_INTERVAL=60,
