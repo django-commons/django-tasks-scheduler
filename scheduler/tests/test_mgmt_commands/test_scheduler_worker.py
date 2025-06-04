@@ -6,7 +6,7 @@ from django.test import TestCase
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG
-from scheduler.tests import test_settings  # noqa
+from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job
 
 

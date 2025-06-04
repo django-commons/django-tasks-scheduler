@@ -13,7 +13,7 @@ from scheduler.helpers.queues import get_queue
 from scheduler.helpers.queues import perform_job
 from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
 from scheduler.redis_models import JobStatus, JobModel
-from scheduler.tests import jobs, test_settings  # noqa
+from scheduler.tests import jobs, conf  # noqa
 from scheduler.tests.testtools import (
     task_factory,
     taskarg_factory,

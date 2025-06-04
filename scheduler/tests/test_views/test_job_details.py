@@ -7,7 +7,7 @@ from django.urls import reverse
 from scheduler.helpers.queues import get_queue
 from scheduler.models import TaskType
 from scheduler.redis_models import JobModel, WorkerModel
-from scheduler.tests import test_settings  # noqa
+from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.test_task_types.test_task_model import assert_response_has_msg
 from scheduler.tests.test_views.base import BaseTestCase

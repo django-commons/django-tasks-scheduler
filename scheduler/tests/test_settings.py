@@ -1,93 +1,30 @@
-import os
-
 from django.conf import settings
 
-from scheduler.settings import conf_settings
+from scheduler.settings import conf_settings, SCHEDULER_CONFIG
+from scheduler.tests.testtools import SchedulerBaseCase
+from scheduler.types import Broker
 
-settings.SCHEDULER_QUEUES = {
-    "default": {"HOST": "localhost", "PORT": 6379, "DB": 0},
-    "test": {"HOST": "localhost", "PORT": 1, "DB": 1},
-    "sentinel": {
-        "SENTINELS": [("localhost", 26736), ("localhost", 26737)],
-        "MASTER_NAME": "testmaster",
-        "DB": 1,
-        "USERNAME": "redis-user",
-        "PASSWORD": "secret",
-        "SENTINEL_KWARGS": {},
-    },
-    "test1": {
-        "HOST": "localhost",
-        "PORT": 1,
-        "DB": 1,
-    },
-    "test2": {
-        "HOST": "localhost",
-        "PORT": 1,
-        "DB": 1,
-    },
-    "test3": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 1,
-    },
-    "async": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 1,
-        "ASYNC": False,
-    },
-    "url": {
-        "URL": "redis://username:password@host:1234/",
-        "DB": 4,
-    },
-    "url_with_db": {
-        "URL": "redis://username:password@host:1234/5",
-    },
-    "url_default_db": {
-        "URL": "redis://username:password@host:1234",
-    },
-    "django_tasks_scheduler_test": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-    },
-    "scheduler_scheduler_active_test": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-        "ASYNC": False,
-    },
-    "scheduler_scheduler_inactive_test": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-        "ASYNC": False,
-    },
-    "worker_scheduler_active_test": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-        "ASYNC": False,
-    },
-    "worker_scheduler_inactive_test": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-        "ASYNC": False,
-    },
-    "django_tasks_scheduler_test2": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-    },
-    "test_scheduler": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-    },
-}
-if os.getenv("FAKEREDIS", "False") == "True":  # pragma: no cover
-    for name, queue_settings in settings.SCHEDULER_QUEUES:  # pragma: no cover
-        queue_settings["BROKER"] = "fakeredis"  # pragma: no cover
 
-conf_settings()
+class TestWorkerAdmin(SchedulerBaseCase):
+
+    def test_scheduler_config_as_dict(self):
+        self.assertEqual(SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE, 20)
+        settings.SCHEDULER_CONFIG = dict(
+            EXECUTIONS_IN_PAGE=1,
+            SCHEDULER_INTERVAL=60,
+            BROKER=Broker.REDIS,
+            CALLBACK_TIMEOUT=1111,
+
+            DEFAULT_SUCCESS_TTL=1111,
+            DEFAULT_FAILURE_TTL=111111,
+            DEFAULT_JOB_TTL=1111,
+            DEFAULT_JOB_TIMEOUT=11111,
+            # General configuration values
+            DEFAULT_WORKER_TTL=11111,
+            DEFAULT_MAINTENANCE_TASK_INTERVAL=111,
+            DEFAULT_JOB_MONITORING_INTERVAL=1111,
+            SCHEDULER_FALLBACK_PERIOD_SECS=1111,
+        )
+        conf_settings()
+        for key, value in settings.SCHEDULER_CONFIG.items():
+            self.assertEqual(getattr(SCHEDULER_CONFIG, key), value)

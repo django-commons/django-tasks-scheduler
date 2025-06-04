@@ -38,10 +38,10 @@ def conf_settings():
         return
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
-    for k in user_settings:
+    for k, v in user_settings.items():
         if k not in SCHEDULER_CONFIG.__annotations__:
             raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")
-        setattr(SCHEDULER_CONFIG, k, getattr(user_settings, k, None))
+        setattr(SCHEDULER_CONFIG, k, v)
 
 
 conf_settings()

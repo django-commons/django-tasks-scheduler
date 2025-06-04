@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from . import test_settings  # noqa
+from . import conf  # noqa
 from ..decorators import JOB_METHODS_LIST, job
 from ..redis_models import JobStatus
 from ..redis_models.job import JobModel
