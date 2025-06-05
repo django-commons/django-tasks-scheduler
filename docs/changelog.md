@@ -9,6 +9,7 @@
 
 ### 🧰 Maintenance
 
+- Fix gha zizmor findings
 - Update dependencies to latest versions
 
 ## v4.0.3 🌈
