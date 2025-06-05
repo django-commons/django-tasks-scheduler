@@ -1,8 +1,16 @@
 # Changelog
 
 ## v4.0.4 🌈
+
 ### 🐛 Bug Fixes
-- Issue when `SCHEDULER_CONFIG` is a `dict`
+
+- Issue when `SCHEDULER_CONFIG` is a `dict` #273
+- Do not warn about _non_serializable_fields #274
+
+### 🧰 Maintenance
+
+- Update dependencies to latest versions
+
 ## v4.0.3 🌈
 
 ### 🐛 Bug Fixes
