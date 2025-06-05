@@ -104,7 +104,9 @@ class BaseModel:
     def deserialize(cls, data: Dict[str, Any]) -> Self:
         types = {f.name: f.type for f in dataclasses.fields(cls) if f.name not in cls._non_serializable_fields}
         for k in data:
-            if k not in types and k in cls._non_serializable_fields:
+            if k in cls._non_serializable_fields:
+                continue
+            if k not in types:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
             data[k] = _deserialize(data[k], types[k])
