@@ -68,14 +68,14 @@ class Queue:
         queued="queued_job_registry",
     )
 
-    def __init__(self, connection: Optional[ConnectionType], name: str, is_async: bool = True) -> None:
+    def __init__(self, connection: ConnectionType, name: str, is_async: bool = True) -> None:
         """Initializes a Queue object.
 
         :param name: The queue name
         :param connection: Broker connection
         :param is_async: Whether jobs should run "async" (using the worker).
         """
-        self.connection = connection
+        self.connection: ConnectionType = connection
         self.name = name
         self._is_async = is_async
         self.queued_job_registry = QueuedJobRegistry(connection=self.connection, name=self.name)

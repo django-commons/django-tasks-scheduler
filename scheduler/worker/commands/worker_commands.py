@@ -72,14 +72,14 @@ class WorkerCommandsChannelListener(object):
     def _commands_channel(worker_name: str) -> str:
         return _PUBSUB_CHANNEL_TEMPLATE.format(worker_name)
 
-    def start(self):
+    def start(self) -> None:
         """Subscribe to this worker's channel"""
         logger.info(f"Subscribing to channel {self.pubsub_channel_name}")
         self.pubsub = self.connection.pubsub()
         self.pubsub.subscribe(**{self.pubsub_channel_name: self.handle_payload})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.2, daemon=True)
 
-    def stop(self):
+    def stop(self) -> None:
         """Unsubscribe from pubsub channel"""
         if self.pubsub_thread:
             logger.info(f"Unsubscribing from channel {self.pubsub_channel_name}")

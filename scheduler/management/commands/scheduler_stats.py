@@ -1,4 +1,6 @@
 import time
+from argparse import ArgumentParser
+from typing import Any, Dict, List, Optional
 
 import click
 from django.core.management.base import BaseCommand
@@ -17,12 +19,12 @@ class Command(BaseCommand):
 
     help = __doc__
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(Command, self).__init__(*args, **kwargs)
         self.table_width = 80
         self.interval = None
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "-j",
             "--json",
@@ -47,10 +49,15 @@ class Command(BaseCommand):
             help="Poll statistics every N seconds",
         )
 
-    def _print_separator(self):
+    def _print_separator(self) -> None:
         click.echo("-" * self.table_width)
 
-    def _print_stats_dashboard(self, statistics, prev_stats=None, with_color: bool = True):
+    def _print_stats_dashboard(
+        self,
+        statistics: Dict[str, List[Dict[str, Any]]],
+        prev_stats: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        with_color: bool = True,
+    ) -> None:
         if self.interval:
             click.clear()
         click.echo()
@@ -81,7 +88,7 @@ class Command(BaseCommand):
             click.echo()
             click.echo("Press 'Ctrl+c' to quit")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options.get("json") and options.get("yaml"):
             click.secho("Aborting. Cannot output as both json and yaml", err=True, fg="red")
             exit(1)

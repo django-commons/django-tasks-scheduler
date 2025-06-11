@@ -96,14 +96,14 @@ class WorkerScheduler:
         self._thread = Thread(target=run_scheduler, args=(self,), name="scheduler-thread")
         self._thread.start()
 
-    def request_stop_and_wait(self):
+    def request_stop_and_wait(self) -> None:
         """Toggle self._stop_requested that's checked on every loop"""
         logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Stop Scheduler requested")
         self._stop_requested = True
         if self._thread is not None:
             self._thread.join()
 
-    def heartbeat(self):
+    def heartbeat(self) -> None:
         """Updates the TTL on scheduler keys and the locks"""
         lock_keys = ", ".join(self._locks.keys())
         logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Scheduler updating lock for queue {lock_keys}")
@@ -112,14 +112,14 @@ class WorkerScheduler:
                 lock.expire(self.connection, expire=self.interval + 60)
             pipeline.execute()
 
-    def stop(self):
+    def stop(self) -> None:
         logger.info(
             f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}..."
         )
         self.release_locks()
         self.status = SchedulerStatus.STOPPED
 
-    def release_locks(self):
+    def release_locks(self) -> None:
         """Release acquired locks"""
         with self.connection.pipeline() as pipeline:
             for lock in self._locks.values():

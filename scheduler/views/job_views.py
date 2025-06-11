@@ -25,7 +25,7 @@ class JobDetailAction(str, Enum):
 @staff_member_required
 def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     queue, job = _find_job(job_name)
-    if job is None:
+    if job is None or queue is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     try:
@@ -54,7 +54,7 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
 @staff_member_required
 def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse:
     queue, job = _find_job(job_name)
-    if job is None:
+    if job is None or queue is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     if action not in [item.value for item in JobDetailAction]:
