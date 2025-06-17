@@ -41,6 +41,7 @@ dependencies = [
     "django>=5",
     "croniter>=2.0",
     "click~=8.2",
+    "fakeredis",
 ]
 
 [project.optional-dependencies]
@@ -95,3 +96,6 @@ follow_imports = "silent"
 ignore_missing_imports = true
 scripts_are_modules = true
 check_untyped_defs = true
+
+[tool.uv.sources]
+fakeredis = { path = "../fakeredis" }
