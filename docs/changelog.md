@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.5 🌈
+
+### 🐛 Bug Fixes
+
+- fix:repeatable task without start date #276
+
 ## v4.0.4 🌈
 
 ### 🐛 Bug Fixes
