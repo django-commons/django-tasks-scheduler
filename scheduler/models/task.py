@@ -187,9 +187,9 @@ class Task(models.Model):
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-            (self.job_name in self.rqueue.scheduled_job_registry.all())
-            or (self.job_name in self.rqueue.queued_job_registry.all())
-            or (self.job_name in self.rqueue.active_job_registry.all())
+                (self.job_name in self.rqueue.scheduled_job_registry.all())
+                or (self.job_name in self.rqueue.queued_job_registry.all())
+                or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
@@ -360,6 +360,7 @@ class Task(models.Model):
         return True
 
     def save(self, **kwargs):
+        self.clean()
         schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
         if update_fields is not None:
@@ -406,7 +407,7 @@ class Task(models.Model):
                 code="invalid",
                 params={"queue": self.queue, "interval": config.SCHEDULER_INTERVAL},
             )
-        if self.interval_seconds() % config.SCHEDULER_INTERVAL:
+        if self.interval_seconds() <= config.SCHEDULER_INTERVAL:
             raise ValidationError(
                 _("Job interval is not a multiple of rq_scheduler's interval frequency: %(interval)ss"),
                 code="invalid",
@@ -434,6 +435,10 @@ class Task(models.Model):
             raise ValidationError({"cron_string": ValidationError(_(str(e)), code="invalid")})
 
     def clean(self):
+        if self.task_type not in TaskType.values:
+            raise ValidationError(
+                {"task_type": ValidationError(_("Invalid task type"), code="invalid")},
+            )
         self.clean_queue()
         self.clean_callable()
         if self.task_type == TaskType.CRON:
@@ -441,6 +446,8 @@ class Task(models.Model):
         if self.task_type == TaskType.REPEATABLE:
             self.clean_interval_unit()
             self.clean_result_ttl()
+        if self.task_type == TaskType.REPEATABLE and self.scheduled_time is None:
+            self.scheduled_time = timezone.now() + timedelta(seconds=2)
         if self.task_type == TaskType.ONCE and self.scheduled_time is None:
             raise ValidationError({"scheduled_time": ValidationError(_("Scheduled time is required"), code="invalid")})
         if self.task_type == TaskType.ONCE and self.scheduled_time < timezone.now():

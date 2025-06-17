@@ -18,17 +18,38 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
 
     def test_create_task_error(self):
         scheduled_time = timezone.now()
-
-        Task.objects.create(
+        task = Task.objects.create(
             name="konichiva_every_2s",
-            callable="chat.task_scheduler.konichiva_func",
-            task_type="REPEATABLE",
-            interval=2,
+            callable="scheduler.tests.jobs.test_args_kwargs",
+            task_type=TaskType.REPEATABLE,
+            interval=333,
             interval_unit="seconds",
             queue="default",
             enabled=True,
             scheduled_time=scheduled_time,
         )
+        self.assertEqual(task.name, "konichiva_every_2s")
+        self.assertEqual(task.callable, "scheduler.tests.jobs.test_args_kwargs")
+        self.assertEqual(task.task_type, TaskType.REPEATABLE)
+        self.assertEqual(task.interval, 333)
+        self.assertEqual(task.interval_unit, "seconds")
+
+    def test_create_task_without_scheduled_time(self):
+        task = Task.objects.create(
+            name="konichiva_every_2s",
+            callable="scheduler.tests.jobs.test_args_kwargs",
+            task_type=TaskType.REPEATABLE,
+            interval=33,
+            interval_unit="seconds",
+            queue="default",
+            enabled=True,
+        )
+        self.assertAlmostEqual(task.scheduled_time.timestamp(), timezone.now().timestamp(), delta=2)
+        self.assertEqual(task.name, "konichiva_every_2s")
+        self.assertEqual(task.callable, "scheduler.tests.jobs.test_args_kwargs")
+        self.assertEqual(task.task_type, TaskType.REPEATABLE)
+        self.assertEqual(task.interval, 33)
+        self.assertEqual(task.interval_unit, "seconds")
 
     def test_unschedulable_old_job(self):
         job = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1), repeat=0)
@@ -63,16 +84,6 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         job.callable = "scheduler.tests.jobs.test_job"
         job.interval = 2  # Smaller than 10
         job.success_ttl = -1
-        job.interval_unit = "seconds"
-        with self.assertRaises(ValidationError):
-            job.clean_interval_unit()
-
-    @override_settings(SCHEDULER_CONFIG=SchedulerConfiguration(SCHEDULER_INTERVAL=10))
-    def test_clean_not_multiple(self):
-        job = task_factory(self.task_type)
-        job.queue = self.queue_name
-        job.callable = "scheduler.tests.jobs.test_job"
-        job.interval = 121
         job.interval_unit = "seconds"
         with self.assertRaises(ValidationError):
             job.clean_interval_unit()
