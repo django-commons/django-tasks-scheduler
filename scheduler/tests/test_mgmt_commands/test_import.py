@@ -32,10 +32,10 @@ class ImportTest(TestCase):
         # assert
         self.assertEqual(1, Task.objects.filter(task_type=TaskType.ONCE).count())
         self.assertEqual(1, Task.objects.filter(task_type=TaskType.REPEATABLE).count())
-        tasks = Task.objects.filter(task_type=TaskType.ONCE).first()
+        db_task = Task.objects.filter(task_type=TaskType.ONCE).first()
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
-            self.assertEqual(getattr(tasks[0], attr), getattr(tasks, attr))
+            self.assertEqual(getattr(tasks[0], attr), getattr(db_task, attr))
 
     def test_import__should_schedule_job_yaml(self):
         tasks = list()

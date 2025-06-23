@@ -35,5 +35,6 @@ class TestScheduledTask(BaseTestCases.TestSchedulableTask):
         self.assertEqual(str(cm.exception), "{'scheduled_time': ['Scheduled time must be in the future']}")
 
     def test_unschedulable_old_job(self):
-        task = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1))
+        task = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1), instance_only=True)
+        task.save(clean=False)
         self.assertFalse(task.is_scheduled())
