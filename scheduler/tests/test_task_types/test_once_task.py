@@ -14,10 +14,10 @@ class TestScheduledTask(BaseTestCases.TestSchedulableTask):
     queue_name = settings.get_queue_names()[0]
 
     def test_clean(self):
-        job = task_factory(self.task_type)
-        job.queue = self.queue_name
-        job.callable = "scheduler.tests.jobs.test_job"
-        self.assertIsNone(job.clean())
+        task = task_factory(self.task_type)
+        task.queue = self.queue_name
+        task.callable = "scheduler.tests.jobs.test_job"
+        self.assertIsNone(task.clean())
 
     def test_create_without_date__fail(self):
         task = task_factory(self.task_type, scheduled_time=None, instance_only=True)
@@ -35,5 +35,5 @@ class TestScheduledTask(BaseTestCases.TestSchedulableTask):
         self.assertEqual(str(cm.exception), "{'scheduled_time': ['Scheduled time must be in the future']}")
 
     def test_unschedulable_old_job(self):
-        job = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1))
-        self.assertFalse(job.is_scheduled())
+        task = task_factory(self.task_type, scheduled_time=timezone.now() - timedelta(hours=1))
+        self.assertFalse(task.is_scheduled())
