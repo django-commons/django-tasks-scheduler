@@ -7,7 +7,7 @@ name = "django-tasks-scheduler"
 version = "4.0.5"
 description = "An async job scheduler for django using redis/valkey brokers"
 authors = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
-requires-python = "~=3.10"
+requires-python = ">=3.10"
 readme = "README.md"
 license = "MIT"
 maintainers = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
