@@ -13,6 +13,7 @@ from scheduler.types import SchedulerConfiguration
 
 
 class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
+    task_type = TaskType.REPEATABLE
     queue_name = settings.get_queue_names()[0]
 
     def test_create_task_error(self):

@@ -265,7 +265,7 @@ class BaseTestCases:
                 f"key1='one', key2=2, key3={repr(date)}, key4=False)",
             )
 
-        def test_admin_list_view(self):
+        def test_admin_changelist_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
             task_factory(self.task_type)
@@ -278,20 +278,10 @@ class BaseTestCases:
         def test_admin_list_view_delete_model(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.task_type,
-            )
+            task = task_factory(self.task_type)
             url = reverse("admin:scheduler_task_changelist")
             # act
-            res = self.client.post(
-                url,
-                data={
-                    "action": "delete_model",
-                    "_selected_action": [
-                        task.pk,
-                    ],
-                },
-            )
+            res = self.client.post(url, data={"action": "delete_model", "_selected_action": [task.pk]})
             # assert
             self.assertEqual(302, res.status_code)
 
@@ -320,15 +310,8 @@ class BaseTestCases:
         def test_admin_change_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.task_type,
-            )
-            url = reverse(
-                "admin:scheduler_task_change",
-                args=[
-                    task.pk,
-                ],
-            )
+            task = task_factory(self.task_type)
+            url = reverse("admin:scheduler_task_change", args=[task.pk])
             # act
             res = self.client.get(url)
             # assert
@@ -339,12 +322,7 @@ class BaseTestCases:
             self.client.login(username="admin", password="admin")
             task = task_factory(self.task_type, queue="test2", instance_only=True)
             task.save(schedule_job=False)
-            url = reverse(
-                "admin:scheduler_task_change",
-                args=[
-                    task.pk,
-                ],
-            )
+            url = reverse("admin:scheduler_task_change", args=[task.pk])
             # act
             res = self.client.get(url)
             # assert
