@@ -13,7 +13,6 @@ import warnings
 from datetime import timedelta
 from enum import Enum
 from random import shuffle
-from resource import struct_rusage
 from types import FrameType
 from typing import List, Optional, Tuple, Any, Iterable
 
@@ -475,14 +474,14 @@ class Worker:
             else:
                 raise
 
-    def wait_for_job_execution_process(self) -> Tuple[Optional[int], Optional[int], Optional[struct_rusage]]:
+    def wait_for_job_execution_process(self) -> Tuple[Optional[int], Optional[int]]:
         """Waits for the job execution process to complete.
         Uses `0` as argument as to include "any child in the process group of the current process".
         """
-        pid = stat = rusage = None
+        pid = stat = None
         with contextlib.suppress(ChildProcessError):  # ChildProcessError: [Errno 10] No child processes
-            pid, stat, rusage = os.wait4(self._model.job_execution_process_pid, 0)
-        return pid, stat, rusage
+            pid, stat = os.waitpid(self._model.job_execution_process_pid, 0)
+        return pid, stat
 
     def request_force_stop(self, signum: int, frame: Optional[FrameType]):
         """Terminates the application (cold shutdown).
@@ -634,14 +633,14 @@ class Worker:
         :param job: The Job
         :param queue: The Queue
         """
-        retpid = ret_val = rusage = None
+        retpid = ret_val = None
         job.started_at = utcnow()
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
                     self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
-                    retpid, ret_val, rusage = self.wait_for_job_execution_process()
+                    retpid, ret_val = self.wait_for_job_execution_process()
                 break
             except JobExecutionMonitorTimeoutException:
                 # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker alive.

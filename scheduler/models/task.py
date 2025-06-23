@@ -187,9 +187,9 @@ class Task(models.Model):
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-                (self.job_name in self.rqueue.scheduled_job_registry.all())
-                or (self.job_name in self.rqueue.queued_job_registry.all())
-                or (self.job_name in self.rqueue.active_job_registry.all())
+            (self.job_name in self.rqueue.scheduled_job_registry.all())
+            or (self.job_name in self.rqueue.queued_job_registry.all())
+            or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
