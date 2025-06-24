@@ -52,8 +52,8 @@ class SentryIntegration(Integration):
                     transaction.name = job_model.func_name
 
                 with sentry_sdk.start_transaction(
-                        transaction,
-                        custom_sampling_context={"rq_job": job_model},
+                    transaction,
+                    custom_sampling_context={"rq_job": job_model},
                 ):
                     rv = old_perform_job(self, job_model, *args, **kwargs)
 
@@ -70,11 +70,7 @@ class SentryIntegration(Integration):
         old_handle_exception = Worker.handle_exception
 
         def sentry_patched_handle_exception(self: Worker, job: Any, *exc_info: Any, **kwargs: Any) -> Any:
-            retry = (
-                    hasattr(job, "retries_left")
-                    and job.retries_left
-                    and job.retries_left > 0
-            )
+            retry = hasattr(job, "retries_left") and job.retries_left and job.retries_left > 0
             failed = job._status == JobStatus.FAILED or job.is_failed
             if failed and not retry:
                 _capture_exception(exc_info)
@@ -89,9 +85,7 @@ class SentryIntegration(Integration):
         def sentry_patched_enqueue_job(self: Queue, job: Any, **kwargs: Any) -> Any:
             scope = sentry_sdk.get_current_scope()
             if scope.span is not None:
-                job.meta["_sentry_trace_headers"] = dict(
-                    scope.iter_trace_propagation_headers()
-                )
+                job.meta["_sentry_trace_headers"] = dict(scope.iter_trace_propagation_headers())
 
             return old_enqueue_job(self, job, **kwargs)
 

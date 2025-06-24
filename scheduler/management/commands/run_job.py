@@ -27,7 +27,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("args", nargs="*", help="Args for callable")
 
-    def handle(self, **options:Any)-> None:
+    def handle(self, **options: Any) -> None:
         verbosity = int(options.get("verbosity", 1))
         timeout = options.get("timeout")
         result_ttl = options.get("result_ttl")

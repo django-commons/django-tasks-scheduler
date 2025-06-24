@@ -43,7 +43,7 @@ def _find_job(job_name: str) -> Tuple[Optional[Queue], Optional[JobModel]]:
 
 
 def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
-    next_url = request.POST.get("next_url", default_next_url)
+    next_url: str = request.POST.get("next_url", default_next_url)
     next_url = next_url.replace("\\", "")
     if (
         not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None)

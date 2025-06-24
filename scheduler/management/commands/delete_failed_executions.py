@@ -1,4 +1,5 @@
 import click
+from django.core.management import CommandParser
 from django.core.management.base import BaseCommand
 
 from scheduler.helpers.queues import get_queue

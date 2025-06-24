@@ -63,6 +63,7 @@ dev = [
     "fakeredis~=2.28",
     "pyyaml>=6,<7",
     "mypy>=1.16.0",
+    "types-croniter>=6.0.0.20250411",
 ]
 
 [tool.hatch.build.targets.sdist]

@@ -30,6 +30,10 @@ class NoSuchJobError(Exception):
     pass
 
 
+class NoSuchRegistryError(Exception):
+    pass
+
+
 def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
     """The main execution method. Invokes the job function with the job arguments.
 
@@ -155,11 +159,11 @@ class Queue:
             res += getattr(self, registry).count(connection=self.connection)
         return res
 
-    def get_registry(self, name: str) -> Union[None, JobNamesRegistry]:
+    def get_registry(self, name: str) -> JobNamesRegistry:
         name = name.lower()
         if name in Queue.REGISTRIES:
             return getattr(self, Queue.REGISTRIES[name])
-        return None
+        raise NoSuchRegistryError(f"Unknown registry name {name}")
 
     def get_all_job_names(self) -> List[str]:
         res = list()

@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 
 from scheduler import settings
 from scheduler.helpers.queues import Queue, get_all_workers
+from scheduler.helpers.queues.queue_logic import NoSuchRegistryError
 from scheduler.redis_models import JobModel, JobNamesRegistry, WorkerModel
 from scheduler.settings import get_queue_names, logger
 from scheduler.types import ConnectionErrorTypes
@@ -19,7 +20,7 @@ from scheduler.views.helpers import get_queue
 def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> Tuple[List[JobModel], int, range]:
     items_per_page = settings.SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = registry.count(queue.connection)
-    job_list = list()
+    job_list: List[JobModel] = list()
 
     if num_jobs == 0:
         return job_list, num_jobs, range(1, 1)
@@ -31,19 +32,19 @@ def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) 
     job_list = JobModel.get_many(job_names, connection=queue.connection)
     remove_job_names = [job_name for i, job_name in enumerate(job_names) if job_list[i] is None]
     valid_jobs = [job for job in job_list if job is not None]
-    if registry is not queue:
-        for job_name in remove_job_names:
-            registry.delete(queue.connection, job_name)
+    for job_name in remove_job_names:
+        registry.delete(queue.connection, job_name)
 
     return valid_jobs, num_jobs, page_range
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
-    registry = queue.get_registry(registry_name)
-    if registry is None:
+    try:
+        registry = queue.get_registry(registry_name)
+    except NoSuchRegistryError:
         return HttpResponseNotFound()
     title = registry_name.capitalize()
     page = int(request.GET.get("page", 1))
@@ -63,8 +64,8 @@ def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str
     return render(request, "admin/scheduler/jobs.html", context_data)
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     queue.clean_registries()
@@ -83,14 +84,14 @@ def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
 def stats_json(request: HttpRequest) -> Union[JsonResponse, HttpResponseNotFound]:
     auth_token = request.headers.get("Authorization")
     token_validation_func = settings.SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
-    if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):
+    if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
         return JsonResponse(get_statistics())
 
     return HttpResponseNotFound()
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def stats(request: HttpRequest) -> HttpResponse:
     context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
     return render(request, "admin/scheduler/stats.html", context_data)

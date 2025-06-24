@@ -1,6 +1,6 @@
 import os
 import signal
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from scheduler.types import ConnectionType
 from scheduler.redis_models import WorkerModel, JobModel
@@ -13,7 +13,7 @@ class StopJobCommand(WorkerCommand):
 
     command_name = "stop-job"
 
-    def __init__(self, *args, job_name: str, worker_name: str, **kwargs) -> None:
+    def __init__(self, *args, job_name: str, worker_name: Optional[str], **kwargs) -> None:
         super().__init__(*args, worker_name=worker_name, **kwargs)
         self.job_name = job_name
         if self.job_name is None:

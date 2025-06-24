@@ -1,6 +1,6 @@
 import math
 from datetime import timedelta, datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple, Callable
 
 import croniter
 from django.conf import settings as django_settings
@@ -29,11 +29,11 @@ from ..helpers import utils
 def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     if job.task_type is None or job.scheduled_task_id is None:
         return None
-    task = Task.objects.filter(id=job.scheduled_task_id).first()
+    task: Task = Task.objects.filter(id=job.scheduled_task_id).first()
     return task
 
 
-def failure_callback(job: JobModel, connection, result, *args, **kwargs):
+def failure_callback(job: JobModel, connection:ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
     task = _get_task_for_job(job)
     if task is None:
         logger.warn(f"Could not find task for job {job.name}")
@@ -48,7 +48,7 @@ def failure_callback(job: JobModel, connection, result, *args, **kwargs):
     task.save(schedule_job=True, clean=False)
 
 
-def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args, **kwargs):
+def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
     task = _get_task_for_job(job)
     if task is None:
         logger.warn(f"Could not find task for job {job.name}")
@@ -59,7 +59,7 @@ def success_callback(job: JobModel, connection: ConnectionType, result: Any, *ar
     task.save(schedule_job=True, clean=False)
 
 
-def get_queue_choices():
+def get_queue_choices() -> List[Tuple[str, str]]:
     queue_names = get_queue_names()
     return [(queue, queue) for queue in queue_names]
 
@@ -176,20 +176,20 @@ class Task(models.Model):
         ),
     )
 
-    def callable_func(self):
+    def callable_func(self)->Callable:
         """Translate callable string to callable"""
         return utils.callable_func(self.callable)
 
-    @admin.display(boolean=True, description=_("is scheduled?"))
+    @admin.display(boolean=True, description=_("is scheduled?"))  # type: ignore[misc]
     def is_scheduled(self) -> bool:
         """Check whether a next job for this task is queued/scheduled to be executed"""
         if self.job_name is None:  # no job_id => is not scheduled
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-            (self.job_name in self.rqueue.scheduled_job_registry.all())
-            or (self.job_name in self.rqueue.queued_job_registry.all())
-            or (self.job_name in self.rqueue.active_job_registry.all())
+                (self.job_name in self.rqueue.scheduled_job_registry.all())
+                or (self.job_name in self.rqueue.queued_job_registry.all())
+                or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
@@ -198,7 +198,7 @@ class Task(models.Model):
             super(Task, self).save()
         return res
 
-    @admin.display(description="Callable")
+    @admin.display(description="Callable")  # type: ignore[misc]
     def function_string(self) -> str:
         args = self.parse_args()
         args_list = [repr(arg) for arg in args]
@@ -206,21 +206,21 @@ class Task(models.Model):
         kwargs_list = [k + "=" + repr(v) for (k, v) in kwargs.items()]
         return self.callable + f"({', '.join(args_list + kwargs_list)})"
 
-    def parse_args(self):
+    def parse_args(self) -> List[Any]:
         """Parse args for running the job"""
         args = self.callable_args.all()
         return [arg.value() for arg in args]
 
-    def parse_kwargs(self):
+    def parse_kwargs(self) -> Dict[str, Any]:
         """Parse kwargs for running the job"""
         kwargs = self.callable_kwargs.all()
         return dict([kwarg.value() for kwarg in kwargs])
 
-    def _next_job_id(self):
+    def _next_job_id(self) -> str:
         addition = timezone.now().strftime("%Y%m%d%H%M%S%f")
         return f"{self.queue}:{self.id}:{addition}"
 
-    def _enqueue_args(self) -> Dict:
+    def _enqueue_args(self) -> Dict[str, Any]:
         """Args for Queue.enqueue_call.
         Set all arguments for Queue.enqueue. Particularly:
         - set job timeout and ttl
@@ -282,7 +282,7 @@ class Task(models.Model):
                 self.repeat = (self.repeat - gap) if self.repeat is not None else None
         return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Export model to dictionary, so it can be saved as external file backup"""
         interval_unit = str(self.interval_unit) if self.interval_unit else None
         res = dict(
@@ -321,16 +321,11 @@ class Task(models.Model):
         )
         return res
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         model = self._meta.model.__name__.lower()
-        return reverse(
-            f"admin:scheduler_{model}_change",
-            args=[
-                self.id,
-            ],
-        )
+        return reverse(f"admin:scheduler_{model}_change", args=[self.id])
 
-    def __str__(self):
+    def __str__(self) -> str:
         func = self.function_string()
         return f"{self.task_type}[{self.name}={func}]"
 
@@ -359,7 +354,7 @@ class Task(models.Model):
         self.job_name = job.name
         return True
 
-    def save(self, **kwargs):
+    def save(self, **kwargs: Any) -> None:
         should_clean = kwargs.pop("clean", True)
         if should_clean:
             self.clean()
@@ -372,17 +367,17 @@ class Task(models.Model):
             self._schedule()
             super(Task, self).save()
 
-    def delete(self, **kwargs):
+    def delete(self, **kwargs: Any) -> None:
         self.unschedule()
         super(Task, self).delete(**kwargs)
 
-    def interval_seconds(self):
+    def interval_seconds(self) -> float:
         kwargs = {
             self.interval_unit: self.interval,
         }
         return timedelta(**kwargs).total_seconds()
 
-    def clean_callable(self):
+    def clean_callable(self) -> None:
         try:
             utils.callable_func(self.callable)
         except Exception:
@@ -390,7 +385,7 @@ class Task(models.Model):
                 {"callable": ValidationError(_("Invalid callable, must be importable"), code="invalid")}
             )
 
-    def clean_queue(self):
+    def clean_queue(self) -> None:
         queue_names = get_queue_names()
         if self.queue not in queue_names:
             raise ValidationError(
@@ -401,7 +396,7 @@ class Task(models.Model):
                 }
             )
 
-    def clean_interval_unit(self):
+    def clean_interval_unit(self) -> None:
         config = settings.SCHEDULER_CONFIG
         if config.SCHEDULER_INTERVAL > self.interval_seconds():
             raise ValidationError(
@@ -424,13 +419,13 @@ class Task(models.Model):
                 params={"interval": self.interval_seconds()},
             )
 
-    def clean_cron_string(self):
+    def clean_cron_string(self) -> None:
         try:
             croniter.croniter(self.cron_string)
         except ValueError as e:
             raise ValidationError({"cron_string": ValidationError(_(str(e)), code="invalid")})
 
-    def clean(self):
+    def clean(self) -> None:
         if self.task_type not in TaskType.values:
             raise ValidationError(
                 {"task_type": ValidationError(_("Invalid task type"), code="invalid")},
@@ -470,7 +465,7 @@ def get_scheduled_task(task_type_str: str, task_id: int) -> Task:
             task = Task.objects.filter(task_type=task_type, id=task_id).first()
             if task is None:
                 raise ValueError(f"Job {task_type}:{task_id} does not exit")
-            return task
+            return task  # type: ignore[no-any-return]
         except ValueError:
             raise ValueError(f"Invalid task type {task_type_str}")
     raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
@@ -484,5 +479,5 @@ def run_task(task_model: str, task_id: int) -> Any:
     logger.debug(f"Running task {str(scheduled_task)}")
     args = scheduled_task.parse_args()
     kwargs = scheduled_task.parse_kwargs()
-    res = scheduled_task.callable_func()(*args, **kwargs)
+    res = scheduled_task.callable_func()(*args, **kwargs)  # type: ignore[no-untyped-call]
     return res

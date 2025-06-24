@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Any, Tuple, Dict, Type
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers import utils
 
-ARG_TYPE_TYPES_DICT = {
+ARG_TYPE_TYPES_DICT:Dict[str,Type] = {
     "str": str,
     "int": int,
     "bool": bool,
@@ -37,7 +37,7 @@ class BaseTaskArg(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
 
-    def clean(self):
+    def clean(self) -> None:
         if self.arg_type not in ARG_TYPE_TYPES_DICT:
             raise ValidationError(
                 {
@@ -61,15 +61,15 @@ class BaseTaskArg(models.Model):
                 {"arg_type": ValidationError(_(f"Could not parse {self.val} as {self.arg_type}"), code="invalid")}
             )
 
-    def save(self, **kwargs):
+    def save(self, **kwargs: Any) -> None:
         super(BaseTaskArg, self).save(**kwargs)
         self.content_object.save()
 
-    def delete(self, **kwargs):
+    def delete(self, **kwargs: Any) -> None:
         super(BaseTaskArg, self).delete(**kwargs)
         self.content_object.save()
 
-    def value(self):
+    def value(self) -> Any:
         if self.arg_type == "callable":
             res = utils.callable_func(self.val)()
         elif self.arg_type == "datetime":
@@ -86,16 +86,16 @@ class BaseTaskArg(models.Model):
 
 
 class TaskArg(BaseTaskArg):
-    def __str__(self):
+    def __str__(self) -> str:
         return f"TaskArg[arg_type={self.arg_type},value={self.value()}]"
 
 
 class TaskKwarg(BaseTaskArg):
     key = models.CharField(max_length=255)
 
-    def __str__(self):
+    def __str__(self) -> str:
         key, value = self.value()
         return f"TaskKwarg[key={key},arg_type={self.arg_type},value={self.val}]"
 
-    def value(self):
+    def value(self) -> Tuple[str, Any]:
         return self.key, super(TaskKwarg, self).value()

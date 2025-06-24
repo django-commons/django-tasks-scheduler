@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 from datetime import datetime, timezone
-from typing import Type, Dict, Any
+from typing import Type, Dict, Any, Optional
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
@@ -19,8 +19,8 @@ class WorkerCommand(ABC):
     _registry: Dict[str, Type[Self]] = dict()
     command_name: str = ""
 
-    def __init__(self, *args, worker_name: str, **kwargs) -> None:
-        self.worker_name = worker_name
+    def __init__(self, *args, worker_name: Optional[str], **kwargs) -> None:
+        self.worker_name: Optional[str] = worker_name
 
     def command_payload(self, **kwargs) -> Dict[str, Any]:
         commands_channel = WorkerCommandsChannelListener._commands_channel(self.worker_name)
