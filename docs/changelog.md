@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.0.5 🌈
+
+### 🐛 Bug Fixes
+
+- fix:repeatable task without start date #276
+- fix:admin list of tasks showing local datetime #280
+- fix:wait for job child process using os.waitpid #281
+
+### 🧰 Maintenance
+
+- refactor some tests
+
 ## v4.0.4 🌈
 
 ### 🐛 Bug Fixes

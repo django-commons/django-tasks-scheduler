@@ -45,7 +45,7 @@ def failure_callback(job: JobModel, connection, result, *args, **kwargs):
     task.job_name = None
     task.failed_runs += 1
     task.last_failed_run = timezone.now()
-    task.save(schedule_job=True)
+    task.save(schedule_job=True, clean=False)
 
 
 def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args, **kwargs):
@@ -56,7 +56,7 @@ def success_callback(job: JobModel, connection: ConnectionType, result: Any, *ar
     task.job_name = None
     task.successful_runs += 1
     task.last_successful_run = timezone.now()
-    task.save(schedule_job=True)
+    task.save(schedule_job=True, clean=False)
 
 
 def get_queue_choices():
@@ -187,9 +187,9 @@ class Task(models.Model):
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-                (self.job_name in self.rqueue.scheduled_job_registry.all())
-                or (self.job_name in self.rqueue.queued_job_registry.all())
-                or (self.job_name in self.rqueue.active_job_registry.all())
+            (self.job_name in self.rqueue.scheduled_job_registry.all())
+            or (self.job_name in self.rqueue.queued_job_registry.all())
+            or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
@@ -266,7 +266,7 @@ class Task(models.Model):
         if self.job_name is not None:
             self.rqueue.delete_job(self.job_name)
             self.job_name = None
-        self.save(schedule_job=False)
+        self.save(schedule_job=False, clean=False)
         return True
 
     def _schedule_time(self) -> datetime:
@@ -360,7 +360,9 @@ class Task(models.Model):
         return True
 
     def save(self, **kwargs):
-        self.clean()
+        should_clean = kwargs.pop("clean", True)
+        if should_clean:
+            self.clean()
         schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
         if update_fields is not None:
@@ -406,12 +408,6 @@ class Task(models.Model):
                 _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)"),
                 code="invalid",
                 params={"queue": self.queue, "interval": config.SCHEDULER_INTERVAL},
-            )
-        if self.interval_seconds() <= config.SCHEDULER_INTERVAL:
-            raise ValidationError(
-                _("Job interval is not a multiple of rq_scheduler's interval frequency: %(interval)ss"),
-                code="invalid",
-                params={"interval": config.SCHEDULER_INTERVAL},
             )
 
     def clean_result_ttl(self) -> None:

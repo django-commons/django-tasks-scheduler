@@ -4,6 +4,7 @@ from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
 from django.http import HttpRequest
+from django.utils import timezone, formats
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers.queues import get_queue
@@ -120,7 +121,11 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description="Schedule")
     def task_schedule(self, o: Task) -> str:
         if o.task_type == TaskType.ONCE.value:
-            return f"Run once: {o.scheduled_time:%Y-%m-%d %H:%M:%S}"
+            if timezone.is_naive(o.scheduled_time):
+                local_time = timezone.make_aware(o.scheduled_time, timezone.get_current_timezone())
+            else:
+                local_time = timezone.localtime(o.scheduled_time)
+            return f"Run once: {formats.date_format(local_time, 'DATETIME_FORMAT')}"
         elif o.task_type == TaskType.CRON.value:
             return f"Cron: {o.cron_string}"
         else:  # if o.task_type == TaskType.REPEATABLE.value:

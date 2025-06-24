@@ -36,8 +36,8 @@ class TestViewJobDetails(BaseTestCase):
 
     def test_scheduled_job_details(self):
         """Job data is displayed properly"""
-        scheduled_job = task_factory(TaskType.ONCE, enabled=True)
-        job = _get_task_scheduled_job_from_registry(scheduled_job)
+        task = task_factory(TaskType.ONCE, enabled=True)
+        job = _get_task_scheduled_job_from_registry(task)
 
         url = reverse(
             "job_details",

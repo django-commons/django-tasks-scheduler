@@ -224,13 +224,13 @@ class BaseTestCases:
             self.assertEqual(task.parse_args(), ["one", 2, True, False, date])
 
         def test_parse_kwargs(self):
-            job = task_factory(self.task_type)
+            task = task_factory(self.task_type)
             date = timezone.now()
-            taskarg_factory(TaskKwarg, key="key1", arg_type="str", val="one", content_object=job)
-            taskarg_factory(TaskKwarg, key="key2", arg_type="int", val=2, content_object=job)
-            taskarg_factory(TaskKwarg, key="key3", arg_type="bool", val=True, content_object=job)
-            taskarg_factory(TaskKwarg, key="key4", arg_type="datetime", val=date, content_object=job)
-            kwargs = job.parse_kwargs()
+            taskarg_factory(TaskKwarg, key="key1", arg_type="str", val="one", content_object=task)
+            taskarg_factory(TaskKwarg, key="key2", arg_type="int", val=2, content_object=task)
+            taskarg_factory(TaskKwarg, key="key3", arg_type="bool", val=True, content_object=task)
+            taskarg_factory(TaskKwarg, key="key4", arg_type="datetime", val=date, content_object=task)
+            kwargs = task.parse_kwargs()
             self.assertEqual(kwargs, dict(key1="one", key2=2, key3=True, key4=date))
 
         def test_callable_args_and_kwargs(self):
@@ -265,7 +265,7 @@ class BaseTestCases:
                 f"key1='one', key2=2, key3={repr(date)}, key4=False)",
             )
 
-        def test_admin_list_view(self):
+        def test_admin_changelist_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
             task_factory(self.task_type)
@@ -278,20 +278,10 @@ class BaseTestCases:
         def test_admin_list_view_delete_model(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.task_type,
-            )
+            task = task_factory(self.task_type)
             url = reverse("admin:scheduler_task_changelist")
             # act
-            res = self.client.post(
-                url,
-                data={
-                    "action": "delete_model",
-                    "_selected_action": [
-                        task.pk,
-                    ],
-                },
-            )
+            res = self.client.post(url, data={"action": "delete_model", "_selected_action": [task.pk]})
             # assert
             self.assertEqual(302, res.status_code)
 
@@ -320,15 +310,8 @@ class BaseTestCases:
         def test_admin_change_view(self):
             # arrange
             self.client.login(username="admin", password="admin")
-            task = task_factory(
-                self.task_type,
-            )
-            url = reverse(
-                "admin:scheduler_task_change",
-                args=[
-                    task.pk,
-                ],
-            )
+            task = task_factory(self.task_type)
+            url = reverse("admin:scheduler_task_change", args=[task.pk])
             # act
             res = self.client.get(url)
             # assert
@@ -339,12 +322,7 @@ class BaseTestCases:
             self.client.login(username="admin", password="admin")
             task = task_factory(self.task_type, queue="test2", instance_only=True)
             task.save(schedule_job=False)
-            url = reverse(
-                "admin:scheduler_task_change",
-                args=[
-                    task.pk,
-                ],
-            )
+            url = reverse("admin:scheduler_task_change", args=[task.pk])
             # act
             res = self.client.get(url)
             # assert
@@ -494,6 +472,6 @@ class BaseTestCases:
             self.assertEqual("2016-12-25T13:00:00+00:00", task._schedule_time().isoformat())
 
         def test_result_ttl_passthrough(self):
-            job = task_factory(self.task_type, result_ttl=500)
-            entry = _get_task_scheduled_job_from_registry(job)
+            task = task_factory(self.task_type, result_ttl=500)
+            entry = _get_task_scheduled_job_from_registry(task)
             self.assertEqual(entry.success_ttl, 500)
