@@ -1,7 +1,8 @@
 import sys
+from typing import Any
 
 import click
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 
 from scheduler.models import Task
 
@@ -11,7 +12,7 @@ class Command(BaseCommand):
 
     help = __doc__
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "-o",
             "--output",
@@ -37,7 +38,7 @@ class Command(BaseCommand):
             help="File name to load (otherwise writes to standard output)",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
         res = list()
 

@@ -45,7 +45,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-yaml = ["pyyaml~=6.0"]
+yaml = ["pyyaml~=6.0", "types-PyYAML>=6.0.12.20250516"]
 valkey = ["valkey>=6.0.2,<7"]
 sentry = ["sentry-sdk~=2.19"]
 
@@ -90,7 +90,10 @@ line-ending = "auto"
 
 [tool.mypy]
 packages = ['scheduler', ]
-exclude = "scheduler/tests/.*\\.py"
+exclude = ["scheduler/tests/.*\\.py",
+           "scheduler/migrations/.*\\.py",
+           "testproject/.*\\.py",
+           "testproject/tests/.*\\.py"]
 strict = true
 follow_imports = "silent"
 ignore_missing_imports = true

@@ -1,5 +1,7 @@
+from typing import Any
+
 import click
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 
 from scheduler.helpers.queues import get_queue
 
@@ -13,7 +15,7 @@ class Command(BaseCommand):
     help = __doc__
     args = "<function arg arg ...>"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--queue", "-q", dest="queue", default="default", help="Specify the queue [default]")
         parser.add_argument("--timeout", "-t", type=int, dest="timeout", help="A timeout in seconds")
         parser.add_argument(
@@ -25,7 +27,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("args", nargs="*", help="Args for callable")
 
-    def handle(self, **options):
+    def handle(self, **options:Any)-> None:
         verbosity = int(options.get("verbosity", 1))
         timeout = options.get("timeout")
         result_ttl = options.get("result_ttl")

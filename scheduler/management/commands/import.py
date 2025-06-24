@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 import click
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from django.utils import timezone
 
 from scheduler.models import TaskArg, TaskKwarg, Task
@@ -24,11 +24,11 @@ def get_task_type(model_str: str) -> TaskType:
     except ValueError:
         pass
     if model_str == "CronTask":
-        return TaskType.CRON
+        return TaskType(TaskType.CRON)
     elif model_str == "RepeatableTask":
-        return TaskType.REPEATABLE
+        return TaskType(TaskType.REPEATABLE)
     elif model_str in {"ScheduledTask", "OnceTask"}:
-        return TaskType.ONCE
+        return TaskType(TaskType.ONCE)
     raise ValueError(f"Invalid model {model_str}")
 
 
@@ -52,12 +52,17 @@ def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[T
         if not settings.USE_TZ and not timezone.is_naive(target):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
-    model_fields = filter(lambda field: hasattr(field, "attname"), Task._meta.get_fields())
-    model_fields = set(map(lambda field: field.attname, model_fields))
+    model_fields = set(map(
+        lambda field: field.attname,
+        filter(
+            lambda field: hasattr(field, "attname"),
+            Task._meta.get_fields()
+        )
+    ))
     keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:
         del kwargs[k]
-    task = Task.objects.create(**kwargs)
+    task: Task = Task.objects.create(**kwargs)
     click.echo(f"Created task {task}")
     content_type = ContentType.objects.get_for_model(task)
 
@@ -77,13 +82,11 @@ def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[T
 
 
 class Command(BaseCommand):
-    """
-    Import scheduled jobs
-    """
+    """Import scheduled jobs"""
 
     help = __doc__
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "-f",
             "--format",
@@ -115,8 +118,8 @@ class Command(BaseCommand):
             help="Update existing records",
         )
 
-    def handle(self, *args, **options):
-        file = open(options.get("filename")) if options.get("filename") else sys.stdin
+    def handle(self, *args: Any, **options: Any) -> None:
+        file = open(options.get("filename")) if options.get("filename") else sys.stdin # type: ignore[arg-type]
         jobs = list()
         if options.get("format") == "json":
             import json
@@ -133,11 +136,11 @@ class Command(BaseCommand):
                 click.echo("Aborting. LibYAML is not installed.")
                 exit(1)
             # Disable YAML alias
-            yaml.Dumper.ignore_aliases = lambda *x: True
+            yaml.Dumper.ignore_aliases = lambda *x: True  # type: ignore[method-assign]
             jobs = yaml.load(file, yaml.SafeLoader)
 
         if options.get("reset"):
             Task.objects.all().delete()
 
         for job in jobs:
-            create_task_from_dict(job, update=options.get("update"))
+            create_task_from_dict(job, update=options.get("update")) # type: ignore[arg-type]

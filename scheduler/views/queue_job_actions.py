@@ -20,12 +20,12 @@ class QueueJobAction(Enum):
     REQUEUE = "requeue"
     STOP = "stop"
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: str) -> bool:
         return item in [a.value for a in self.__class__]
 
 
-@never_cache
-@staff_member_required
+@never_cache # type: ignore
+@staff_member_required # type: ignore
 def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
@@ -51,6 +51,9 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
             if job is None:
                 continue
             try:
+                if job.worker_name is None:
+                    logger.warning(f"Job {job.name} has no worker assigned, cannot stop it")
+                    continue
                 command = StopJobCommand(job_name=job.name, worker_name=job.worker_name)
                 send_command(connection=queue.connection, command=command)
                 queue.cancel_job(job.name)
@@ -62,8 +65,8 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     return redirect(next_url)
 
 
-@never_cache
-@staff_member_required
+@never_cache # type: ignore
+@staff_member_required # type: ignore
 def queue_confirm_job_action(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))

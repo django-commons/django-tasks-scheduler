@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from typing import Any, Dict, List, Optional
 
 import click
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 
 from scheduler.views import get_statistics
 
@@ -24,7 +24,7 @@ class Command(BaseCommand):
         self.table_width = 80
         self.interval = None
 
-    def add_arguments(self, parser: ArgumentParser) -> None:
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "-j",
             "--json",
