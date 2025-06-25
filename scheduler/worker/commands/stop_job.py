@@ -19,7 +19,7 @@ class StopJobCommand(WorkerCommand):
         if self.job_name is None:
             raise WorkerCommandError("job_name for kill-job command is required")
 
-    def command_payload(self) -> Dict[str, Any]:
+    def command_payload(self,  **kwargs) -> Dict[str, Any]:
         return super().command_payload(job_name=self.job_name)
 
     def process_command(self, connection: ConnectionType) -> None:

@@ -14,6 +14,7 @@ class SuspendWorkCommand(WorkerCommand):
         worker_model = WorkerModel.get(self.worker_name, connection)
         if worker_model is None:
             logger.warning(f"Worker {self.worker_name} not found")
+            return
         if worker_model.is_suspended:
             logger.warning(f"Worker {self.worker_name} already suspended")
             return

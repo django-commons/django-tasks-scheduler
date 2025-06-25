@@ -312,7 +312,7 @@ class Worker:
                 # Ensure that custom exception handlers are called even if the Broker is down
                 pass
 
-    def bootstrap(self):
+    def bootstrap(self)-> None:
         """Bootstraps the worker.
         Runs the basic tasks that should run when the worker actually starts working.
         Used so that new workers can focus on the work loop implementation rather
