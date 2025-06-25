@@ -65,7 +65,7 @@ class QueueConfiguration:
     USERNAME: Optional[str] = None
     PASSWORD: Optional[str] = None
 
-    ASYNC: Optional[bool] = True
+    ASYNC: bool = True
 
     SENTINELS: Optional[List[Tuple[str, int]]] = None
     SENTINEL_KWARGS: Optional[Dict[str, str]] = None

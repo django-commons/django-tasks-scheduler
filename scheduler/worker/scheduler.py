@@ -158,7 +158,7 @@ class WorkerScheduler:
             with self.connection.pipeline() as pipeline:
                 for job in jobs:
                     if job is not None:
-                        queue.enqueue_job(job, connection=pipeline, at_front=job.at_front)
+                        queue.enqueue_job(job, pipeline=pipeline, at_front=job.at_front)
                 pipeline.execute()
         self.status = SchedulerStatus.STARTED
 

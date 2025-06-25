@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers import utils
 
-ARG_TYPE_TYPES_DICT:Dict[str,Type] = {
+ARG_TYPE_TYPES_DICT: Dict[str, Type] = {
     "str": str,
     "int": int,
     "bool": bool,

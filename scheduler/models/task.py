@@ -33,7 +33,7 @@ def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     return task
 
 
-def failure_callback(job: JobModel, connection:ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
+def failure_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
     task = _get_task_for_job(job)
     if task is None:
         logger.warn(f"Could not find task for job {job.name}")
@@ -176,7 +176,7 @@ class Task(models.Model):
         ),
     )
 
-    def callable_func(self)->Callable:
+    def callable_func(self) -> Callable:
         """Translate callable string to callable"""
         return utils.callable_func(self.callable)
 
@@ -187,9 +187,9 @@ class Task(models.Model):
             return False
         # check whether job_id is in scheduled/queued/active jobs
         res = (
-                (self.job_name in self.rqueue.scheduled_job_registry.all())
-                or (self.job_name in self.rqueue.queued_job_registry.all())
-                or (self.job_name in self.rqueue.active_job_registry.all())
+            (self.job_name in self.rqueue.scheduled_job_registry.all())
+            or (self.job_name in self.rqueue.queued_job_registry.all())
+            or (self.job_name in self.rqueue.active_job_registry.all())
         )
         # If the job_id is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)

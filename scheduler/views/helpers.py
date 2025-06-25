@@ -68,7 +68,7 @@ def _enqueue_multiple_jobs(queue: Queue, job_names: List[str], at_front: bool = 
             if job is None:
                 continue
             job.save(connection=pipe)
-            queue.enqueue_job(job, connection=pipe, at_front=at_front)
+            queue.enqueue_job(job, pipeline=pipe, at_front=at_front)
             jobs_requeued += 1
         pipe.execute()
     return jobs_requeued

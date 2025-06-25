@@ -19,7 +19,7 @@ from scheduler.redis_models import (
 )
 from scheduler.redis_models import JobStatus, SchedulerLock, Result, ResultType, JobModel
 from scheduler.settings import logger, SCHEDULER_CONFIG
-from scheduler.types import ConnectionType, FunctionReferenceType, Self
+from scheduler.types import ConnectionType, FunctionReferenceType, Self, PipelineType
 
 
 class InvalidJobOperation(Exception):
@@ -49,17 +49,17 @@ def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
             coro_result = loop.run_until_complete(result)
             result = coro_result
         if job_model.success_callback:
-            job_model.success_callback(job_model, connection, result)  # type: ignore
+            job_model.success_callback(job_model, connection, result)
         return result
     except:
         if job_model.failure_callback:
-            job_model.failure_callback(job_model, connection, *sys.exc_info())  # type: ignore
+            job_model.failure_callback(job_model, connection, *sys.exc_info())
         raise
     finally:
         assert job_model is _job_stack.pop()
 
 
-_job_stack = []
+_job_stack: List[JobModel] = []
 
 
 class Queue:
@@ -89,11 +89,11 @@ class Queue:
         self.scheduled_job_registry = ScheduledJobRegistry(connection=self.connection, name=self.name)
         self.canceled_job_registry = CanceledJobRegistry(connection=self.connection, name=self.name)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.count
 
     @property
-    def scheduler_pid(self) -> int:
+    def scheduler_pid(self) -> Optional[int]:
         lock = SchedulerLock(self.name)
         pid = lock.value(self.connection)
         return int(pid.decode()) if pid is not None else None
@@ -162,7 +162,7 @@ class Queue:
     def get_registry(self, name: str) -> JobNamesRegistry:
         name = name.lower()
         if name in Queue.REGISTRIES:
-            return getattr(self, Queue.REGISTRIES[name])
+            return getattr(self, Queue.REGISTRIES[name])  # type: ignore
         raise NoSuchRegistryError(f"Unknown registry name {name}")
 
     def get_all_job_names(self) -> List[str]:
@@ -182,8 +182,8 @@ class Queue:
     def create_and_enqueue_job(
         self,
         func: FunctionReferenceType,
-        args: Union[Tuple, List, None] = None,
-        kwargs: Optional[Dict] = None,
+        args: Union[Tuple[Any, ...], List[Any], None] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
         when: Optional[datetime] = None,
         timeout: Optional[int] = None,
         result_ttl: Optional[int] = None,
@@ -191,13 +191,12 @@ class Queue:
         description: Optional[str] = None,
         name: Optional[str] = None,
         at_front: bool = False,
-        meta: Optional[Dict] = None,
+        meta: Optional[Dict[str, Any]] = None,
         on_success: Optional[Callback] = None,
         on_failure: Optional[Callback] = None,
         on_stopped: Optional[Callback] = None,
         task_type: Optional[str] = None,
         scheduled_task_id: Optional[int] = None,
-        pipeline: Optional[ConnectionType] = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -216,7 +215,6 @@ class Queue:
         :param on_stopped: Callback for on stopped
         :param task_type: The task type
         :param scheduled_task_id: The scheduled task id
-        :param pipeline: The Broker Pipeline
         :returns: The enqueued Job
         """
         status = JobStatus.QUEUED if when is None else JobStatus.SCHEDULED
@@ -240,7 +238,7 @@ class Queue:
             scheduled_task_id=scheduled_task_id,
         )
         if when is None:
-            job_model = self.enqueue_job(job_model, connection=pipeline, at_front=at_front)
+            job_model = self.enqueue_job(job_model, at_front=at_front)
         elif isinstance(when, datetime):
             job_model.save(connection=self.connection)
             self.scheduled_job_registry.schedule(self.connection, job_model.name, when)
@@ -250,7 +248,7 @@ class Queue:
 
     def job_handle_success(
         self, job: JobModel, result: Any, job_info_ttl: int, result_ttl: int, connection: ConnectionType
-    ):
+    ) -> None:
         """Saves and cleanup job after successful execution"""
         job.after_execution(
             job_info_ttl,
@@ -268,7 +266,7 @@ class Queue:
             ttl=result_ttl,
         )
 
-    def job_handle_failure(self, status: JobStatus, job: JobModel, exc_string: str, connection: ConnectionType):
+    def job_handle_failure(self, status: JobStatus, job: JobModel, exc_string: str, connection: ConnectionType) -> None:
         # Does not set job status since the job might be stopped
         job.after_execution(
             SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
@@ -308,10 +306,7 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-        cls,
-        queues: List[Self],
-        timeout: Optional[int],
-        connection: Optional[ConnectionType] = None,
+        cls, queues: List[Self], timeout: Optional[int], connection: ConnectionType
     ) -> Tuple[Optional[JobModel], Optional[Self]]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
@@ -414,19 +409,19 @@ class Queue:
                 pass
 
     def enqueue_job(
-        self, job_model: JobModel, connection: Optional[ConnectionType] = None, at_front: bool = False
+        self, job_model: JobModel, pipeline: Optional[PipelineType] = None, at_front: bool = False
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 
         If Queue is instantiated with is_async=False, job is executed immediately.
         :param job_model: The job redis model
-        :param connection: The Redis Pipeline
+        :param pipeline: The Broker Pipeline
         :param at_front: Whether to enqueue the job at the front
 
         :returns: The enqueued JobModel
         """
 
-        pipe = connection if connection is not None else self.connection.pipeline()
+        pipe: PipelineType = pipeline if pipeline is not None else self.connection.pipeline()
         job_model.started_at = None
         job_model.ended_at = None
         job_model.status = JobStatus.QUEUED

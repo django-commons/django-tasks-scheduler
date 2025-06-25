@@ -5,6 +5,7 @@ from typing import Optional, Any, ClassVar, List
 
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import StreamModel, decode_dict
+from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
 
@@ -34,19 +35,21 @@ class Result(StreamModel):
         cls,
         connection: ConnectionType,
         job_name: str,
-        worker_name: str,
+        worker_name: Optional[str],
         _type: ResultType,
         ttl: int,
         return_value: Any = None,
         exc_string: Optional[str] = None,
     ) -> Self:
+        if worker_name is None:
+            logger.warning(f"Job {job_name} has no worker name, will save result with 'unknown_worker'")
         result = cls(
             parent=job_name,
             ttl=ttl,
             type=_type,
             return_value=return_value,
             exc_string=exc_string,
-            worker_name=worker_name,
+            worker_name=worker_name or "unknown_worker",
         )
         result.save(connection)
         return result
