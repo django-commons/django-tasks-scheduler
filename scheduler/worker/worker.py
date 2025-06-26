@@ -895,9 +895,9 @@ def _get_ip_address_from_connection(connection: ConnectionType, client_name: str
         warnings.warn("CLIENT SETNAME command not supported, setting ip_address to unknown", Warning)
         return "unknown"
     client_list = connection.client_list()
-    client_adresses: List[str] = [client["addr"] for client in client_list if client["name"] == client_name]
-    if len(client_adresses) > 0:
-        return client_adresses[0]
+    client_address_list: List[str] = [client["addr"] for client in client_list if client["name"] == client_name]
+    if len(client_address_list) > 0:
+        return client_address_list[0]
     else:
         warnings.warn("CLIENT LIST command not supported, setting ip_address to unknown", Warning)
         return "unknown"
