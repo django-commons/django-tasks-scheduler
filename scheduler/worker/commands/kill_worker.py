@@ -19,6 +19,7 @@ class KillWorkerCommand(WorkerCommand):
 
     def process_command(self, connection: ConnectionType) -> None:
         from scheduler.worker import Worker
+
         logger.info(f"Received kill-worker command for {self.worker_name}")
         worker_model = WorkerModel.get(self.worker_name, connection)
         if worker_model is None or worker_model.pid is None:

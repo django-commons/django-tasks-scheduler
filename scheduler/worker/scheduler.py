@@ -32,11 +32,11 @@ def _reschedule_tasks() -> None:
 
 class WorkerScheduler:
     def __init__(
-            self,
-            queues: Sequence[Queue],
-            connection: ConnectionType,
-            worker_name: str,
-            interval: Optional[int] = None,
+        self,
+        queues: Sequence[Queue],
+        connection: ConnectionType,
+        worker_name: str,
+        interval: Optional[int] = None,
     ) -> None:
         interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._queues = queues
