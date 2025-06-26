@@ -1,4 +1,5 @@
 import click
+from django.core.management import CommandParser
 from django.core.management.base import BaseCommand
 
 from scheduler.helpers.queues import get_queue
@@ -8,7 +9,7 @@ from scheduler.redis_models import JobModel
 class Command(BaseCommand):
     help = "Delete failed jobs from Django queue."
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--queue", "-q", dest="queue", default="default", help="Specify the queue [default]")
         parser.add_argument("-f", "--func", help='optional job function name, e.g. "app.tasks.func"')
         parser.add_argument("--dry-run", action="store_true", help="Do not actually delete failed jobs")

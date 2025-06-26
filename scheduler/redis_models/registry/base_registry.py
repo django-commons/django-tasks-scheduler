@@ -74,11 +74,11 @@ class JobNamesRegistry(ZSetModel):
         first_job = self.connection.zrange(self._key, 0, 0)
         return first_job[0].decode() if first_job else None
 
-    def get_last_timestamp(self) -> Optional[float]:
+    def get_last_timestamp(self) -> Optional[int]:
         """Returns the last timestamp in the registry."""
         self.cleanup(self.connection)
         last_timestamp = self.connection.zrange(self._key, -1, -1, withscores=True)
-        return last_timestamp[0][1] if last_timestamp else None
+        return int(last_timestamp[0][1]) if last_timestamp else None
 
     @property
     def key(self) -> str:

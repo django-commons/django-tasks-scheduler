@@ -1,15 +1,14 @@
 from typing import Set
 
 from scheduler.redis_models.worker import WorkerModel
-from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, get_queue_configuration, QueueConfiguration, logger
-from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker
+from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, get_queue_configuration, logger
+from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker, ConnectionType, QueueConfiguration
 from .queue_logic import Queue
-
 
 _BAD_QUEUE_CONFIGURATION = set()
 
 
-def _get_connection(config: QueueConfiguration, use_strict_broker=False):
+def _get_connection(config: QueueConfiguration, use_strict_broker: bool = False) -> ConnectionType:
     """Returns a Broker connection to use based on parameters in SCHEDULER_QUEUES"""
     if SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS:
         import fakeredis
@@ -32,7 +31,7 @@ def _get_connection(config: QueueConfiguration, use_strict_broker=False):
         sentinel_kwargs = config.SENTINEL_KWARGS or {}
         SentinelClass = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)].sentinel_type
         sentinel = SentinelClass(config.SENTINELS, sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
-        return sentinel.master_for(
+        return sentinel.master_for(  # type: ignore
             service_name=config.MASTER_NAME,
             redis_class=broker_cls,
         )
@@ -47,7 +46,7 @@ def _get_connection(config: QueueConfiguration, use_strict_broker=False):
     )
 
 
-def get_queue(name="default") -> Queue:
+def get_queue(name: str = "default") -> Queue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     queue_settings = get_queue_configuration(name)
     is_async = queue_settings.ASYNC

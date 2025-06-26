@@ -23,8 +23,8 @@ def get_worker_executions(worker: WorkerModel) -> List[JobModel]:
     return res
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     workers = get_all_workers()
     worker = next((w for w in workers if w.name == name), None)
@@ -53,8 +53,8 @@ def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     return render(request, "admin/scheduler/worker_details.html", context_data)
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def workers_list(request: HttpRequest) -> HttpResponse:
     all_workers = get_all_workers()
     worker_list = [worker for worker in all_workers]

@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, Union, Dict, Collection, Any, ClassVar, Set, Type
 
-from redis import Redis
-
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
@@ -138,13 +136,13 @@ class HashModel(BaseModel):
         return self._children_key_template.format(self.parent)
 
     @classmethod
-    def all_names(cls, connection: Redis, parent: Optional[str] = None) -> Collection[str]:
+    def all_names(cls, connection: ConnectionType, parent: Optional[str] = None) -> Collection[str]:
         collection_key = cls._children_key_template.format(parent) if parent else cls._list_key
         collection_members = connection.smembers(collection_key)
         return [r.decode() for r in collection_members]
 
     @classmethod
-    def all(cls, connection: Redis, parent: Optional[str] = None) -> List[Self]:
+    def all(cls, connection: ConnectionType, parent: Optional[str] = None) -> List[Self]:
         keys = cls.all_names(connection, parent)
         items = [cls.get(k, connection) for k in keys]
         return [w for w in items if w is not None]

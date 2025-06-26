@@ -3,7 +3,7 @@ from typing import List
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone, formats
 from django.utils.translation import gettext_lazy as _
 
@@ -137,7 +137,7 @@ class TaskAdmin(admin.ModelAdmin):
     def next_run(self, o: Task) -> str:
         return get_next_cron_time(o.cron_string)
 
-    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None):
+    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None) -> HttpResponse:
         extra = extra_context or {}
         obj = self.get_object(request, object_id)
         try:

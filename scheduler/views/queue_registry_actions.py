@@ -10,7 +10,9 @@ from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 from scheduler.helpers.queues import Queue
+from scheduler.helpers.queues.queue_logic import NoSuchRegistryError
 from scheduler.redis_models import JobModel, JobNamesRegistry
+from scheduler.settings import logger
 from scheduler.types import ResponseErrorTypes
 from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
 
@@ -20,32 +22,38 @@ class QueueRegistryActions(Enum):
     REQUEUE = "requeue"
 
 
-def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, registry: JobNamesRegistry):
+def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, registry: JobNamesRegistry) -> None:
     try:
         job_names = registry.all()
         for job_name in job_names:
             registry.delete(registry.connection, job_name)
             job_model = JobModel.get(job_name, connection=registry.connection)
-            job_model.delete(connection=registry.connection)
+            if job_model is not None:
+                job_model.delete(connection=registry.connection)
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")
         raise e
 
 
-def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str):
-    registry = queue.get_registry(registry_name)
+def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str) -> None:
+    try:
+        registry = queue.get_registry(registry_name)
+    except NoSuchRegistryError:
+        logger.error(f"No registry named {registry_name}")
+        return
     job_names = registry.all()
     jobs_requeued_count = _enqueue_multiple_jobs(queue, job_names)
     messages.info(request, f"You have successfully re-queued {jobs_requeued_count} jobs!")
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name: str, action: str) -> HttpResponse:
     queue = get_queue(queue_name)
-    registry = queue.get_registry(registry_name)
-    if registry is None:
+    try:
+        registry = queue.get_registry(registry_name)
+    except NoSuchRegistryError:
         return HttpResponseNotFound()
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, registry_name]))
     if action not in [item.value for item in QueueRegistryActions]:

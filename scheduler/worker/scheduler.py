@@ -23,7 +23,7 @@ class SchedulerStatus(str, Enum):
     STOPPED = "stopped"
 
 
-def _reschedule_tasks():
+def _reschedule_tasks() -> None:
     enabled_jobs = list(Task.objects.filter(enabled=True))
     for item in enabled_jobs:
         logger.debug(f"Rescheduling {str(item)}")
@@ -41,7 +41,7 @@ class WorkerScheduler:
         interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._queues = queues
         self._scheduled_job_registries: List[ScheduledJobRegistry] = []
-        self.lock_acquisition_time = None
+        self.lock_acquisition_time: Optional[datetime] = None
         self._pool_class = connection.connection_pool.connection_class
         self._pool_kwargs = connection.connection_pool.connection_kwargs.copy()
         self._locks: Dict[str, SchedulerLock] = dict()
@@ -49,7 +49,7 @@ class WorkerScheduler:
         self.interval = interval
         self._stop_requested = False
         self.status = SchedulerStatus.STOPPED
-        self._thread = None
+        self._thread: Optional[Thread] = None
         self._pid: Optional[int] = None
         self.worker_name = worker_name
 
@@ -96,14 +96,14 @@ class WorkerScheduler:
         self._thread = Thread(target=run_scheduler, args=(self,), name="scheduler-thread")
         self._thread.start()
 
-    def request_stop_and_wait(self):
+    def request_stop_and_wait(self) -> None:
         """Toggle self._stop_requested that's checked on every loop"""
         logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Stop Scheduler requested")
         self._stop_requested = True
         if self._thread is not None:
             self._thread.join()
 
-    def heartbeat(self):
+    def heartbeat(self) -> None:
         """Updates the TTL on scheduler keys and the locks"""
         lock_keys = ", ".join(self._locks.keys())
         logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Scheduler updating lock for queue {lock_keys}")
@@ -112,14 +112,14 @@ class WorkerScheduler:
                 lock.expire(self.connection, expire=self.interval + 60)
             pipeline.execute()
 
-    def stop(self):
+    def stop(self) -> None:
         logger.info(
             f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}..."
         )
         self.release_locks()
         self.status = SchedulerStatus.STOPPED
 
-    def release_locks(self):
+    def release_locks(self) -> None:
         """Release acquired locks"""
         with self.connection.pipeline() as pipeline:
             for lock in self._locks.values():
@@ -158,15 +158,15 @@ class WorkerScheduler:
             with self.connection.pipeline() as pipeline:
                 for job in jobs:
                     if job is not None:
-                        queue.enqueue_job(job, connection=pipeline, at_front=job.at_front)
+                        queue.enqueue_job(job, pipeline=pipeline, at_front=job.at_front)
                 pipeline.execute()
         self.status = SchedulerStatus.STARTED
 
 
-def run_scheduler(scheduler: WorkerScheduler):
+def run_scheduler(scheduler: WorkerScheduler) -> None:
     try:
         scheduler.work()
-    except:  # noqa
+    except Exception:  # noqa
         logger.error(f"Scheduler [PID {os.getpid()}] raised an exception.\n{traceback.format_exc()}")
         raise
     logger.info(f"Scheduler with PID {os.getpid()} has stopped")

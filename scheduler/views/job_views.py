@@ -21,11 +21,11 @@ class JobDetailAction(str, Enum):
     CANCEL = "cancel"
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     queue, job = _find_job(job_name)
-    if job is None:
+    if job is None or queue is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     try:
@@ -50,11 +50,11 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     return render(request, "admin/scheduler/job_detail.html", context_data)
 
 
-@never_cache
-@staff_member_required
+@never_cache  # type: ignore
+@staff_member_required  # type: ignore
 def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse:
     queue, job = _find_job(job_name)
-    if job is None:
+    if job is None or queue is None:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     if action not in [item.value for item in JobDetailAction]:

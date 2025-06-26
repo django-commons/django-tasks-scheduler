@@ -1,7 +1,7 @@
 import datetime
 import importlib
 import time
-from typing import Callable
+from typing import Callable, Any
 
 
 def current_timestamp() -> int:
@@ -14,10 +14,10 @@ def utcnow() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def callable_func(callable_str: str) -> Callable:
+def callable_func(callable_str: str) -> Callable[[Any], Any]:
     path = callable_str.split(".")
     module = importlib.import_module(".".join(path[:-1]))
-    func = getattr(module, path[-1])
-    if callable(func) is False:
+    func: Callable[[Any], Any] = getattr(module, path[-1])
+    if not callable(func):
         raise TypeError(f"'{callable_str}' is not callable")
     return func
