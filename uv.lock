@@ -183,7 +183,7 @@ requires-dist = [
     { name = "click", specifier = "~=8.2" },
     { name = "croniter", specifier = ">=2.0" },
     { name = "django", specifier = ">=5" },
-    { name = "fakeredis", directory = "../fakeredis" },
+    { name = "fakeredis" },
     { name = "pyyaml", marker = "extra == 'yaml'", specifier = "~=6.0" },
     { name = "sentry-sdk", marker = "extra == 'sentry'", specifier = "~=2.19" },
     { name = "types-pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0.12.20250516" },
@@ -194,7 +194,7 @@ provides-extras = ["yaml", "valkey", "sentry"]
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", specifier = "~=7.6" },
-    { name = "fakeredis", directory = "../fakeredis" },
+    { name = "fakeredis", specifier = "~=2.28" },
     { name = "mypy", specifier = ">=1.16.0" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "ruff", specifier = ">=0.11" },
@@ -205,46 +205,15 @@ dev = [
 [[package]]
 name = "fakeredis"
 version = "2.30.1"
-source = { directory = "../fakeredis" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "redis" },
     { name = "sortedcontainers" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "jsonpath-ng", marker = "extra == 'json'", specifier = "~=1.6" },
-    { name = "lupa", marker = "extra == 'lua'", specifier = ">=2.1,<3.0" },
-    { name = "pyprobables", marker = "extra == 'bf'", specifier = ">=0.6" },
-    { name = "pyprobables", marker = "extra == 'cf'", specifier = ">=0.6" },
-    { name = "pyprobables", marker = "extra == 'probabilistic'", specifier = ">=0.6" },
-    { name = "redis", marker = "python_full_version < '3.8'", specifier = ">=4" },
-    { name = "redis", marker = "python_full_version >= '3.9'", specifier = ">=4.3" },
-    { name = "sortedcontainers", specifier = ">=2,<3" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = "~=4.7" },
-]
-provides-extras = ["lua", "json", "bf", "cf", "probabilistic"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", marker = "python_full_version >= '3.10'", specifier = ">=1.15" },
-    { name = "pre-commit", marker = "python_full_version >= '3.10'", specifier = "~=4.2" },
-    { name = "ruff", marker = "python_full_version >= '3.10'", specifier = ">=0.12" },
-]
-docs = [
-    { name = "pygithub", marker = "python_full_version >= '3.10'", specifier = "~=2.3" },
-    { name = "python-dotenv", marker = "python_full_version >= '3.10'", specifier = ">=1,<2" },
-]
-test = [
-    { name = "coverage", marker = "python_full_version >= '3.9'", specifier = "~=7.6" },
-    { name = "hypothesis", marker = "python_full_version >= '3.9'", specifier = "~=6.111" },
-    { name = "pytest", marker = "python_full_version >= '3.9'", specifier = "~=8.3" },
-    { name = "pytest-asyncio", marker = "python_full_version >= '3.9'", specifier = ">=0.24,<0.25" },
-    { name = "pytest-cov", marker = "python_full_version >= '3.9'", specifier = "~=6.0" },
-    { name = "pytest-html", marker = "python_full_version >= '3.9'", specifier = "~=4.1" },
-    { name = "pytest-mock", marker = "python_full_version >= '3.9'", specifier = "~=3.14" },
-    { name = "pytest-timeout", marker = "python_full_version >= '3.9'", specifier = ">=2.3.1,<3" },
+sdist = { url = "https://files.pythonhosted.org/packages/86/3b/eb1d4d0fdc138df1d8e625dfa6b500189030e6c1c265b8dd22b783b2f9ec/fakeredis-2.30.1.tar.gz", hash = "sha256:6489f2926e39815c9bf0fce80751635e0898e333c43a767825adf101180dbc45", size = 167724, upload-time = "2025-06-19T17:55:45.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/ee/acc3de71b8c66029ea4567d83e9c736d79836b2d97aa2cacf1b83f96c678/fakeredis-2.30.1-py3-none-any.whl", hash = "sha256:b594a9c20aef8b94c4d923f489210ef443e4001e62ad3cd73b9a01298dcef743", size = 116215, upload-time = "2025-06-19T17:55:43.893Z" },
 ]
 
 [[package]]
@@ -542,11 +511,11 @@ wheels = [
 
 [[package]]
 name = "types-croniter"
-version = "6.0.0.20250411"
+version = "6.0.0.20250626"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/92/5a/837dd0f759b8df7c5ce28692f1b6d752035e5389098dd364784283b30a19/types_croniter-6.0.0.20250411.tar.gz", hash = "sha256:ee97025b7768f2cc556ef52a2f10c97c503c1634f372fd3e9683d8f7c960eeb7", size = 11722, upload-time = "2025-04-11T02:56:33.172Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/7e/2bb235f73d545fe3b77658a63b71e8d68b4fcabfbedd7956661bc31e6303/types_croniter-6.0.0.20250626.tar.gz", hash = "sha256:c32243b16d4dfa7c9989a5eadc6762459d093dded023f3c363fdee6b96578a77", size = 11745, upload-time = "2025-06-26T03:12:04.28Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/e3/ec8880c9a7a484048457c5db3a340a949863f54043384f36eb0e4d9edc2f/types_croniter-6.0.0.20250411-py3-none-any.whl", hash = "sha256:4acdaccf4190017daa51699bd3110a0617c5df72459e62dea8b72549c62fad90", size = 9754, upload-time = "2025-04-11T02:56:32.317Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/84/d51e29ccfe9ae23bb0cd0a4c91741ef03c923f7385eeac4b00411e20988c/types_croniter-6.0.0.20250626-py3-none-any.whl", hash = "sha256:3e8c37b54b541f323b2c487f3a1c9dcb27a7092333a2d5c09fff0c4d41c68380", size = 9757, upload-time = "2025-06-26T03:12:03.241Z" },
 ]
 
 [[package]]
