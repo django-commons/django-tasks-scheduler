@@ -166,7 +166,7 @@ class WorkerScheduler:
 def run_scheduler(scheduler: WorkerScheduler) -> None:
     try:
         scheduler.work()
-    except:  # noqa
+    except Exception:  # noqa
         logger.error(f"Scheduler [PID {os.getpid()}] raised an exception.\n{traceback.format_exc()}")
         raise
     logger.info(f"Scheduler with PID {os.getpid()} has stopped")
