@@ -1,5 +1,4 @@
 import time
-from argparse import ArgumentParser
 from typing import Any, Dict, List, Optional
 
 import click
