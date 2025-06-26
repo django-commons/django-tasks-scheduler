@@ -41,7 +41,7 @@ class WorkerScheduler:
         interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._queues = queues
         self._scheduled_job_registries: List[ScheduledJobRegistry] = []
-        self.lock_acquisition_time = None
+        self.lock_acquisition_time: Optional[datetime] = None
         self._pool_class = connection.connection_pool.connection_class
         self._pool_kwargs = connection.connection_pool.connection_kwargs.copy()
         self._locks: Dict[str, SchedulerLock] = dict()
@@ -49,7 +49,7 @@ class WorkerScheduler:
         self.interval = interval
         self._stop_requested = False
         self.status = SchedulerStatus.STOPPED
-        self._thread = None
+        self._thread: Optional[Thread] = None
         self._pid: Optional[int] = None
         self.worker_name = worker_name
 
@@ -163,7 +163,7 @@ class WorkerScheduler:
         self.status = SchedulerStatus.STARTED
 
 
-def run_scheduler(scheduler: WorkerScheduler):
+def run_scheduler(scheduler: WorkerScheduler) -> None:
     try:
         scheduler.work()
     except:  # noqa

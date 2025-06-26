@@ -1,12 +1,13 @@
 import json
 from abc import ABC
 from datetime import datetime, timezone
-from typing import Type, Dict, Any, Optional
+from typing import Type, Dict, Any
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"
+_WORKER_COMMANDS_REGISTRY: Dict[str, Type["WorkerCommand"]] = dict()
 
 
 class WorkerCommandError(Exception):
@@ -16,13 +17,12 @@ class WorkerCommandError(Exception):
 class WorkerCommand(ABC):
     """Abstract class for commands to be sent to a worker and processed by worker"""
 
-    _registry: Dict[str, Type[Self]] = dict()
     command_name: str = ""
 
-    def __init__(self, *args, worker_name: Optional[str], **kwargs) -> None:
-        self.worker_name: Optional[str] = worker_name
+    def __init__(self, *args: Any, worker_name: str, **kwargs: Any) -> None:
+        self.worker_name: str = worker_name
 
-    def command_payload(self, **kwargs) -> Dict[str, Any]:
+    def command_payload(self, **kwargs: Any) -> Dict[str, Any]:
         commands_channel = WorkerCommandsChannelListener._commands_channel(self.worker_name)
         payload = {
             "command": self.command_name,
@@ -41,17 +41,19 @@ class WorkerCommand(ABC):
         raise NotImplementedError
 
     @classmethod
-    def __init_subclass__(cls, *args, **kwargs):
+    def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
         if cls is WorkerCommand:
             return
         if not cls.command_name:
-            raise NotImplementedError(f"{cls.__name__} must have a name attribute")
-        WorkerCommand._registry[cls.command_name] = cls
+            raise NotImplementedError(f"{cls.__name__} must have a command_name attribute")
+        _WORKER_COMMANDS_REGISTRY[cls.command_name] = cls
 
     @classmethod
     def from_payload(cls, payload: Dict[str, Any]) -> Type[Self]:
         command_name = payload.get("command")
-        command_class = WorkerCommand._registry.get(command_name)
+        if command_name is None:
+            raise WorkerCommandError("Payload must contain 'command' key")
+        command_class = _WORKER_COMMANDS_REGISTRY.get(command_name)
         if command_class is None:
             raise WorkerCommandError(f"Invalid command: {command_name}")
         return command_class(**payload)

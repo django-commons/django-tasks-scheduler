@@ -14,7 +14,7 @@ from datetime import timedelta
 from enum import Enum
 from random import shuffle
 from types import FrameType
-from typing import List, Optional, Tuple, Any, Iterable, Collection
+from typing import List, Optional, Tuple, Any, Iterable, Collection, Union
 
 import scheduler
 from scheduler.helpers.queues import get_queue
@@ -63,7 +63,7 @@ _signames = dict(
 )
 
 
-def signal_name(signum) -> str:
+def signal_name(signum: int) -> str:
     try:
         return signal.Signals(signum).name
     except KeyError:
@@ -99,19 +99,19 @@ class Worker:
         return res
 
     def __init__(
-        self,
-        queues,
-        name: str,
-        connection: ConnectionType,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval=SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        disable_default_exception_handler: bool = False,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
-    ):  # noqa
+            self,
+            queues: Iterable[Union[str, Queue]],
+            name: str,
+            connection: ConnectionType,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            disable_default_exception_handler: bool = False,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
+    ) -> None:
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval: int = job_monitoring_interval
         self.maintenance_interval = maintenance_interval
@@ -232,7 +232,7 @@ class Worker:
 
                 timeout = None if self.burst else (SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 15)
                 job, queue = self.dequeue_job_and_maintain_ttl(timeout, max_idle_time)
-                if job is None:
+                if job is None or queue is None:
                     if self.burst:
                         logger.info(f"[Worker {self.name}/{self._pid}]: done, quitting")
                         break
@@ -267,7 +267,7 @@ class Worker:
             self.teardown()
         return False
 
-    def handle_job_failure(self, job: JobModel, queue: Queue, exc_string="") -> None:
+    def handle_job_failure(self, job: JobModel, queue: Queue, exc_string: str = "") -> None:
         """
         Handles the failure or an executing job by:
             1. Setting the job status to failed
@@ -312,7 +312,7 @@ class Worker:
                 # Ensure that custom exception handlers are called even if the Broker is down
                 pass
 
-    def bootstrap(self)-> None:
+    def bootstrap(self) -> None:
         """Bootstraps the worker.
         Runs the basic tasks that should run when the worker actually starts working.
         Used so that new workers can focus on the work loop implementation rather
@@ -327,7 +327,8 @@ class Worker:
             self._model.has_scheduler = True
             self._model.save(connection=self.connection)
         if self.with_scheduler and self.burst:
-            self.scheduler.request_stop_and_wait()
+            if self.scheduler is not None:
+                self.scheduler.request_stop_and_wait()
             self._model.has_scheduler = False
             self._model.save(connection=self.connection)
         qnames = [queue.name for queue in self.queues]
@@ -375,8 +376,8 @@ class Worker:
             self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
-    ) -> Tuple[JobModel, Queue]:
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
+    ) -> Tuple[Optional[JobModel], Optional[Queue]]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
         :param max_idle_time: The maximum idle time for the worker.
@@ -550,7 +551,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -634,7 +635,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val = self.wait_for_job_execution_process()
                 break
@@ -877,7 +878,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue: Queue) -> None:
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):

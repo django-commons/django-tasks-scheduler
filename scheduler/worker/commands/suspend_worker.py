@@ -1,6 +1,6 @@
-from scheduler.types import ConnectionType
 from scheduler.redis_models import WorkerModel
 from scheduler.settings import logger
+from scheduler.types import ConnectionType
 from scheduler.worker.commands.worker_commands import WorkerCommand
 
 
@@ -32,6 +32,7 @@ class ResumeWorkCommand(WorkerCommand):
         worker_model = WorkerModel.get(self.worker_name, connection)
         if worker_model is None:
             logger.warning(f"Worker {self.worker_name} not found")
+            return
         if not worker_model.is_suspended:
             logger.warning(f"Worker {self.worker_name} not suspended and therefore can't be resumed")
             return
