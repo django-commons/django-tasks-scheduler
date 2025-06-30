@@ -39,8 +39,6 @@ class TestScheduledOnceTask(BaseTestCases.TestSchedulableTask):
         # arrange
         self.client.login(username="admin", password="admin")
         task = task_factory(self.task_type)
-        queue = get_queue(self.queue_name)
-        job = JobModel.get(task.job_name, connection=queue.connection)
         url = reverse("admin:scheduler_task_change", args=(task.id,))
         # act
         res = self.client.get(url)
