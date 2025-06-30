@@ -170,7 +170,7 @@ class HashModel(BaseModel):
             return None
 
     @classmethod
-    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> List[Self]:
+    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> List[Optional[Self]]:
         pipeline = connection.pipeline()
         for name in names:
             pipeline.hgetall(cls._element_key_template.format(name))

@@ -20,7 +20,10 @@ def job_execution_of(job: JobModel, task: Task) -> bool:
 
 def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[JobModel]:
     queue = get_queue(queue_name)
-    job_list: List[JobModel] = JobModel.get_many(queue.get_all_job_names(), connection=queue.connection)
+    job_list: List[JobModel] = list(
+        filter(lambda job: job is not None, JobModel.get_many(queue.get_all_job_names(), connection=queue.connection))
+    )
+
     res = sorted(
         list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)), key=lambda j: j.created_at, reverse=True
     )
