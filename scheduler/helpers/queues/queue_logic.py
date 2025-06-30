@@ -51,7 +51,8 @@ def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
         if job_model.success_callback:
             job_model.success_callback(job_model, connection, result)
         return result
-    except:
+    except Exception as e:
+        logger.error(f"Job {job_model.name} failed with exception: {e}", exc_info=True)
         if job_model.failure_callback:
             job_model.failure_callback(job_model, connection, *sys.exc_info())
         raise

@@ -157,7 +157,7 @@ class TestTaskKwarg(TestAllTaskArg):
     def test__repr__datetime_val(self):
         _time = timezone.now()
         kwarg = taskarg_factory(self.TaskArgClass, key="key", arg_type="datetime", val=str(_time))
-        self.assertEqual("('key', {})".format(repr(_time)), repr(kwarg.value()))
+        self.assertEqual(f"('key', {repr(_time)})", repr(kwarg.value()))
 
     def test__repr__bool_val(self):
         kwarg = taskarg_factory(self.TaskArgClass, key="key", arg_type="bool", val="True")

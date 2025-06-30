@@ -245,7 +245,7 @@ class BaseTestCases:
             queue = get_queue("default")
             self.assertEqual(
                 perform_job(entry, connection=queue.connection),
-                "test_args_kwargs('one', key1=2, key2={}, key3=False)".format(date),
+                f"test_args_kwargs('one', key1=2, key2={date}, key3=False)",
             )
 
         def test_function_string(self):

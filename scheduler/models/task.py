@@ -389,11 +389,7 @@ class Task(models.Model):
         queue_names = get_queue_names()
         if self.queue not in queue_names:
             raise ValidationError(
-                {
-                    "queue": ValidationError(
-                        "Invalid queue, must be one of: {}".format(", ".join(queue_names)), code="invalid"
-                    )
-                }
+                {"queue": ValidationError(f"Invalid queue, must be one of: {', '.join(queue_names)}", code="invalid")}
             )
 
     def clean_interval_unit(self) -> None:
