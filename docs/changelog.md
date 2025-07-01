@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.0.6 🌈
+
+### 🐛 Bug Fixes
+
+- Issue on task admin showing list of jobs where jobs have been deleted from broker #285
+
+### 🧰 Maintenance
+
+- Added typing to many files
+
 ## v4.0.5 🌈
 
 ### 🐛 Bug Fixes
