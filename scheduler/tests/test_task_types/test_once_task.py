@@ -48,6 +48,8 @@ class TestScheduledOnceTask(BaseTestCases.TestSchedulableTask):
         self.assertContains(res, task.job_name, status_code=200)
         self.assertContains(res, "Scheduled", status_code=200)
         self.assertContains(res, """<span id="counter">1""", status_code=200)
+        self.assertFalse(res.context["pagination_required"])
+        self.assertEqual(res.context["executions"].paginator.count, 1)
 
     @time_machine.travel(datetime(2016, 12, 25))
     def test_admin_change_view__has_empty_execution_list(self):
@@ -64,6 +66,8 @@ class TestScheduledOnceTask(BaseTestCases.TestSchedulableTask):
         self.assertContains(res, "Job executions")
         self.assertContains(res, """<table id="result_list">""")
         self.assertContains(res, """<span id="counter">0""", status_code=200)
+        self.assertFalse(res.context["pagination_required"])
+        self.assertEqual(res.context["executions"].paginator.count, 0)
 
     def test_create_without_date__fail(self):
         task = task_factory(self.task_type, scheduled_time=None, instance_only=True)
