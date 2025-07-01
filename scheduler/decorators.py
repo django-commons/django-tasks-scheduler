@@ -18,9 +18,9 @@ class job:
         at_front: bool = False,
         meta: Optional[Dict[Any, Any]] = None,
         description: Optional[str] = None,
-        on_failure: Optional[Union["Callback", Callable[..., Any]]] = None,
-        on_success: Optional[Union["Callback", Callable[..., Any]]] = None,
-        on_stopped: Optional[Union["Callback", Callable[..., Any]]] = None,
+        on_failure: Optional[Union[Callback, Callable[..., Any]]] = None,
+        on_success: Optional[Union[Callback, Callable[..., Any]]] = None,
+        on_stopped: Optional[Union[Callback, Callable[..., Any]]] = None,
     ):
         """A decorator that adds a ``delay`` method to the decorated function, which in turn creates a RQ job when
         called. Accepts a required ``queue`` argument that can be either a ``Queue`` instance or a string
