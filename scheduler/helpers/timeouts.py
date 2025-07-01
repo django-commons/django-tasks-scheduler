@@ -1,6 +1,9 @@
 import ctypes
+import logging
 import signal
 import threading
+
+logger = logging.getLogger("scheduler")
 
 
 class BaseTimeoutException(Exception):
@@ -59,13 +62,19 @@ class UnixSignalDeathPenalty(BaseDeathPenalty):
     def setup_death_penalty(self) -> None:
         """Sets up an alarm signal and a signal handler that raises an exception after the timeout amount
         (expressed in seconds)."""
-        signal.signal(signal.SIGALRM, self.handle_death_penalty)
-        signal.alarm(self._timeout)
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGALRM, self.handle_death_penalty)
+            signal.alarm(self._timeout)
+        else:
+            logger.warning(f"Ignoring death penalty setup in non-main thread `{threading.current_thread().name}`.")
 
     def cancel_death_penalty(self) -> None:
         """Removes the death penalty alarm and puts back the system into default signal handling."""
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        if threading.current_thread() is threading.main_thread():
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        else:
+            logger.warning(f"Ignoring death penalty cancel in non-main thread `{threading.current_thread().name}`.")
 
 
 class TimerDeathPenalty(BaseDeathPenalty):

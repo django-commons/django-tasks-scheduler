@@ -7,7 +7,6 @@ from django.core.exceptions import ImproperlyConfigured
 from scheduler.types import SchedulerConfiguration, QueueConfiguration
 
 logger = logging.getLogger("scheduler")
-logging.basicConfig(level=logging.DEBUG)
 
 _QUEUES: Dict[str, QueueConfiguration] = dict()
 SCHEDULER_CONFIG: SchedulerConfiguration = SchedulerConfiguration()

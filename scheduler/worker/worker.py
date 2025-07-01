@@ -35,7 +35,7 @@ except ImportError:
 from contextlib import suppress
 
 from scheduler.helpers.queues import Queue, perform_job
-from scheduler.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
+from scheduler.helpers.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
 from scheduler.helpers.utils import utcnow, current_timestamp
 
 try:

@@ -1,9 +1,9 @@
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional, List, Tuple, Any, Type
+from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar
 
-from scheduler.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
+from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -45,7 +45,7 @@ class SchedulerConfiguration:
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class QueueConfiguration:
-    __CONNECTION_FIELDS__ = {
+    __CONNECTION_FIELDS__: ClassVar[Dict] = {
         "URL",
         "DB",
         "UNIX_SOCKET_PATH",

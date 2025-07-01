@@ -2,7 +2,7 @@ import inspect
 from typing import Union, Callable, Any, Optional
 
 from scheduler.helpers.utils import callable_func
-from scheduler.timeouts import JobTimeoutException
+from scheduler.helpers.timeouts import JobTimeoutException
 
 
 class CallbackSetupError(Exception):
