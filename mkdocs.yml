@@ -4,7 +4,7 @@ site_author: Daniel Moran
 site_description: >-
   Documentation for django-tasks-scheduler django library
 # Repository
-repo_name: dsoftwareinc/django-tasks-scheduler
+repo_name: django-commons/django-tasks-scheduler
 repo_url: https://github.com/django-commons/django-tasks-scheduler
 
 # Copyright
@@ -38,7 +38,7 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.magiclink:
       repo_url_shorthand: true
-      user: dsoftware-inc
+      user: django-commons
       repo: django-tasks-scheduler
   - pymdownx.mark
   - pymdownx.smartsymbols
