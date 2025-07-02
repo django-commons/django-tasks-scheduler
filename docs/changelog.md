@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.5 🌈
+
+### Bug Fixes
+
+- Fixes issue where admin queue choices were hardcoded by loading them dynamically from user-defined settings like `settings.SCHEDULER_QUEUES`. @DhavalGojiya #278
+
 ## v1.3.4 🌈
 
 ### 🧰 Maintenance
