@@ -5,8 +5,17 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import tools
 from scheduler.models import CronTask, TaskArg, TaskKwarg, RepeatableTask, ScheduledTask
-from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.settings import SCHEDULER_CONFIG, logger, QUEUES
 from scheduler.tools import get_job_executions
+
+
+def get_queue_choices():
+    """
+    Returns a list of all queues as choices.
+
+    Loaded from user-defined settings: `RQ_QUEUES` or `SCHEDULER_QUEUES`.
+    """
+    return [(queue, queue) for queue in QUEUES.keys()]
 
 
 class HiddenMixin(object):
@@ -161,3 +170,10 @@ class TaskAdmin(admin.ModelAdmin):
             task.enqueue_to_run()
             task_names.append(task.name)
         self.message_user(request, f"The following jobs have been enqueued: {', '.join(task_names)}", )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        # Override admin form to dynamically set choices for the 'queue' field
+        # See issue #278: https://github.com/django-commons/django-tasks-scheduler/issues/278
+        queue_field = self.model._meta.get_field('queue')
+        queue_field.choices = get_queue_choices()  # Choices based on user-defined settings
+        return super().get_form(request, obj=obj, change=change, **kwargs)
