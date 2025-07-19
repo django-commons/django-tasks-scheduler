@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, timezone as dt_timezone
+from datetime import timedelta, timezone as dt_timezone
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings

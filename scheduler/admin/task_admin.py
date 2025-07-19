@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Union
 
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
@@ -10,7 +10,7 @@ from django.utils.timezone import is_naive
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers.queues import get_queue
-from scheduler.models import TaskArg, TaskKwarg, Task, TaskType, get_next_cron_time
+from scheduler.models import TaskArg, TaskKwarg, Task, TaskType
 from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionErrorTypes
