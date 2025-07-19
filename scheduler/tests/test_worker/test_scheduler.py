@@ -22,7 +22,7 @@ class TestWorkerScheduler(SchedulerBaseCase):
     def test_scheduler_schedules_tasks(self):
         with time_machine.travel(0.0, tick=False) as traveller:
             # arrange
-            task = task_factory(TaskType.ONCE, scheduled_time=timezone.now() + timedelta(milliseconds=40))
+            task = task_factory(TaskType.ONCE, scheduled_time=timezone.now() + timedelta(seconds=50))
             self.assertIsNotNone(task.job_name)
             self.assertNotIn(task.job_name, task.rqueue.queued_job_registry)
             self.assertIn(task.job_name, task.rqueue.scheduled_job_registry)

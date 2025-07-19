@@ -1,14 +1,17 @@
-from typing import List
+from datetime import datetime
+from typing import List, Union
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
+from django.utils import timezone, formats
+from django.utils.timezone import is_naive
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers.queues import get_queue
-from scheduler.models import TaskArg, TaskKwarg, Task, TaskType, get_next_cron_time
+from scheduler.models import TaskArg, TaskKwarg, Task, TaskType
 from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionErrorTypes
@@ -20,7 +23,10 @@ def job_execution_of(job: JobModel, task: Task) -> bool:
 
 def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[JobModel]:
     queue = get_queue(queue_name)
-    job_list: List[JobModel] = JobModel.get_many(queue.get_all_job_names(), connection=queue.connection)
+    job_list: List[JobModel] = list(
+        filter(lambda job: job is not None, JobModel.get_many(queue.get_all_job_names(), connection=queue.connection))
+    )
+
     res = sorted(
         list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)), key=lambda j: j.created_at, reverse=True
     )
@@ -141,7 +147,11 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description="Schedule")
     def task_schedule(self, o: Task) -> str:
         if o.task_type == TaskType.ONCE.value:
-            return f"Run once: {o.scheduled_time:%Y-%m-%d %H:%M:%S}"
+            if timezone.is_naive(o.scheduled_time):
+                local_time = timezone.make_aware(o.scheduled_time, timezone.get_current_timezone())
+            else:
+                local_time = timezone.localtime(o.scheduled_time)
+            return f"Run once: {formats.date_format(local_time, 'DATETIME_FORMAT')}"
         elif o.task_type == TaskType.CRON.value:
             return f"Cron: {o.cron_string}"
         else:  # if o.task_type == TaskType.REPEATABLE.value:
@@ -150,10 +160,18 @@ class TaskAdmin(admin.ModelAdmin):
             return f"Repeatable: {o.interval} {o.get_interval_unit_display()}"
 
     @admin.display(description="Next run")
-    def next_run(self, o: Task) -> str:
-        return get_next_cron_time(o.cron_string)
+    def next_run(self, o: Task) -> Union[str, datetime]:
+        res = o.scheduled_time
+        if res < timezone.now():
+            o.save(clean=False)
+            res = o.scheduled_time
+        if res is None:
+            return _("Not scheduled")
+        if is_naive(res):
+            res = timezone.make_aware(res, timezone.get_current_timezone())
+        return res
 
-    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None):
+    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None) -> HttpResponse:
         extra = extra_context or {}
         obj = self.get_object(request, object_id)
         try:

@@ -1,3 +1,4 @@
+import threading
 import time
 
 from django.test import TestCase
@@ -45,8 +46,13 @@ class MyClass:
 
 
 @job()
-def long_running_func(x):
+def func_with_param(x):
     x.run()
+
+
+@job(timeout=1)
+def long_running_func():
+    time.sleep(1000)
 
 
 class JobDecoratorTest(TestCase):
@@ -54,7 +60,7 @@ class JobDecoratorTest(TestCase):
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(5, len(JOB_METHODS_LIST))
+        self.assertEqual(6, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()
@@ -107,12 +113,11 @@ class JobDecoratorTest(TestCase):
 
             @job("bad-queue")
             def test_job_bad_queue():
-                time.sleep(1)
                 return 1 + 1
 
     def test_job_decorator_delay_with_param(self):
         queue_name = "default"
-        long_running_func.delay(MyClass())
+        func_with_param.delay(MyClass())
 
         worker = create_worker(queue_name, burst=True)
         worker.work()
@@ -120,7 +125,24 @@ class JobDecoratorTest(TestCase):
         jobs_list = worker.queues[0].get_all_jobs()
         self.assertEqual(1, len(jobs_list))
         job = jobs_list[0]
-        self.assertEqual(job.func, long_running_func)
+        self.assertEqual(job.func, func_with_param)
         self.assertEqual(job.kwargs, {})
         self.assertEqual(job.status, JobStatus.FINISHED)
         self.assertEqual(job.args, (MyClass(),))
+
+    def test_job_decorator_delay_with_param_worker_thread(self):
+        queue_name = "default"
+
+        long_running_func.delay()
+
+        worker = create_worker(queue_name, burst=True)
+        t = threading.Thread(target=worker.work)
+        t.start()
+        t.join()
+
+        jobs_list = get_queue(queue_name).get_all_jobs()
+        self.assertEqual(1, len(jobs_list))
+        j = jobs_list[0]
+        self.assertEqual(j.func, long_running_func)
+        self.assertEqual(j.kwargs, {})
+        self.assertEqual(j.status, JobStatus.FAILED)

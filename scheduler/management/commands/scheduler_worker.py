@@ -1,14 +1,16 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
+from typing import Any, Optional
 
 import click
 from django.core.management.base import BaseCommand
 from django.db import connections
 
+from scheduler.settings import logger
 from scheduler.types import ConnectionErrorTypes
 from scheduler.worker import create_worker
-from scheduler.settings import logger
 
 VERBOSITY_TO_LOG_LEVEL = {
     0: logging.CRITICAL,
@@ -31,20 +33,20 @@ WORKER_ARGUMENTS = {
 }
 
 
-def reset_db_connections():
+def reset_db_connections() -> None:
     for c in connections.all():
         c.close()
 
 
-def register_sentry(sentry_dsn, **opts):
+def register_sentry(sentry_dsn: str, **opts: Any) -> None:
     try:
         import sentry_sdk
-        from sentry_sdk.integrations.rq import RqIntegration
+        from scheduler.helpers.sentry_integration import SentryIntegration
     except ImportError:
         logger.error("Sentry SDK not installed. Skipping Sentry Integration")
         return
 
-    sentry_sdk.init(sentry_dsn, integrations=[RqIntegration()], **opts)
+    sentry_sdk.init(sentry_dsn, integrations=[SentryIntegration()], **opts)
 
 
 class Command(BaseCommand):
@@ -57,12 +59,12 @@ class Command(BaseCommand):
 
     args = "<queue queue ...>"
 
-    def _add_sentry_args(self, parser):
+    def _add_sentry_args(self, parser: ArgumentParser) -> None:
         parser.add_argument("--sentry-dsn", action="store", dest="sentry_dsn", help="Sentry DSN to use")
         parser.add_argument("--sentry-debug", action="store_true", dest="sentry_debug", help="Enable Sentry debug mode")
         parser.add_argument("--sentry-ca-certs", action="store", dest="sentry_ca_certs", help="Path to CA certs file")
 
-    def _add_work_args(self, parser):
+    def _add_work_args(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--burst", action="store_true", dest="burst", default=False, help="Run worker in burst mode"
         )
@@ -90,7 +92,7 @@ class Command(BaseCommand):
             help="Run worker without scheduler, default to with scheduler",
         )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--pid", action="store", dest="pidfile", default=None, help="file to write the worker`s pid into"
         )
@@ -120,7 +122,7 @@ class Command(BaseCommand):
         self._add_sentry_args(parser)
         self._add_work_args(parser)
 
-    def handle(self, **options):
+    def handle(self, **options: Any) -> None:
         queues = options.pop("queues", [])
         if not queues:
             queues = [
@@ -149,12 +151,12 @@ class Command(BaseCommand):
             # Check whether sentry is enabled
             if options.get("sentry_dsn") is not None:
                 sentry_opts = dict(ca_certs=options.get("sentry_ca_certs"), debug=options.get("sentry_debug"))
-                register_sentry(options.get("sentry_dsn"), **sentry_opts)
+                dsn: str = options.get("sentry_dsn")  # type: ignore
+                register_sentry(dsn, **sentry_opts)
 
-            w.work(
-                max_jobs=options["max_jobs"],
-                max_idle_time=options.get("max_idle_time", None),
-            )
+            max_jobs: Optional[int] = options.get("max_jobs", None)
+            max_idle_time: Optional[int] = options.get("max_idle_time", None)
+            w.work(max_jobs=max_jobs, max_idle_time=max_idle_time)
         except ConnectionErrorTypes as e:
             click.echo(str(e), err=True)
             sys.exit(1)

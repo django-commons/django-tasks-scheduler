@@ -2,7 +2,7 @@ import inspect
 from typing import Union, Callable, Any, Optional
 
 from scheduler.helpers.utils import callable_func
-from scheduler.timeouts import JobTimeoutException
+from scheduler.helpers.timeouts import JobTimeoutException
 
 
 class CallbackSetupError(Exception):
@@ -30,7 +30,7 @@ class Callback:
     def name(self) -> str:
         return f"{self.func.__module__}.{self.func.__qualname__}"
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         from scheduler.settings import SCHEDULER_CONFIG
 
         with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(self.timeout, JobTimeoutException):

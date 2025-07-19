@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, Union, Dict, Collection, Any, ClassVar, Set, Type
 
-from redis import Redis
-
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
@@ -104,6 +102,8 @@ class BaseModel:
     def deserialize(cls, data: Dict[str, Any]) -> Self:
         types = {f.name: f.type for f in dataclasses.fields(cls) if f.name not in cls._non_serializable_fields}
         for k in data:
+            if k in cls._non_serializable_fields:
+                continue
             if k not in types:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
@@ -136,13 +136,13 @@ class HashModel(BaseModel):
         return self._children_key_template.format(self.parent)
 
     @classmethod
-    def all_names(cls, connection: Redis, parent: Optional[str] = None) -> Collection[str]:
+    def all_names(cls, connection: ConnectionType, parent: Optional[str] = None) -> Collection[str]:
         collection_key = cls._children_key_template.format(parent) if parent else cls._list_key
         collection_members = connection.smembers(collection_key)
         return [r.decode() for r in collection_members]
 
     @classmethod
-    def all(cls, connection: Redis, parent: Optional[str] = None) -> List[Self]:
+    def all(cls, connection: ConnectionType, parent: Optional[str] = None) -> List[Self]:
         keys = cls.all_names(connection, parent)
         items = [cls.get(k, connection) for k in keys]
         return [w for w in items if w is not None]
@@ -170,7 +170,7 @@ class HashModel(BaseModel):
             return None
 
     @classmethod
-    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> List[Self]:
+    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> List[Optional[Self]]:
         pipeline = connection.pipeline()
         for name in names:
             pipeline.hgetall(cls._element_key_template.format(name))

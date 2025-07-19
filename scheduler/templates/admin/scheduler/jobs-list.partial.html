@@ -27,27 +27,13 @@
                                 </a>
                             {% endif %}
                         </td>
-                        <td>
-                            {{ exec|job_status }}
-                        </td>
-                        <td>
-                            {{ exec.created_at|date:"Y-m-d, H:i:s"|default:"-" }}
-                        </td>
-                        <td>
-                            {{ exec.enqueued_at|date:"Y-m-d, H:i:s"|default:"-" }}
-                        </td>
-                        <td>
-                            {{ exec.started_at|date:"Y-m-d, H:i:s"|default:"-" }}
-                        </td>
-                        <td>
-                            {{ exec|job_runtime }}
-                        </td>
-                        <td>
-                            {{ exec.worker_name|default:"-" }}
-                        </td>
-                        <td>
-                            {{ exec|job_result|default:"-" }}
-                        </td>
+                        <td>{{ exec|job_status }}</td>
+                        <td>{{ exec.created_at|date:"Y-m-d, H:i:s"|default:"-" }}</td>
+                        <td>{{ exec.enqueued_at|date:"Y-m-d, H:i:s"|default:"-" }}</td>
+                        <td>{{ exec.started_at|date:"Y-m-d, H:i:s"|default:"-" }}</td>
+                        <td>{{ exec|job_runtime }}</td>
+                        <td>{{ exec.worker_name|default:"-" }}</td>
+                        <td>{{ exec|job_result|default:"-" }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -65,9 +51,8 @@
                            class="end" {% endif %}>{{ i }}</a>
                     {% endif %}
                 {% endfor %}
-                {{ executions.paginator.count }} {% blocktranslate count counter=executions.paginator.count %}entry
-                {% plural %}entries{% endblocktranslate %}
             {% endif %}
+            <span id="counter">{{ executions.paginator.count }} {% blocktranslate count counter=executions.paginator.count %}entry{% plural %}entries{% endblocktranslate %}</span>
         </p>
     </fieldset>
 {% endif %}

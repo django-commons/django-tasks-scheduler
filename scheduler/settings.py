@@ -7,7 +7,6 @@ from django.core.exceptions import ImproperlyConfigured
 from scheduler.types import SchedulerConfiguration, QueueConfiguration
 
 logger = logging.getLogger("scheduler")
-logging.basicConfig(level=logging.DEBUG)
 
 _QUEUES: Dict[str, QueueConfiguration] = dict()
 SCHEDULER_CONFIG: SchedulerConfiguration = SchedulerConfiguration()
@@ -35,6 +34,7 @@ def conf_settings():
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     if isinstance(user_settings, SchedulerConfiguration):
+        SCHEDULER_CONFIG = user_settings  # type: ignore
         return
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")

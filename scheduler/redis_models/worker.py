@@ -79,7 +79,7 @@ class WorkerModel(HashModel):
         """The hash does not take the database/connection into account"""
         return hash((self._key, ",".join(self.queue_names)))
 
-    def set_current_job_working_time(self, job_execution_time: int, connection: ConnectionType) -> None:
+    def set_current_job_working_time(self, job_execution_time: float, connection: ConnectionType) -> None:
         self.set_field("current_job_working_time", job_execution_time, connection=connection)
 
     def heartbeat(self, connection: ConnectionType, timeout: Optional[int] = None) -> None:

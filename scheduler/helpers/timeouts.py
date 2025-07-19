@@ -1,6 +1,9 @@
 import ctypes
+import logging
 import signal
 import threading
+
+logger = logging.getLogger("scheduler")
 
 
 class BaseTimeoutException(Exception):
@@ -54,18 +57,24 @@ class BaseDeathPenalty:
 
 class UnixSignalDeathPenalty(BaseDeathPenalty):
     def handle_death_penalty(self, signum, frame) -> None:
-        raise self._exception("Task exceeded maximum timeout value ({0} seconds)".format(self._timeout))
+        raise self._exception(f"Task exceeded maximum timeout value ({self._timeout} seconds)")
 
     def setup_death_penalty(self) -> None:
-        """Sets up an alarm signal and a signal handler that raises an exception after the timeout amount (expressed
-        in seconds)."""
-        signal.signal(signal.SIGALRM, self.handle_death_penalty)
-        signal.alarm(self._timeout)
+        """Sets up an alarm signal and a signal handler that raises an exception after the timeout amount
+        (expressed in seconds)."""
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGALRM, self.handle_death_penalty)
+            signal.alarm(self._timeout)
+        else:
+            logger.warning(f"Ignoring death penalty setup in non-main thread `{threading.current_thread().name}`.")
 
     def cancel_death_penalty(self) -> None:
         """Removes the death penalty alarm and puts back the system into default signal handling."""
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        if threading.current_thread() is threading.main_thread():
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        else:
+            logger.warning(f"Ignoring death penalty cancel in non-main thread `{threading.current_thread().name}`.")
 
 
 class TimerDeathPenalty(BaseDeathPenalty):
@@ -77,7 +86,7 @@ class TimerDeathPenalty(BaseDeathPenalty):
         # Monkey-patch exception with the message ahead of time
         # since PyThreadState_SetAsyncExc can only take a class
         def init_with_message(self, *args, **kwargs):  # noqa
-            super(exception, self).__init__("Task exceeded maximum timeout value ({0} seconds)".format(timeout))
+            super(exception, self).__init__(f"Task exceeded maximum timeout value ({timeout} seconds)")
 
         self._exception.__init__ = init_with_message
 

@@ -1,5 +1,40 @@
 # Changelog
 
+## v4.0.6 🌈
+
+### 🐛 Bug Fixes
+
+- Issue on task admin showing list of jobs where jobs have been deleted from broker #285
+- Task admin view shows next run currently #288
+
+### 🧰 Maintenance
+
+- Added typing to many files
+
+## v4.0.5 🌈
+
+### 🐛 Bug Fixes
+
+- fix:repeatable task without start date #276
+- fix:admin list of tasks showing local datetime #280
+- fix:wait for job child process using os.waitpid #281
+
+### 🧰 Maintenance
+
+- refactor some tests
+
+## v4.0.4 🌈
+
+### 🐛 Bug Fixes
+
+- Issue when `SCHEDULER_CONFIG` is a `dict` #273
+- Do not warn about _non_serializable_fields #274
+
+### 🧰 Maintenance
+
+- Fix gha zizmor findings
+- Update dependencies to latest versions
+
 ## v4.0.3 🌈
 
 ### 🐛 Bug Fixes
