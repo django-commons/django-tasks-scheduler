@@ -1,10 +1,12 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional, Union
 
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone, formats
+from django.utils.timezone import is_naive
 from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers.queues import get_queue
@@ -137,8 +139,16 @@ class TaskAdmin(admin.ModelAdmin):
             return f"Repeatable: {o.interval} {o.get_interval_unit_display()}"
 
     @admin.display(description="Next run")
-    def next_run(self, o: Task) -> str:
-        return get_next_cron_time(o.cron_string)
+    def next_run(self, o: Task) -> Union[str, datetime]:
+        res = o.scheduled_time
+        if res < timezone.now():
+            o.save(clean=False)
+            res = o.scheduled_time
+        if res is None:
+            return _("Not scheduled")
+        if is_naive(res):
+            res = timezone.make_aware(res, timezone.get_current_timezone())
+        return res
 
     def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None) -> HttpResponse:
         extra = extra_context or {}

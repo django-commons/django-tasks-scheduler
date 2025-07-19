@@ -333,7 +333,6 @@ class Task(models.Model):
         """Schedule the next execution for the task to run.
         :returns: True if a job was scheduled, False otherwise.
         """
-        self.refresh_from_db()
         if self.is_scheduled():
             logger.debug(f"Task {self.name} already scheduled")
             return False
@@ -358,10 +357,10 @@ class Task(models.Model):
         should_clean = kwargs.pop("clean", True)
         if should_clean:
             self.clean()
-        schedule_job = kwargs.pop("schedule_job", True)
         update_fields = kwargs.get("update_fields", None)
         if update_fields is not None:
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
+        schedule_job = kwargs.pop("schedule_job", True)
         super(Task, self).save(**kwargs)
         if schedule_job:
             self._schedule()
@@ -443,13 +442,13 @@ class Task(models.Model):
             )
 
 
-def get_next_cron_time(cron_string: Optional[str]) -> Optional[timezone.datetime]:
+def get_next_cron_time(cron_string: Optional[str]) -> Optional[datetime]:
     """Calculate the next scheduled time by creating a crontab object with a cron string"""
     if cron_string is None:
         return None
     now = timezone.now()
     itr = croniter.croniter(cron_string, now)
-    next_itr = itr.get_next(timezone.datetime)
+    next_itr = itr.get_next(datetime)
     return next_itr
 
 

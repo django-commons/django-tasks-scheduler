@@ -5,6 +5,7 @@
 ### 🐛 Bug Fixes
 
 - Issue on task admin showing list of jobs where jobs have been deleted from broker #285
+- Task admin view shows next run currently #288
 
 ### 🧰 Maintenance
 

@@ -41,7 +41,6 @@ dependencies = [
     "django>=5",
     "croniter>=2.0",
     "click~=8.2",
-    "fakeredis",
 ]
 
 [project.optional-dependencies]
@@ -57,13 +56,14 @@ Funding = "https://github.com/sponsors/cunla"
 
 [dependency-groups]
 dev = [
-    "time-machine>=2.16.0,<3",
+    "time-machine>=2.16.0",
     "ruff>=0.11",
-    "coverage~=7.6",
-    "fakeredis~=2.28",
+    "coverage>=7.6",
+    "fakeredis>=2.28",
     "pyyaml>=6,<7",
     "mypy>=1.16.0",
     "types-croniter>=6.0.0.20250411",
+    "beautifulsoup4>=4.13.4"
 ]
 
 [tool.hatch.build.targets.sdist]

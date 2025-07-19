@@ -1,6 +1,7 @@
 import zoneinfo
 from datetime import datetime, timedelta
 
+import bs4
 import time_machine
 from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError

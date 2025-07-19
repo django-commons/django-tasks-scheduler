@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 
+import bs4
 import time_machine
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -43,13 +44,16 @@ class TestScheduledOnceTask(BaseTestCases.TestSchedulableTask):
         # act
         res = self.client.get(url)
         # assert
+        self.assertEqual(200, res.status_code)
         self.assertContains(res, "Job executions")
-        self.assertContains(res, """<table id="result_list">""")
-        self.assertContains(res, task.job_name, status_code=200)
-        self.assertContains(res, "Scheduled", status_code=200)
-        self.assertContains(res, """<span id="counter">1""", status_code=200)
         self.assertFalse(res.context["pagination_required"])
         self.assertEqual(res.context["executions"].paginator.count, 1)
+        soup = bs4.BeautifulSoup(res.content, "html.parser")
+        self.assertEqual(1, len(soup.find_all("table", {"id": "result_list"})))
+        counter_element_list = soup.find_all("span", {"id": "counter"})
+        self.assertEqual(1, len(counter_element_list))
+        counter_element = counter_element_list[0]
+        self.assertEqual("1 entry", counter_element.text.strip())
 
     @time_machine.travel(datetime(2016, 12, 25))
     def test_admin_change_view__has_empty_execution_list(self):

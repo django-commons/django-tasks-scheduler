@@ -1,11 +1,11 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone as dt_timezone
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
-from scheduler.models import TaskType, get_scheduled_task
+from scheduler.models import TaskType, get_scheduled_task, get_next_cron_time
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
 
@@ -80,3 +80,10 @@ class TestConfSettings(SchedulerBaseCase):
             settings.conf_settings()
 
         self.assertEqual(str(cm.exception), "Unknown setting UNKNOWN_SETTING in SCHEDULER_CONFIG")
+
+    @override_settings(USE_TZ=True, TIME_ZONE="EST")
+    def test_get_next_cron_time(self):
+        next_cron_time = get_next_cron_time("0 0 * * *")
+        self.assertIsNotNone(next_cron_time)
+        self.assertTrue(next_cron_time > timezone.now())
+        self.assertEqual(dt_timezone.utc, next_cron_time.tzinfo)
