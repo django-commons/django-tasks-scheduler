@@ -38,18 +38,18 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: [ '3.11', '3.12', '3.13' ]
-        django-version: [ '5.1.8', '5.2' ]
+        django-version: [ '5.2.4' ]
         broker: [ 'redis', 'fakeredis', 'valkey' ]
         include:
           - python-version: '3.13'
-            django-version: '5.2'
+            django-version: '5.2.4'
             broker: 'redis'
             coverage: yes
     permissions:
       pull-requests: write
     services:
       redis:
-        image: redis:7.2.2
+        image: redis:8.0.0
         ports:
           - 6379:6379
         options: >-
