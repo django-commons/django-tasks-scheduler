@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkou2222t@v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Install uv
