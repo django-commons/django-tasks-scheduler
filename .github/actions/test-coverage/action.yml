@@ -36,7 +36,7 @@ runs:
       run: |
         uv run coverage json
         echo "COVERAGE=$(jq '.totals.percent_covered_display|tonumber' coverage.json)" >> $GITHUB_ENV
-    - uses: mshick/add-pr-comment@dd126dd8c253650d181ad9538d8b4fa218fc31e8
+    - uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc
       if: ${{ github.event_name == 'pull_request' }}
       with:
         message: |

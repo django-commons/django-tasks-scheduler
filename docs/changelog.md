@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.7 🌈
+
+### 🧰 Maintenance
+
+- Improve GitHub workflow performance using ruff action @DhavalGojiya #294
+
 ## v4.0.6 🌈
 
 ### 🐛 Bug Fixes
