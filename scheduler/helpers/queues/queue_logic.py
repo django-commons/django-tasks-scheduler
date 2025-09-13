@@ -44,6 +44,7 @@ def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
 
     try:
         result = job_model.func(*job_model.args, **job_model.kwargs)
+        job_model.save(connection=connection, save_all=True)
         if asyncio.iscoroutine(result):
             loop = asyncio.new_event_loop()
             coro_result = loop.run_until_complete(result)
