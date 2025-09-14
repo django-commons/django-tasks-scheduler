@@ -50,13 +50,13 @@ class WorkerModel(HashModel):
     _children_key_template: ClassVar[str] = ":queue-workers:{}:"
     _element_key_template: ClassVar[str] = ":workers:{}"
 
-    def save(self, connection: ConnectionType) -> None:
-        pipeline = connection.pipeline()
-        super(WorkerModel, self).save(pipeline)
-        for queue_name in self.queue_names:
-            pipeline.sadd(self._children_key_template.format(queue_name), self.name)
-        pipeline.expire(self._key, DEFAULT_WORKER_TTL + 60)
-        pipeline.execute()
+    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
+        with connection.pipeline() as pipeline:
+            super(WorkerModel, self).save(pipeline, save_all)
+            for queue_name in self.queue_names:
+                pipeline.sadd(self._children_key_template.format(queue_name), self.name)
+            pipeline.expire(self._key, DEFAULT_WORKER_TTL + 60)
+            pipeline.execute()
 
     def delete(self, connection: ConnectionType) -> None:
         logger.debug(f"Deleting worker {self.name}")
@@ -118,4 +118,4 @@ def _split_list(a_list: List[str], segment_size: int) -> Generator[list[str], An
     :returns: The list split into smaller lists
     """
     for i in range(0, len(a_list), segment_size):
-        yield a_list[i : i + segment_size]
+        yield a_list[i: i + segment_size]

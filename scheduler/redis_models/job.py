@@ -107,7 +107,9 @@ class JobModel(HashModel):
             connection.expire(self._key, ttl)
 
     def persist(self, connection: ConnectionType) -> None:
-        connection.persist(self._key)
+        with connection.pipeline() as pipeline:
+            pipeline.persist(self._key)
+            pipeline.execute()
 
     def prepare_for_execution(self, worker_name: str, registry: JobNamesRegistry, connection: ConnectionType) -> None:
         """Prepares the job for execution, setting the worker name,
