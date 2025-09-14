@@ -24,6 +24,7 @@ from scheduler.types import Broker, Self
 from scheduler.types import ConnectionType, TimeoutErrorTypes, ConnectionErrorTypes, WatchErrorTypes, ResponseErrorTypes
 from .commands import WorkerCommandsChannelListener
 from .scheduler import WorkerScheduler, SchedulerStatus
+from ..helpers.queues.getters import refresh_queue_connection
 from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
 
@@ -116,14 +117,14 @@ class Worker:
         self.job_monitoring_interval: int = job_monitoring_interval
         self.maintenance_interval = maintenance_interval
 
-        connection = self._set_connection(connection)
-        self.connection = connection
+        self.connection = self._set_connection(connection)
 
         self.queues = [
             (Queue(name=q, connection=connection) if isinstance(q, str) else q) for q in _ensure_list(queues)
         ]
         self.name: str = name
-        self._validate_name_uniqueness()
+        if model is None:
+            self._validate_name_uniqueness()
         self._ordered_queues = self.queues[:]
 
         self._is_job_execution_process: bool = False
@@ -155,6 +156,9 @@ class Worker:
 
     @property
     def _pid(self) -> int:
+        if self._model is None:
+            logger.debug(f"[Worker {self.name}]: Worker model is None, returning 0 as PID")
+            return 0
         return self._model.pid
 
     def should_run_maintenance_tasks(self) -> bool:
@@ -600,16 +604,19 @@ class Worker:
         os.environ["SCHEDULER_JOB_NAME"] = job.name
         if child_pid == 0:  # Child process/Job executor process to run the job
             os.setsid()
-            self._model.job_execution_process_pid = os.getpid()
-            self._model.save(connection=self.connection)
-            self.execute_in_separate_process(job, queue)
+            refresh_queue_connection(queue)
+            self.connection = queue.connection
+            self._model.set_field("job_execution_process_pid", os.getpid(), connection=queue.connection)
+            worker = Worker.from_model(self._model)
+            worker.execute_in_separate_process(job, queue)
             os._exit(0)  # just in case
         else:  # Parent worker process
             logger.debug(
                 f"[Worker {self.name}/{self._pid}]: Forking job execution process, job_execution_process_pid={child_pid}"
             )
+            refresh_queue_connection(queue)
             self._model.job_execution_process_pid = child_pid
-            self._model.save(connection=self.connection)
+            self._model.save(connection=queue.connection)
             self.procline(f"Forked {child_pid} at {time.time()}")
 
     def get_heartbeat_ttl(self, job: JobModel) -> int:
@@ -732,6 +739,7 @@ class Worker:
         random.seed()
         self.setup_job_execution_process_signals()
         self._is_job_execution_process = True
+        job = JobModel.get(job.name, self.connection)
         try:
             self.perform_job(job, queue)
         except:  # noqa
@@ -756,7 +764,7 @@ class Worker:
         self._model.current_job_working_time = 0
         self._model.job_execution_process_pid = current_pid
         heartbeat_ttl = self.get_heartbeat_ttl(job)
-        self._model.heartbeat(self.connection, heartbeat_ttl)
+        self._model.heartbeat(connection, heartbeat_ttl)
         self.procline(
             f"[Worker {self.name}/{self._pid}]: Processing {job.func_name} from {job.queue_name} since {time.time()}"
         )
@@ -792,7 +800,7 @@ class Worker:
                     self._model.completed_jobs += 1
                     if job.started_at is not None and job.ended_at is not None:
                         self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
-                    self._model.save(connection=self.connection)
+                    self._model.save(connection=pipeline)
 
                     job.expire(job.success_ttl, connection=pipeline)
                     logger.debug(f"[Worker {self.name}/{self._pid}]: Removing job {job.name} from active_job_registry")

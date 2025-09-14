@@ -91,6 +91,15 @@ class Queue:
         self.scheduled_job_registry = ScheduledJobRegistry(connection=self.connection, name=self.name)
         self.canceled_job_registry = CanceledJobRegistry(connection=self.connection, name=self.name)
 
+    def refresh_connection(self, connection: ConnectionType) -> None:
+        self.connection = connection
+        self.queued_job_registry.connection = connection
+        self.active_job_registry.connection = connection
+        self.failed_job_registry.connection = connection
+        self.finished_job_registry.connection = connection
+        self.scheduled_job_registry.connection = connection
+        self.canceled_job_registry.connection = connection
+
     def __len__(self) -> int:
         return self.count
 
