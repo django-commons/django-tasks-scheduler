@@ -22,8 +22,6 @@ from . import views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("scheduler/", include("scheduler.urls")),
-    path(
-        "test-view/",
-        views.my_view,
-    ),
+    path("test-view/", views.my_view),
+    path("run-job/", views.run_job),
 ]
