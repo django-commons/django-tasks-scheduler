@@ -108,7 +108,7 @@ class BaseModel:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
             data[k] = _deserialize(data[k], types[k])
-        res= cls(**data)
+        res = cls(**data)
         return res
 
 
@@ -185,7 +185,7 @@ class HashModel(BaseModel):
             values = pipeline.execute()
         return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
 
-    def save(self, connection: ConnectionType, save_all:bool=False) -> None:
+    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
         save_all = save_all or self._save_all
         with connection.pipeline() as pipeline:
             pipeline.sadd(self._list_key, self.name)
@@ -205,11 +205,13 @@ class HashModel(BaseModel):
             self._save_all = False
 
     def delete(self, connection: ConnectionType) -> None:
-        connection.srem(self._list_key, self._key)
-        if self._parent_key is not None:
-            connection.srem(self._parent_key, 0, self._key)
-        connection.delete(self._key)
-        self._save_all = True
+        with connection.pipeline() as pipeline:
+            pipeline.srem(self._list_key, self._key)
+            if self._parent_key is not None:
+                pipeline.srem(self._parent_key, 0, self._key)
+            pipeline.delete(self._key)
+            pipeline.execute()
+            self._save_all = True
 
     @classmethod
     def count(cls, connection: ConnectionType, parent: Optional[str] = None) -> int:
