@@ -25,8 +25,8 @@ def _run_worker_process(worker: Worker, **kwargs):
 
 
 def run_worker_in_process(*args, name="test-worker") -> Tuple[multiprocessing.Process, str]:
-    worker = create_worker(*args, name=name, fork_job_execution=False)
-    process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs=dict(with_scheduler=False))
+    worker = create_worker(*args, name=name, fork_job_execution=False, with_scheduler=False)
+    process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs=dict())
     process.start()
     return process, name
 

@@ -24,13 +24,11 @@ class WorkerCommandsTest(BaseTestCase):
 
         # Act
         send_command(queue.connection, StopJobCommand(worker_name=worker_name, job_name=job.name))
-
-        # Assert
-
         process.terminate()
         process.join(2)
         process.kill()
 
+        # Assert
         job = JobModel.get(job.name, connection=queue.connection)
         worker_model = WorkerModel.get(worker_name, connection=queue.connection)
         self.assertEqual(job.name, worker_model.stopped_job_name)
