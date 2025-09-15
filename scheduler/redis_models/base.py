@@ -116,6 +116,8 @@ class BaseModel:
 class HashModel(BaseModel):
     created_at: Optional[datetime] = None
     parent: Optional[str] = None
+    _dirty_fields: Set[str] = dataclasses.field(default_factory=set)  # fields that were changed
+    _save_all: bool = True  # Save all fields to broker, after init, or after delete
     _list_key: ClassVar[str] = ":list_all:"
     _children_key_template: ClassVar[str] = ":children:{}:"
 
