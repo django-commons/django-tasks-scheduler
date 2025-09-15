@@ -44,17 +44,16 @@ def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
 
     try:
         result = job_model.func(*job_model.args, **job_model.kwargs)
+        job_model.save(connection=connection, save_all=True)
         if asyncio.iscoroutine(result):
             loop = asyncio.new_event_loop()
             coro_result = loop.run_until_complete(result)
             result = coro_result
-        if job_model.success_callback:
-            job_model.success_callback(job_model, connection, result)
+        job_model.call_success_callback(job_model, connection, result)
         return result
     except Exception as e:
         logger.error(f"Job {job_model.name} failed with exception: {e}", exc_info=True)
-        if job_model.failure_callback:
-            job_model.failure_callback(job_model, connection, *sys.exc_info())
+        job_model.call_failure_callback(job_model, connection, *sys.exc_info())
         raise
     finally:
         assert job_model is _job_stack.pop()
@@ -90,6 +89,15 @@ class Queue:
         self.scheduled_job_registry = ScheduledJobRegistry(connection=self.connection, name=self.name)
         self.canceled_job_registry = CanceledJobRegistry(connection=self.connection, name=self.name)
 
+    def refresh_connection(self, connection: ConnectionType) -> None:
+        self.connection = connection
+        self.queued_job_registry.connection = connection
+        self.active_job_registry.connection = connection
+        self.failed_job_registry.connection = connection
+        self.finished_job_registry.connection = connection
+        self.scheduled_job_registry.connection = connection
+        self.canceled_job_registry.connection = connection
+
     def __len__(self) -> int:
         return self.count
 
@@ -111,43 +119,27 @@ class Queue:
             self.connection, before_score
         )
 
-        with self.connection.pipeline() as pipeline:
-            for job_name, job_score in started_jobs:
-                job = JobModel.get(job_name, connection=self.connection)
-                if job is None or job.failure_callback is None or job_score + job.timeout > before_score:
-                    continue
+        for job_name, job_score in started_jobs:
+            job = JobModel.get(job_name, connection=self.connection)
+            if job is None or not job.has_failure_callback or job_score + job.timeout > before_score:
+                continue
 
-                logger.debug(f"Running failure callbacks for {job.name}")
-                try:
-                    job.failure_callback(job, self.connection, traceback.extract_stack())
-                except Exception:  # noqa
-                    logger.exception(f"Job {self.name}: error while executing failure callback")
-                    raise
+            logger.debug(f"Running failure callbacks for {job.name}")
+            try:
+                job.call_failure_callback(job, self.connection, traceback.extract_stack())
+            except Exception:  # noqa
+                logger.exception(f"Job {self.name}: error while executing failure callback")
+                raise
 
-                else:
-                    logger.warning(
-                        f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)"
-                    )
-                    exc_string = (
-                        f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {datetime.now()}"
-                    )
-                    job.status = JobStatus.FAILED
-                    score = current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL
-                    Result.create(
-                        connection=pipeline,
-                        job_name=job.name,
-                        worker_name=job.worker_name,
-                        _type=ResultType.FAILED,
-                        ttl=SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
-                        exc_string=exc_string,
-                    )
-                    self.failed_job_registry.add(pipeline, job.name, score)
-                    job.expire(connection=pipeline, ttl=SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL)
-                    job.save(connection=pipeline)
+            else:
+                logger.warning(
+                    f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)"
+                )
+                exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {datetime.now()}"
+                self.job_handle_failure(JobStatus.FAILED, job, exc_string)
 
             for registry in self.REGISTRIES.values():
                 getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
-            pipeline.execute()
 
     def first_queued_job_name(self) -> Optional[str]:
         return self.queued_job_registry.get_first()
@@ -248,19 +240,17 @@ class Queue:
             raise TypeError(f"Invalid type for when=`{when}`")
         return job_model
 
-    def job_handle_success(
-        self, job: JobModel, result: Any, job_info_ttl: int, result_ttl: int, connection: ConnectionType
-    ) -> None:
+    def job_handle_success(self, job: JobModel, result: Any, job_info_ttl: int, result_ttl: int) -> None:
         """Saves and cleanup job after successful execution"""
         job.after_execution(
             job_info_ttl,
             JobStatus.FINISHED,
             prev_registry=self.active_job_registry,
             new_registry=self.finished_job_registry,
-            connection=connection,
+            connection=self.connection,
         )
         Result.create(
-            connection,
+            self.connection,
             job_name=job.name,
             worker_name=job.worker_name,
             _type=ResultType.SUCCESSFUL,
@@ -268,17 +258,17 @@ class Queue:
             ttl=result_ttl,
         )
 
-    def job_handle_failure(self, status: JobStatus, job: JobModel, exc_string: str, connection: ConnectionType) -> None:
+    def job_handle_failure(self, status: JobStatus, job: JobModel, exc_string: str) -> None:
         # Does not set job status since the job might be stopped
         job.after_execution(
             SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
             status,
             prev_registry=self.active_job_registry,
             new_registry=self.failed_job_registry,
-            connection=connection,
+            connection=self.connection,
         )
         Result.create(
-            connection,
+            self.connection,
             job.name,
             job.worker_name,
             ResultType.FAILED,
@@ -291,19 +281,11 @@ class Queue:
         job.prepare_for_execution("sync", self.active_job_registry, self.connection)
         try:
             result = perform_job(job, self.connection)
-
-            with self.connection.pipeline() as pipeline:
-                self.job_handle_success(
-                    job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl, connection=pipeline
-                )
-
-                pipeline.execute()
+            self.job_handle_success(job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl)
         except Exception as e:  # noqa
             logger.warning(f"Job {job.name} failed with exception: {e}")
-            with self.connection.pipeline() as pipeline:
-                exc_string = "".join(traceback.format_exception(*sys.exc_info()))
-                self.job_handle_failure(JobStatus.FAILED, job, exc_string, pipeline)
-                pipeline.execute()
+            exc_string = "".join(traceback.format_exception(*sys.exc_info()))
+            self.job_handle_failure(JobStatus.FAILED, job, exc_string)
         return job
 
     @classmethod

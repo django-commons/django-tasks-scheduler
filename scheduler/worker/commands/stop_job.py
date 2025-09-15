@@ -32,11 +32,11 @@ class StopJobCommand(WorkerCommand):
         if job_model is None:
             logger.error(f"Job {self.job_name} not found")
             return
-        if worker_model.pid == worker_model.job_execution_process_pid:
-            logger.warning(f"Job execution process ID and worker process id {worker_model.pid} are equal, skipping")
-            return
         if not worker_model.job_execution_process_pid:
             logger.error(f"Worker {self.worker_name} has no job execution process")
+            return
+        if worker_model.pid == worker_model.job_execution_process_pid:
+            logger.warning(f"Job execution process ID and worker process id {worker_model.pid} are equal, skipping")
             return
         if worker_model.current_job_name != self.job_name:
             logger.info(

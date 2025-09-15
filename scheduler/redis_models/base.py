@@ -108,7 +108,8 @@ class BaseModel:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
             data[k] = _deserialize(data[k], types[k])
-        return cls(**data)
+        res = cls(**data)
+        return res
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -117,6 +118,22 @@ class HashModel(BaseModel):
     parent: Optional[str] = None
     _list_key: ClassVar[str] = ":list_all:"
     _children_key_template: ClassVar[str] = ":children:{}:"
+
+    def __post_init__(self):
+        self._dirty_fields = set()
+        self._save_all = True
+
+    def __setattr__(self, key, value):
+        if not key.startswith("_") and hasattr(self, "_dirty_fields"):
+            self._dirty_fields.add(key)
+        super(HashModel, self).__setattr__(key, value)
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, Any]) -> Self:
+        instance = super(HashModel, cls).deserialize(data)
+        instance._dirty_fields = set()
+        instance._save_all = False
+        return instance
 
     @property
     def _parent_key(self) -> Optional[str]:
@@ -168,20 +185,24 @@ class HashModel(BaseModel):
             values = pipeline.execute()
             return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
 
-    def save(self, connection: ConnectionType) -> None:
+    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
+        save_all = save_all or self._save_all
         with connection.pipeline() as pipeline:
             pipeline.sadd(self._list_key, self.name)
             if self._parent_key is not None:
                 pipeline.sadd(self._parent_key, self.name)
             mapping = self.serialize(with_nones=True)
+            if not save_all:
+                mapping = {k: v for k, v in mapping.items() if k in self._dirty_fields}
             none_values = {k for k, v in mapping.items() if v is None}
             if none_values:
                 pipeline.hdel(self._key, *none_values)
             mapping = {k: v for k, v in mapping.items() if v is not None}
             if mapping:
                 pipeline.hset(self._key, mapping=mapping)
-
             pipeline.execute()
+            self._dirty_fields = set()
+            self._save_all = False
 
     def delete(self, connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
@@ -189,8 +210,8 @@ class HashModel(BaseModel):
             if self._parent_key is not None:
                 pipeline.srem(self._parent_key, 0, self._key)
             pipeline.delete(self._key)
-
             pipeline.execute()
+            self._save_all = True
 
     @classmethod
     def count(cls, connection: ConnectionType, parent: Optional[str] = None) -> int:

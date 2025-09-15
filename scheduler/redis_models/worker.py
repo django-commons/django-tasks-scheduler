@@ -18,6 +18,7 @@ class WorkerStatus(str, Enum):
     SUSPENDED = "suspended"
     BUSY = "busy"
     IDLE = "idle"
+    STOPPED = "stopped"
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -50,13 +51,13 @@ class WorkerModel(HashModel):
     _children_key_template: ClassVar[str] = ":queue-workers:{}:"
     _element_key_template: ClassVar[str] = ":workers:{}"
 
-    def save(self, connection: ConnectionType) -> None:
-        pipeline = connection.pipeline()
-        super(WorkerModel, self).save(pipeline)
-        for queue_name in self.queue_names:
-            pipeline.sadd(self._children_key_template.format(queue_name), self.name)
-        pipeline.expire(self._key, DEFAULT_WORKER_TTL + 60)
-        pipeline.execute()
+    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
+        with connection.pipeline() as pipeline:
+            super(WorkerModel, self).save(pipeline, save_all)
+            for queue_name in self.queue_names:
+                pipeline.sadd(self._children_key_template.format(queue_name), self.name)
+            pipeline.expire(self._key, DEFAULT_WORKER_TTL + 60)
+            pipeline.execute()
 
     def delete(self, connection: ConnectionType) -> None:
         logger.debug(f"Deleting worker {self.name}")
@@ -96,17 +97,16 @@ class WorkerModel(HashModel):
         with connection.pipeline() as pipeline:
             for worker_key in worker_keys:
                 pipeline.exists(worker_key)
-            worker_exist = pipeline.execute()
-            invalid_workers = list()
-            for i, worker_name in enumerate(worker_names):
-                if not worker_exist[i]:
-                    invalid_workers.append(worker_name)
+            worker_exist: List[int] = pipeline.execute()
+            invalid_workers: List[str] = [
+                worker_name for i, worker_name in enumerate(worker_names) if not worker_exist[i]
+            ]
             if len(invalid_workers) == 0:
                 return
-            for invalid_subset in _split_list(invalid_workers, MAX_KEYS):
-                pipeline.srem(cls._list_key, *invalid_subset)
+            for invalid_workers_subset in _split_list(invalid_workers, MAX_KEYS):
+                pipeline.srem(cls._list_key, *invalid_workers_subset)
                 if queue_name:
-                    pipeline.srem(cls._children_key_template.format(queue_name), *invalid_subset)
+                    pipeline.srem(cls._children_key_template.format(queue_name), *invalid_workers_subset)
                 pipeline.execute()
 
 

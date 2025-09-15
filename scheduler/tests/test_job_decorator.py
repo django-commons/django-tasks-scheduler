@@ -60,7 +60,7 @@ class JobDecoratorTest(TestCase):
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(6, len(JOB_METHODS_LIST))
+        self.assertEqual(7, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()

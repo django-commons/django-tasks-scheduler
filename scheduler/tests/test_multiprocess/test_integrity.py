@@ -25,14 +25,14 @@ class MultiProcessTest(BaseTestCase):
         res = self.client.post(reverse("job_detail_action", args=[job.name, "cancel"]), {"post": "yes"}, follow=True)
 
         # assert
-        self.assertEqual(200, res.status_code)
-        job = JobModel.get(job.name, connection=queue.connection)
-        self.assertEqual(JobStatus.STOPPED, job.status)
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
         sleep(0.2)
         process.terminate()
         process.join(2)
         process.kill()
+        self.assertEqual(200, res.status_code)
+        job = JobModel.get(job.name, connection=queue.connection)
+        self.assertEqual(JobStatus.STOPPED, job.status)
+        self.assertNotIn(job.name, queue.queued_job_registry.all())
         worker_model = WorkerModel.get(worker_name, connection=queue.connection)
         self.assertEqual(0, worker_model.completed_jobs)
         self.assertEqual(0, worker_model.failed_job_count)

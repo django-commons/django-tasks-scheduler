@@ -19,7 +19,7 @@ class KvLock(object):
     def expire(self, connection: ConnectionType, expire: Optional[int] = None) -> bool:
         return connection.expire(self._locking_key, expire)
 
-    def release(self, connection: ConnectionType):
+    def release(self, connection: ConnectionType) -> None:
         connection.delete(self._locking_key)
 
     def value(self, connection: ConnectionType) -> Any:

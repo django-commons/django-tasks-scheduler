@@ -289,20 +289,9 @@ class Task(models.Model):
             model=str(self.task_type),
             name=self.name,
             callable=self.callable,
-            callable_args=[
-                dict(
-                    arg_type=arg.arg_type,
-                    val=arg.val,
-                )
-                for arg in self.callable_args.all()
-            ],
+            callable_args=[dict(arg_type=arg.arg_type, val=arg.val) for arg in self.callable_args.all()],
             callable_kwargs=[
-                dict(
-                    arg_type=arg.arg_type,
-                    key=arg.key,
-                    val=arg.val,
-                )
-                for arg in self.callable_kwargs.all()
+                dict(arg_type=arg.arg_type, key=arg.key, val=arg.val) for arg in self.callable_kwargs.all()
             ],
             enabled=self.enabled,
             queue=self.queue,
@@ -344,23 +333,18 @@ class Task(models.Model):
             logger.debug(f"Task {str(self)} scheduled time is in the past, not scheduling")
             return False
         kwargs = self._enqueue_args()
-        job = self.rqueue.create_and_enqueue_job(
-            run_task,
-            args=(self.task_type, self.id),
-            when=schedule_time,
-            **kwargs,
-        )
+        job = self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=schedule_time, **kwargs)
         self.job_name = job.name
         return True
 
     def save(self, **kwargs: Any) -> None:
         should_clean = kwargs.pop("clean", True)
+        schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
         update_fields = kwargs.get("update_fields", None)
         if update_fields is not None:
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
-        schedule_job = kwargs.pop("schedule_job", True)
         super(Task, self).save(**kwargs)
         if schedule_job:
             self._schedule()

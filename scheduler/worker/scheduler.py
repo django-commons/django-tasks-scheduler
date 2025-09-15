@@ -24,10 +24,10 @@ class SchedulerStatus(str, Enum):
 
 
 def _reschedule_tasks() -> None:
-    enabled_jobs = list(Task.objects.filter(enabled=True))
-    for item in enabled_jobs:
-        logger.debug(f"Rescheduling {str(item)}")
-        item.save()
+    enabled_tasks = list(Task.objects.filter(enabled=True))
+    for task in enabled_tasks:
+        logger.debug(f"Rescheduling {str(task)}")
+        task.save(schedule_job=True, clean=False)
 
 
 class WorkerScheduler:
