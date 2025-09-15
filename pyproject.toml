@@ -66,16 +66,6 @@ dev = [
     "beautifulsoup4>=4.13.4"
 ]
 
-[tool.coverage.run]
-concurrency = ["multiprocessing"]
-parallel = true
-source = ["scheduler"]
-omit = [
-    "*/.venv/*",
-    "**/migrations/*.py",
-    "**/tests/**/*.py"
-]
-
 [tool.hatch.build.targets.sdist]
 include = ["scheduler"]
 
