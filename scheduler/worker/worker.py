@@ -581,7 +581,6 @@ class Worker:
             logger.debug(
                 f"[Worker {self.name}/{self._pid}]: Forking job execution process, job_execution_process_pid={child_pid}"
             )
-            refresh_queue_connection(queue)
             self._model.job_execution_process_pid = child_pid
             self._model.save(connection=queue.connection)
             self.procline(f"Forked {child_pid} at {time.time()}")
@@ -605,7 +604,6 @@ class Worker:
         :param queue: The Queue
         """
         retpid = ret_val = None
-        job.started_at = utcnow()
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
