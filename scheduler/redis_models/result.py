@@ -43,13 +43,14 @@ class Result(StreamModel):
     ) -> Self:
         if worker_name is None:
             logger.warning(f"Job {job_name} has no worker name, will save result with 'unknown_worker'")
+            worker_name = "unknown_worker"
         result = cls(
             parent=job_name,
             ttl=ttl,
             type=_type,
             return_value=return_value,
             exc_string=exc_string,
-            worker_name=worker_name or "unknown_worker",
+            worker_name=worker_name,
         )
         result.save(connection)
         return result

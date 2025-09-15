@@ -21,15 +21,18 @@ class TimeoutFormatError(Exception):
 
 
 class JobStatus(str, Enum):
-    """The Status of Job within its lifecycle at any given time."""
+    """The Status of Job within its lifecycle at any given time.
 
-    QUEUED = "queued"
-    FINISHED = "finished"
-    FAILED = "failed"
-    STARTED = "started"
-    SCHEDULED = "scheduled"
-    STOPPED = "stopped"
-    CANCELED = "canceled"
+    scheduled -> queued -> (canceled | started -> (finished | failed | stopped))
+    """
+
+    SCHEDULED = "scheduled"  # Job is scheduled to be queued at a later time
+    QUEUED = "queued"  # Job is waiting to be processed
+    CANCELED = "canceled"  # Job was canceled before being processed
+    STARTED = "started"  # Job is currently being processed
+    FINISHED = "finished"  # Job has been processed successfully
+    FAILED = "failed"  # Job has been processed but failed
+    STOPPED = "stopped"  # Job was stopped while being processed
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -49,9 +52,6 @@ class JobModel(HashModel):
     timeout: int = SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT
     success_ttl: int = SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL
     job_info_ttl: int = SCHEDULER_CONFIG.DEFAULT_JOB_TTL
-    status: JobStatus
-    created_at: datetime
-    meta: Dict[str, str]
     at_front: bool = False
     last_heartbeat: Optional[datetime] = None
     worker_name: Optional[str] = None
@@ -66,6 +66,9 @@ class JobModel(HashModel):
     stopped_callback_timeout: int = SCHEDULER_CONFIG.CALLBACK_TIMEOUT
     task_type: Optional[str] = None
     scheduled_task_id: Optional[int] = None
+    status: JobStatus
+    created_at: datetime
+    meta: Dict[str, str]
 
     def __hash__(self):
         return hash(self.name)
@@ -99,6 +102,9 @@ class JobModel(HashModel):
     def is_scheduled_task(self) -> bool:
         return self.scheduled_task_id is not None
 
+    def has_failure_callback(self) -> bool:
+        return self.failure_callback_name is not None
+
     def expire(self, ttl: int, connection: ConnectionType) -> None:
         """Expire the Job Model if ttl >= 0"""
         if ttl == 0:
@@ -112,8 +118,8 @@ class JobModel(HashModel):
             pipeline.execute()
 
     def prepare_for_execution(self, worker_name: str, registry: JobNamesRegistry, connection: ConnectionType) -> None:
-        """Prepares the job for execution, setting the worker name,
-        heartbeat information, status and other metadata before execution begins.
+        """Prepares the job for execution, setting the worker name, heartbeat information, status, and other metadata
+        before execution begins.
         :param worker_name: The name of the worker
         :param registry: The registry to add the job to
         :param current_pid: The current process id
@@ -144,26 +150,26 @@ class JobModel(HashModel):
             new_registry.add(connection, self.name, current_timestamp() + job_info_ttl)
         self.save(connection=connection)
 
-    @property
-    def failure_callback(self) -> Optional[Callback]:
+    def call_failure_callback(self, *args, **kwargs) -> Optional[Callback]:
         if self.failure_callback_name is None:
             return None
-        logger.debug(f"Running failure callbacks for {self.name}")
-        return Callback(self.failure_callback_name, self.failure_callback_timeout)
+        logger.debug(f"Running failure callback for {self.name}")
+        callback = Callback(self.failure_callback_name, self.failure_callback_timeout)
+        return callback(*args, **kwargs)
 
-    @property
-    def success_callback(self) -> Optional[Callable[..., Any]]:
+    def call_success_callback(self, *args, **kwargs) -> Optional[Any]:
         if self.success_callback_name is None:
             return None
-        logger.debug(f"Running success callbacks for {self.name}")
-        return Callback(self.success_callback_name, self.success_callback_timeout)
+        logger.debug(f"Running success callback for {self.name}")
+        callback = Callback(self.success_callback_name, self.success_callback_timeout)
+        return callback(*args, **kwargs)
 
-    @property
-    def stopped_callback(self) -> Optional[Callable[..., Any]]:
+    def call_stopped_callback(self, *args, **kwargs) -> Optional[Any]:
         if self.stopped_callback_name is None:
             return None
         logger.debug(f"Running stopped callbacks for {self.name}")
-        return Callback(self.stopped_callback_name, self.stopped_callback_timeout)
+        callback = Callback(self.stopped_callback_name, self.stopped_callback_timeout)
+        return callback(*args, **kwargs)
 
     def get_call_string(self):
         return _get_call_string(self.func_name, self.args, self.kwargs)

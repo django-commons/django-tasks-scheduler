@@ -33,8 +33,6 @@ try:
 except ImportError:
     from signal import SIGTERM as SIGKILL  # type:ignore
 
-from contextlib import suppress
-
 from scheduler.helpers.queues import Queue, perform_job
 from scheduler.helpers.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
 from scheduler.helpers.utils import utcnow, current_timestamp
@@ -89,51 +87,38 @@ class Worker:
 
     @classmethod
     def from_model(cls, model: WorkerModel) -> Self:
-        connection = get_queue(model.queue_names[0]).connection
         res = cls(
             queues=[get_queue(queue_name) for queue_name in model.queue_names],
             name=model.name,
-            connection=connection,
             with_scheduler=False,
             model=model,
         )
         return res
 
     def __init__(
-        self,
-        queues: Iterable[Union[str, Queue]],
-        name: str,
-        connection: ConnectionType,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        disable_default_exception_handler: bool = False,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
+            self,
+            queues: Iterable[Union[str, Queue]],
+            name: str,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
     ) -> None:
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval: int = job_monitoring_interval
         self.maintenance_interval = maintenance_interval
-
-        self.connection = self._set_connection(connection)
-
-        self.queues = [
-            (Queue(name=q, connection=connection) if isinstance(q, str) else q) for q in _ensure_list(queues)
-        ]
+        self.queues = [(get_queue(q) if isinstance(q, str) else q) for q in _ensure_list(queues)]
         self.name: str = name
         if model is None:
             self._validate_name_uniqueness()
         self._ordered_queues = self.queues[:]
-
         self._is_job_execution_process: bool = False
-
         self.scheduler: Optional[WorkerScheduler] = None
-        self._command_listener = WorkerCommandsChannelListener(connection, self.name)
+        self._command_listener = WorkerCommandsChannelListener(self.connection, self.name)
         self._dequeue_strategy = dequeue_strategy
-
-        self.disable_default_exception_handler = disable_default_exception_handler
         self.with_scheduler = with_scheduler
         self.burst = burst
         self._model: WorkerModel = (
@@ -156,9 +141,6 @@ class Worker:
 
     @property
     def _pid(self) -> int:
-        if self._model is None:
-            logger.debug(f"[Worker {self.name}]: Worker model is None, returning 0 as PID")
-            return 0
         return self._model.pid
 
     def should_run_maintenance_tasks(self) -> bool:
@@ -169,16 +151,16 @@ class Worker:
             return True
         return False
 
-    def _set_connection(self, connection: ConnectionType) -> ConnectionType:
+    @property
+    def connection(self) -> ConnectionType:
         """Configures the Broker connection to have a socket timeout.
         This should timouet the connection in case any specific command hangs at any given time (eg. BLPOP).
         If the connection provided already has a `socket_timeout` defined, skips.
-
-        :param connection: Broker connection to configure.
         """
+        connection = self.queues[0].connection
         current_socket_timeout = connection.connection_pool.connection_kwargs.get("socket_timeout")
         if current_socket_timeout is None:
-            timeout_config = {"socket_timeout": self.connection_timeout}
+            timeout_config = {"socket_timeout": SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 5}
             connection.connection_pool.connection_kwargs.update(timeout_config)
         return connection
 
@@ -188,11 +170,11 @@ class Worker:
             # If there are multiple workers running, we only want 1 worker
             # to run clean_registries().
             queue_lock = QueueLock(self.name)
-            if queue_lock.acquire(1, expire=899, connection=self.connection):
+            if queue_lock.acquire(1, expire=899, connection=queue.connection):
                 logger.debug(f"[Worker {self.name}/{self._pid}]: Cleaning registries for queue: {queue.name}")
                 queue.clean_registries()
                 WorkerModel.cleanup(queue.connection, queue.name)
-                queue_lock.release(self.connection)
+                queue_lock.release(queue.connection)
         self._model.last_cleaned_at = utcnow()
 
     def _install_signal_handlers(self) -> None:
@@ -283,38 +265,25 @@ class Worker:
         logger.debug(f"[Worker {self.name}/{self._pid}]: Handling failed execution of job {job.name}")
         # check whether a job was stopped intentionally and set the job status appropriately if it was this job.
 
-        new_job_status = (
-            JobStatus.STOPPED
-            if self._model.get_field("stopped_job_name", self.connection) == job.name
-            else JobStatus.FAILED
-        )
+        stopped_job_name = self._model.get_field("stopped_job_name", queue.connection)
         self._model.current_job_name = None
-        with self.connection.pipeline() as pipeline:
-            if new_job_status == JobStatus.STOPPED:
-                logger.debug(f"[Worker {self.name}/{self._pid}]: Job was stopped, setting status to STOPPED")
-            else:
-                logger.debug(f"[Worker {self.name}/{self._pid}]: Job has failed, setting status to FAILED")
+        if stopped_job_name == job.name:
+            logger.debug(f"[Worker {self.name}/{self._pid}]: Job was stopped, setting status to STOPPED")
+            new_job_status = JobStatus.STOPPED
+        else:
+            logger.debug(f"[Worker {self.name}/{self._pid}]: Job has failed, setting status to FAILED")
+            new_job_status = JobStatus.FAILED
 
-            queue.active_job_registry.delete(connection=pipeline, job_name=job.name)
+        queue.active_job_registry.delete(connection=queue.connection, job_name=job.name)
+        queue.job_handle_failure(new_job_status, job, exc_string)
 
-            if not self.disable_default_exception_handler:
-                queue.job_handle_failure(new_job_status, job, exc_string, connection=pipeline)
-                with suppress(ConnectionErrorTypes):
-                    pipeline.execute()
-
-            self._model.current_job_working_time = 0
-            if job.status == JobStatus.FAILED:
-                self._model.failed_job_count += 1
-                self._model.completed_jobs += 1
-            if job.started_at and job.ended_at:
-                self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
-            self._model.save(connection=self.connection)
-
-            try:
-                pipeline.execute()
-            except Exception:
-                # Ensure that custom exception handlers are called even if the Broker is down
-                pass
+        self._model.current_job_working_time = 0
+        if job.status == JobStatus.FAILED:
+            self._model.failed_job_count += 1
+            self._model.completed_jobs += 1
+        if job.started_at and job.ended_at:
+            self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
+        self._model.save(connection=queue.connection)
 
     def bootstrap(self) -> None:
         """Bootstraps the worker.
@@ -368,19 +337,22 @@ class Worker:
         self.clean_registries()
         if not self.with_scheduler:
             return
-        if self.scheduler is None:
+        if self.scheduler is None and self.with_scheduler:
+            logger.debug("[Worker {self.name}/{self._pid}]: Creating scheduler")
             self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
         if self.scheduler.status == SchedulerStatus.STOPPED:
+            logger.debug("[Worker {self.name}/{self._pid}]: Starting scheduler thread")
             self.scheduler.start()
             self._model.has_scheduler = True
             self._model.save(connection=self.connection)
         if self.burst:
+            logger.debug("[Worker {self.name}/{self._pid}]: Stopping scheduler thread (burst mode)")
             self.scheduler.request_stop_and_wait()
             self._model.has_scheduler = False
             self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[Optional[JobModel], Optional[Queue]]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -431,10 +403,6 @@ class Worker:
         self._model.heartbeat(self.connection)
         return job, queue
 
-    @property
-    def connection_timeout(self) -> int:
-        return SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 5
-
     def procline(self, message: str) -> None:
         """Changes the current procname for the process.
 
@@ -471,7 +439,7 @@ class Worker:
         except OSError as e:
             if e.errno == errno.ESRCH:
                 # "No such process" is fine with us
-                logger.debug("[Worker {self.name}/{self._pid}]: Job execution process already dead")
+                logger.debug(f"[Worker {self.name}/{self._pid}]: Job execution process already dead")
             else:
                 raise
 
@@ -555,7 +523,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -605,7 +573,6 @@ class Worker:
         if child_pid == 0:  # Child process/Job executor process to run the job
             os.setsid()
             refresh_queue_connection(queue)
-            self.connection = queue.connection
             self._model.set_field("job_execution_process_pid", os.getpid(), connection=queue.connection)
             worker = Worker.from_model(self._model)
             worker.execute_in_separate_process(job, queue)
@@ -642,7 +609,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val = self.wait_for_job_execution_process()
                 break
@@ -686,8 +653,7 @@ class Worker:
             return
         elif stopped_job_name == job.name:  # job execution process killed deliberately
             logger.warning(f"[Worker {self.name}/{self._pid}]: Job stopped by user, moving job to failed-jobs-registry")
-            if job.stopped_callback:
-                job.stopped_callback()
+            job.call_stopped_callback()
             self.handle_job_failure(
                 job, queue=queue, exc_string="Job stopped by user, job execution process terminated."
             )
@@ -789,11 +755,7 @@ class Worker:
             while True:
                 try:
                     queue.job_handle_success(
-                        job,
-                        result=return_value,
-                        job_info_ttl=job.job_info_ttl,
-                        result_ttl=job.success_ttl,
-                        connection=pipeline,
+                        job, result=return_value, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl
                     )
                     self._model.current_job_name = None
                     self._model.successful_job_count += 1
@@ -830,7 +792,7 @@ class Worker:
             timeout = job.timeout or SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT
             with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(timeout, JobTimeoutException, job_name=job.name):
                 logger.debug(f"[Worker {self.name}/{self._pid}]: Performing job `{job.name}`...")
-                rv = perform_job(job, self.connection)
+                rv = perform_job(job, queue.connection)
                 logger.debug(f"[Worker {self.name}/{self._pid}]: Finished performing job `{job.name}`")
 
             self.handle_job_success(job=job, return_value=rv, queue=queue)
@@ -886,7 +848,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue: Queue) -> None:
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):
@@ -960,5 +922,5 @@ def create_worker(*queue_names: str, **kwargs: Any) -> Worker:
         raise ValueError(f"Worker {kwargs['name']} already exists")
     kwargs["name"] = kwargs["name"].replace("/", ".")
     kwargs.setdefault("with_scheduler", False)
-    worker = Worker(queues, connection=queues[0].connection, **kwargs)
+    worker = Worker(queues, **kwargs)
     return worker
