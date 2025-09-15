@@ -4,7 +4,6 @@ from time import sleep
 
 from scheduler.helpers.queues import get_queue
 from scheduler.tests.jobs import test_job, two_seconds_job
-from ..test_job_decorator import long_running_func
 from ..test_views.base import BaseTestCase
 from ...redis_models import JobModel, JobStatus, WorkerModel
 from ...worker import create_worker
