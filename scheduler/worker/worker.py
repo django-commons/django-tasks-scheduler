@@ -281,7 +281,7 @@ class Worker:
         if job.status == JobStatus.FAILED:
             self._model.failed_job_count += 1
             self._model.completed_jobs += 1
-        if job.started_at and job.ended_at:
+        if job.started_at is not None and job.ended_at is not None:
             self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
         self._model.save(connection=queue.connection)
 
@@ -613,9 +613,11 @@ class Worker:
                 break
             except JobExecutionMonitorTimeoutException:
                 # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker alive.
-                working_time = (utcnow() - job.started_at).total_seconds()
-                self._model.set_current_job_working_time(working_time, self.connection)
-
+                if job.started_at is not None:
+                    working_time = (utcnow() - job.started_at).total_seconds()
+                    self._model.set_current_job_working_time(working_time, self.connection)
+                else:
+                    logger.warning("[Worker {self.name}/{self._pid}]: job.started_at is None, cannot set working time")
                 # Kill the job from this side if something is really wrong (interpreter lock/etc).
                 if job.timeout != -1 and self._model.current_job_working_time > (job.timeout + 60):
                     self._model.heartbeat(self.connection, self.job_monitoring_interval + 60)
@@ -703,7 +705,7 @@ class Worker:
         random.seed()
         self.setup_job_execution_process_signals()
         self._is_job_execution_process = True
-        job = JobModel.get(job.name, self.connection)
+        job = JobModel.get(job.name, queue.connection)
         try:
             self.perform_job(job, queue)
         except:  # noqa

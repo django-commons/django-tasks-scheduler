@@ -176,7 +176,7 @@ class HashModel(BaseModel):
         try:
             return cls.deserialize(decode_dict(res, set()))
         except Exception as e:
-            logger.warning(f"Failed to deserialize {name}: {e}")
+            logger.warning(f"Failed to deserialize {name}: {e}", exc_info=True)
             return None
 
     @classmethod
