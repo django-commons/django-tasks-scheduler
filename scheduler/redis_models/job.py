@@ -122,7 +122,6 @@ class JobModel(HashModel):
         before execution begins.
         :param worker_name: The name of the worker
         :param registry: The registry to add the job to
-        :param current_pid: The current process id
         :param connection: The connection to the broker
         """
         self.worker_name = worker_name
