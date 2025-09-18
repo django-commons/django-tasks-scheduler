@@ -163,8 +163,10 @@ class HashModel(BaseModel):
 
     @classmethod
     def delete_many(cls, names: List[str], connection: ConnectionType) -> None:
-        for name in names:
-            connection.delete(cls._element_key_template.format(name))
+        with connection.pipeline() as pipeline:
+            for name in names:
+                pipeline.delete(cls._element_key_template.format(name))
+            pipeline.execute()
 
     @classmethod
     def get(cls, name: str, connection: ConnectionType) -> Optional[Self]:
@@ -183,7 +185,7 @@ class HashModel(BaseModel):
             for name in names:
                 pipeline.hgetall(cls._element_key_template.format(name))
             values = pipeline.execute()
-        return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
+            return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
 
     def save(self, connection: ConnectionType, save_all: bool = False) -> None:
         save_all = save_all or self._save_all
