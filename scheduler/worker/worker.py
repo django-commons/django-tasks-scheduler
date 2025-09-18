@@ -35,7 +35,7 @@ except ImportError:
 
 from scheduler.helpers.queues import Queue, perform_job
 from scheduler.helpers.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
-from scheduler.helpers.utils import utcnow, current_timestamp
+from scheduler.helpers.utils import utcnow
 
 try:
     from setproctitle import setproctitle as setprocname
@@ -96,16 +96,16 @@ class Worker:
         return res
 
     def __init__(
-        self,
-        queues: Iterable[Union[str, Queue]],
-        name: str,
-        maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
-        job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
-        dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        fork_job_execution: bool = True,
-        with_scheduler: bool = True,
-        burst: bool = False,
-        model: Optional[WorkerModel] = None,
+            self,
+            queues: Iterable[Union[str, Queue]],
+            name: str,
+            maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
+            job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
+            dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
+            fork_job_execution: bool = True,
+            with_scheduler: bool = True,
+            burst: bool = False,
+            model: Optional[WorkerModel] = None,
     ) -> None:
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval: int = job_monitoring_interval
@@ -352,7 +352,7 @@ class Worker:
             self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
+            self, timeout: Optional[int], max_idle_time: Optional[int] = None
     ) -> Tuple[Optional[JobModel], Optional[Queue]]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
@@ -523,7 +523,7 @@ class Worker:
             return
         if self._dequeue_strategy == DequeueStrategy.ROUND_ROBIN:
             pos = self._ordered_queues.index(reference_queue)
-            self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+            self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
             return
         if self._dequeue_strategy == DequeueStrategy.RANDOM:
             shuffle(self._ordered_queues)
@@ -607,7 +607,7 @@ class Worker:
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
-                    self.job_monitoring_interval, JobExecutionMonitorTimeoutException
+                        self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
                     retpid, ret_val = self.wait_for_job_execution_process()
                 break
@@ -625,7 +625,7 @@ class Worker:
                     self.wait_for_job_execution_process()
                     break
 
-                self.maintain_heartbeats(job, queue)
+                self._model.heartbeat(self.connection, self.job_monitoring_interval + 60)
 
             except OSError as e:
                 # In case we encountered an OSError due to EINTR (which is
@@ -684,11 +684,6 @@ class Worker:
             self._model.set_field("state", WorkerStatus.BUSY, connection=self.connection)
             self.perform_job(job, queue)
             self._model.set_field("state", WorkerStatus.IDLE, connection=self.connection)
-
-    def maintain_heartbeats(self, job: JobModel, queue: Queue) -> None:
-        """Updates worker and job's last heartbeat field."""
-        self._model.heartbeat(self.connection, self.job_monitoring_interval + 60)
-        ttl = self.get_heartbeat_ttl(job)
 
     def execute_in_separate_process(self, job: JobModel, queue: Queue) -> None:
         """This is the entry point of the newly spawned job execution process.
@@ -840,7 +835,7 @@ class RoundRobinWorker(Worker):
 
     def reorder_queues(self, reference_queue: Queue) -> None:
         pos = self._ordered_queues.index(reference_queue)
-        self._ordered_queues = self._ordered_queues[pos + 1 :] + self._ordered_queues[: pos + 1]
+        self._ordered_queues = self._ordered_queues[pos + 1:] + self._ordered_queues[: pos + 1]
 
 
 class RandomWorker(Worker):
