@@ -691,10 +691,10 @@ class Worker:
             self._model.heartbeat(pipeline, self.job_monitoring_interval + 60)
             ttl = self.get_heartbeat_ttl(job)
 
-            queue.active_job_registry.add(pipeline, self.name, current_timestamp() + ttl, update_existing_only=False)
+            queue.active_job_registry.add(pipeline, job.name, current_timestamp() + ttl, update_existing_only=False)
             results = pipeline.execute()
             if results[2] == 1:
-                job.delete(self.connection)
+                job.delete(queue.connection)
 
     def execute_in_separate_process(self, job: JobModel, queue: Queue) -> None:
         """This is the entry point of the newly spawned job execution process.

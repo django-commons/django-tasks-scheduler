@@ -76,8 +76,8 @@ def _deserialize(value: str, _type: Type) -> Any:
 class BaseModel:
     name: str
     _element_key_template: ClassVar[str] = ":element:{}"
-    # fields that are not serializable using method above and should be dealt with in the subclass
-    # e.g. args/kwargs for a job
+    # fields that are not serializable using the method above and should be dealt with in the subclass
+    # e.g., args/kwargs for a job
     _non_serializable_fields: ClassVar[Set[str]] = set()
 
     @classmethod

@@ -15,7 +15,7 @@ class DequeueTimeout(Exception):
 @dataclasses.dataclass(slots=True, kw_only=True)
 class ZSetModel(BaseModel):
     def cleanup(self, connection: ConnectionType, timestamp: Optional[float] = None) -> None:
-        """Remove expired jobs from registry."""
+        """Remove expired jobs from the registry."""
         score = timestamp or current_timestamp()
         connection.zremrangebyscore(self._key, 0, score)
 
@@ -45,11 +45,11 @@ class JobNamesRegistry(ZSetModel):
         return self.connection.zrank(self._key, item) is not None
 
     def all(self, start: int = 0, end: int = -1) -> List[str]:
-        """Returns list of all job names.
+        """Returns a list of all job names.
 
         :param start: Start score/timestamp, default to 0.
         :param end: End score/timestamp, default to -1 (i.e., no max score).
-        :returns: Returns list of all job names with timestamp from start to end
+        :returns: Returns a list of all job names with timestamp from start to end
         """
         self.cleanup(self.connection)
         res = [as_str(job_name) for job_name in self.connection.zrange(self._key, start, end)]
@@ -57,11 +57,11 @@ class JobNamesRegistry(ZSetModel):
         return res
 
     def all_with_timestamps(self, start: int = 0, end: int = -1) -> List[Tuple[str, float]]:
-        """Returns list of all job names with their timestamps.
+        """Returns a list of all job names with their timestamps.
 
         :param start: Start score/timestamp, default to 0.
         :param end: End score/timestamp, default to -1 (i.e., no max score).
-        :returns: Returns list of all job names with timestamp from start to end
+        :returns: Returns a list of all job names with timestamp from start to end
         """
         self.cleanup(self.connection)
         res = self.connection.zrange(self._key, start, end, withscores=True)
