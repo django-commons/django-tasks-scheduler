@@ -8,6 +8,15 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the workflow in'
+        required: true
+        type: environment
+      reason:
+        description: 'Reason for running the workflow'
+        required: true
+        type: string
 
 jobs:
   ruff:
