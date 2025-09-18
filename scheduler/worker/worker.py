@@ -687,14 +687,8 @@ class Worker:
 
     def maintain_heartbeats(self, job: JobModel, queue: Queue) -> None:
         """Updates worker and job's last heartbeat field."""
-        with self.connection.pipeline() as pipeline:
-            self._model.heartbeat(pipeline, self.job_monitoring_interval + 60)
-            ttl = self.get_heartbeat_ttl(job)
-
-            queue.active_job_registry.add(pipeline, job.name, current_timestamp() + ttl, update_existing_only=False)
-            results = pipeline.execute()
-            if results[2] == 1:
-                job.delete(queue.connection)
+        self._model.heartbeat(self.connection, self.job_monitoring_interval + 60)
+        ttl = self.get_heartbeat_ttl(job)
 
     def execute_in_separate_process(self, job: JobModel, queue: Queue) -> None:
         """This is the entry point of the newly spawned job execution process.
@@ -785,10 +779,8 @@ class Worker:
         logger.debug(f"[Worker {self.name}/{self._pid}]: Performing {job.name} code.")
 
         try:
-            with self.connection.pipeline() as pipeline:
-                self.worker_before_execution(job, connection=pipeline)
-                job.prepare_for_execution(self.name, queue.active_job_registry, connection=pipeline)
-                pipeline.execute()
+            self.worker_before_execution(job, connection=queue.connection)
+            job.prepare_for_execution(self.name, queue.active_job_registry, connection=queue.connection)
             timeout = job.timeout or SCHEDULER_CONFIG.DEFAULT_JOB_TIMEOUT
             with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(timeout, JobTimeoutException, job_name=job.name):
                 logger.debug(f"[Worker {self.name}/{self._pid}]: Performing job `{job.name}`...")

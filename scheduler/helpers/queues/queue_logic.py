@@ -397,10 +397,10 @@ class Queue:
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 
-        If Queue is instantiated with is_async=False, job is executed immediately.
+        If Queue is instantiated with is_async=False, the job is executed immediately.
         :param job_model: The job redis model
         :param pipeline: The Broker Pipeline
-        :param at_front: Whether to enqueue the job at the front
+        :param at_front: Should the job be enqueued at the front
 
         :returns: The enqueued JobModel
         """
