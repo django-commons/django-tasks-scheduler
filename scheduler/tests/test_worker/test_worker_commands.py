@@ -1,14 +1,24 @@
 import json
 from threading import Thread
 from time import sleep
+from unittest import mock
 
 from scheduler.helpers.queues import get_queue
 from scheduler.tests.jobs import test_job, two_seconds_job
 from ..test_views.base import BaseTestCase
+from ...helpers.callback import Callback
 from ...redis_models import JobModel, JobStatus, WorkerModel
 from ...worker import create_worker
 from ...worker.commands import send_command, StopJobCommand
 from ...worker.commands.suspend_worker import SuspendWorkCommand
+
+
+def _callback_func():
+    pass
+
+
+def callback_func():
+    pass
 
 
 class WorkerCommandsTest(BaseTestCase):
@@ -45,11 +55,12 @@ class WorkerCommandsTest(BaseTestCase):
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertFalse(job.is_queued)
 
-    def test_stop_job_command__success(self):
+    @mock.patch("scheduler.redis_models.job.JobModel.call_stopped_callback")
+    def test_stop_job_command__success(self, mock_stopped_callback):
         # Arrange
         worker_name = "test"
         queue = get_queue("default")
-        job = queue.create_and_enqueue_job(two_seconds_job)
+        job = queue.create_and_enqueue_job(two_seconds_job, on_stopped=Callback(callback_func))
         self.assertTrue(job.is_queued)
         worker = create_worker("default", name=worker_name, burst=True, with_scheduler=False)
         worker.bootstrap()
@@ -70,3 +81,4 @@ class WorkerCommandsTest(BaseTestCase):
         self.assertIsNone(worker.current_job_name)
         self.assertEqual(job.status, JobStatus.STOPPED)
         t.join()
+        mock_stopped_callback.assert_called()
