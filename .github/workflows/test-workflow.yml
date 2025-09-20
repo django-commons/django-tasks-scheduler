@@ -15,14 +15,17 @@ on:
         description: 'Environment to run the workflow in'
         required: false
         type: environment
-      choices-input:
+      choices-input-optional:
         type: choice
         required: false
         options:
           - option 1
           - option 2
         description: "Choice input"
-
+      number-input-optional:
+        type: number
+        required: false
+        description: "Number input"
 
 jobs:
   ruff:
