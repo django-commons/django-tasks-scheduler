@@ -1,0 +1,36 @@
+name: Test workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the workflow in'
+        required: true
+        type: environment
+      reason:
+        description: 'Reason for running the workflow'
+        required: true
+        type: string
+      environment-optional:
+        description: 'Environment to run the workflow in'
+        required: false
+        type: environment
+      choices-input:
+        type: choice
+        required: false
+        options:
+          - option 1
+          - option 2
+        description: "Choice input"
+
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    name: "ruff on code"
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
