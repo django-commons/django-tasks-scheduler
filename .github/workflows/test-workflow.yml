@@ -37,3 +37,10 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+      - name: print all inputs
+        run: |
+          echo "environment: ${{ github.event.inputs.environment }}"
+          echo "reason: ${{ github.event.inputs.reason }}"
+          echo "environment-optional: ${{ github.event.inputs.environment-optional }}"
+          echo "choices-input-optional: ${{ github.event.inputs.choices-input-optional }}"
+          echo "number-input-optional: ${{ github.event.inputs.number-input-optional }}"
