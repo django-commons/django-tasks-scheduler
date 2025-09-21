@@ -1,13 +1,11 @@
 # Changelog
 
-## v4.0.8 🌈
+## v4.0.7 🌈
 
 ### 🐛 Bug Fixes
 
 - Fix: Scheduled jobs fail to execute: {'scheduled_time': ['Scheduled time must be in the future']} #297
 - Fix Error with deserialize JobModel due to multi-processing #291
-
-## v4.0.7 🌈
 
 ### 🧰 Maintenance
 

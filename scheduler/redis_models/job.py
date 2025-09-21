@@ -128,7 +128,7 @@ class JobModel(HashModel):
         self.last_heartbeat = utils.utcnow()
         self.started_at = self.last_heartbeat
         self.status = JobStatus.STARTED
-        registry.add(connection, self.name, self.last_heartbeat.timestamp())
+        registry.add(connection, self.name, self.last_heartbeat.timestamp() + self.timeout)
         self.save(connection=connection)
 
     def after_execution(
