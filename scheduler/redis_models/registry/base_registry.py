@@ -25,9 +25,11 @@ class ZSetModel(BaseModel):
         return connection.zcard(self._key)
 
     def add(self, connection: ConnectionType, job_name: str, score: float, update_existing_only: bool = False) -> int:
+        logger.debug(f"[registry {self._key}] Adding {job_name} / {score}")
         return connection.zadd(self._key, {job_name: float(score)}, xx=update_existing_only)
 
     def delete(self, connection: ConnectionType, job_name: str) -> None:
+        logger.debug(f"[registry {self._key}] Deleting {job_name}")
         connection.zrem(self._key, job_name)
 
 
@@ -75,7 +77,7 @@ class JobNamesRegistry(ZSetModel):
         return first_job[0].decode() if first_job else None
 
     def get_last_timestamp(self) -> Optional[int]:
-        """Returns the last timestamp in the registry."""
+        """Returns the latest timestamp in the registry."""
         self.cleanup(self.connection)
         last_timestamp = self.connection.zrange(self._key, -1, -1, withscores=True)
         return int(last_timestamp[0][1]) if last_timestamp else None

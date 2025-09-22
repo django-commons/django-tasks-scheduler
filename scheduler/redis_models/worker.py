@@ -90,7 +90,7 @@ class WorkerModel(HashModel):
             now = utcnow()
             self.set_field("last_heartbeat", now, connection=pipeline)
             pipeline.execute()
-            logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
+        logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
     @classmethod
     def cleanup(cls, connection: ConnectionType, queue_name: Optional[str] = None):
