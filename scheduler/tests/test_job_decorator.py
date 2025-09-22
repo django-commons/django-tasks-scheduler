@@ -100,7 +100,7 @@ class JobDecoratorTest(TestCase):
 
     def _assert_job_with_func_and_props(self, queue_name, expected_func, expected_result_ttl, expected_timeout):
         queue = get_queue(queue_name)
-        jobs = JobModel.get_many(queue.queued_job_registry.all(), queue.connection)
+        jobs = JobModel.get_many(queue.queued_job_registry.all(queue.connection), queue.connection)
         self.assertEqual(1, len(jobs))
 
         j = jobs[0]

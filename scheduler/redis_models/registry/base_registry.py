@@ -32,54 +32,52 @@ class ZSetModel(BaseModel):
         logger.debug(f"[registry {self._key}] Deleting {job_name}")
         connection.zrem(self._key, job_name)
 
+    def exists(self, connection: ConnectionType, job_name: str) -> bool:
+        return connection.zrank(self._key, job_name) is not None
+
 
 class JobNamesRegistry(ZSetModel):
     _element_key_template: ClassVar[str] = ":registry:{}"
 
-    def __init__(self, connection: ConnectionType, name: str) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__(name=name)
-        self.connection = connection
 
-    def __len__(self) -> int:
-        return self.count(self.connection)
-
-    def __contains__(self, item: str) -> bool:
-        return self.connection.zrank(self._key, item) is not None
-
-    def all(self, start: int = 0, end: int = -1) -> List[str]:
+    def all(self, connection: ConnectionType, start: int = 0, end: int = -1) -> List[str]:
         """Returns a list of all job names.
 
+        :param connection: Broker connection
         :param start: Start score/timestamp, default to 0.
         :param end: End score/timestamp, default to -1 (i.e., no max score).
         :returns: Returns a list of all job names with timestamp from start to end
         """
-        self.cleanup(self.connection)
-        res = [as_str(job_name) for job_name in self.connection.zrange(self._key, start, end)]
-        logger.debug(f"Getting jobs for registry {self._key}: {len(res)} found.")
+        self.cleanup(connection)
+        res = [as_str(job_name) for job_name in connection.zrange(self._key, start, end)]
+        logger.debug(f"Getting jobs for registry {self.key}: {len(res)} found.")
         return res
 
-    def all_with_timestamps(self, start: int = 0, end: int = -1) -> List[Tuple[str, float]]:
+    def all_with_timestamps(self, connection: ConnectionType, start: int = 0, end: int = -1) -> List[Tuple[str, float]]:
         """Returns a list of all job names with their timestamps.
 
+        :param connection: Broker connection
         :param start: Start score/timestamp, default to 0.
         :param end: End score/timestamp, default to -1 (i.e., no max score).
         :returns: Returns a list of all job names with timestamp from start to end
         """
-        self.cleanup(self.connection)
-        res = self.connection.zrange(self._key, start, end, withscores=True)
+        self.cleanup(connection)
+        res = connection.zrange(self._key, start, end, withscores=True)
         logger.debug(f"Getting jobs for registry {self._key}: {len(res)} found.")
         return [(as_str(job_name), timestamp) for job_name, timestamp in res]
 
-    def get_first(self) -> Optional[str]:
+    def get_first(self, connection: ConnectionType) -> Optional[str]:
         """Returns the first job in the registry."""
-        self.cleanup(self.connection)
-        first_job = self.connection.zrange(self._key, 0, 0)
+        self.cleanup(connection)
+        first_job = connection.zrange(self._key, 0, 0)
         return first_job[0].decode() if first_job else None
 
-    def get_last_timestamp(self) -> Optional[int]:
+    def get_last_timestamp(self, connection: ConnectionType) -> Optional[int]:
         """Returns the latest timestamp in the registry."""
-        self.cleanup(self.connection)
-        last_timestamp = self.connection.zrange(self._key, -1, -1, withscores=True)
+        self.cleanup(connection)
+        last_timestamp = connection.zrange(self._key, -1, -1, withscores=True)
         return int(last_timestamp[0][1]) if last_timestamp else None
 
     @property
@@ -88,7 +86,7 @@ class JobNamesRegistry(ZSetModel):
 
     @classmethod
     def pop(
-        cls, connection: ConnectionType, registries: Sequence[Self], timeout: Optional[int]
+            cls, connection: ConnectionType, registries: Sequence[Self], timeout: Optional[int]
     ) -> Tuple[Optional[str], Optional[str]]:
         """Helper method to abstract away from some Redis API details
 

@@ -46,13 +46,6 @@ def _get_connection(config: QueueConfiguration, use_strict_broker: bool = False)
     )
 
 
-def refresh_queue_connection(queue: Queue) -> None:
-    """Refreshes the connection of a given Queue"""
-    queue_settings = get_queue_configuration(queue.name)
-    connection = _get_connection(queue_settings)
-    queue.refresh_connection(connection)
-
-
 def get_queue(name: str = "default") -> Queue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     queue_settings = get_queue_configuration(name)

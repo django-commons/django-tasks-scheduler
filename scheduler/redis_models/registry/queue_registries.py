@@ -17,18 +17,18 @@ class QueuedJobRegistry(JobNamesRegistry):
         and `all()` methods implemented in JobIdsRegistry."""
         pass
 
-    def compact(self) -> None:
+    def compact(self, connection: ConnectionType) -> None:
         """Removes all "dead" jobs from the queue by cycling through it, while guaranteeing FIFO semantics."""
-        jobs_with_ts = self.all_with_timestamps()
+        jobs_with_ts = self.all_with_timestamps(connection)
         for job_name, timestamp in jobs_with_ts:
-            if not JobModel.exists(job_name, self.connection):
-                self.delete(connection=self.connection, job_name=job_name)
+            if not JobModel.exists(job_name, connection):
+                self.delete(connection=connection, job_name=job_name)
 
-    def empty(self) -> None:
-        queued_jobs_count = self.count(connection=self.connection)
-        with self.connection.pipeline() as pipe:
+    def empty(self, connection: ConnectionType) -> None:
+        queued_jobs_count = self.count(connection=connection)
+        with connection.pipeline() as pipe:
             for offset in range(0, queued_jobs_count, 1000):
-                job_names = self.all(offset, 1000)
+                job_names = self.all(connection, offset, 1000)
                 for job_name in job_names:
                     self.delete(connection=pipe, job_name=job_name)
                 JobModel.delete_many(job_names, connection=pipe)
@@ -76,24 +76,26 @@ class ScheduledJobRegistry(JobNamesRegistry):
         timestamp = scheduled_datetime.timestamp()
         return self.add(connection=connection, job_name=job_name, score=timestamp)
 
-    def get_jobs_to_schedule(self, timestamp: int, chunk_size: int = 1000) -> List[str]:
+    def get_jobs_to_schedule(self, connection: ConnectionType, timestamp: int, chunk_size: int = 1000) -> List[str]:
         """Gets a list of job names that should be scheduled.
 
+        :param connection: Broker connection
         :param timestamp: timestamp/score of jobs in SortedSet.
         :param chunk_size: Max results to return.
         :returns: A list of job names
         """
-        jobs_to_schedule = self.connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
+        jobs_to_schedule = connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
         return [as_str(job_name) for job_name in jobs_to_schedule]
 
-    def get_scheduled_time(self, job_name: str) -> Optional[datetime]:
+    def get_scheduled_time(self, connection: ConnectionType, job_name: str) -> Optional[datetime]:
         """Returns datetime (UTC) at which job is scheduled to be enqueued
 
+        :param connection: Broker connection
         :param job_name: Job name
         :returns: The scheduled time as datetime object, or None if job is not found
         """
 
-        score: Optional[float] = self.connection.zscore(self._key, job_name)
+        score: Optional[float] = connection.zscore(self._key, job_name)
         if not score:
             return None
 

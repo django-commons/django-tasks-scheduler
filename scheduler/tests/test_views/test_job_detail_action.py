@@ -32,7 +32,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         self.client.post(reverse("job_detail_action", args=[job.name, "delete"]), {"post": "yes"}, follow=True)
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection))
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
 
     def test_single_job_action_cancel_job(self):
         queue = get_queue("django_tasks_scheduler_test")
@@ -45,7 +45,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertTrue(job.is_canceled)
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
 
     def test_single_job_action_cancel_job_that_is_already_cancelled(self):
         queue = get_queue("django_tasks_scheduler_test")
@@ -54,7 +54,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         tmp = JobModel.get(job.name, connection=queue.connection)
         self.assertTrue(tmp.is_canceled)
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
         res = self.client.post(reverse("job_detail_action", args=[job.name, "cancel"]), {"post": "yes"}, follow=True)
         self.assertEqual(200, res.status_code)
         assert_message_in_response(res, f"Could not perform action: Cannot cancel already canceled job: {job.name}")

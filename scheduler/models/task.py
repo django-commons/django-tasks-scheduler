@@ -186,12 +186,14 @@ class Task(models.Model):
         if self.job_name is None:  # no job_id => is not scheduled
             return False
         # check whether job_id is in scheduled/queued/active jobs
-        res = (
-            (self.job_name in self.rqueue.scheduled_job_registry.all())
-            or (self.job_name in self.rqueue.queued_job_registry.all())
-            or (self.job_name in self.rqueue.active_job_registry.all())
-        )
-        # If the job_id is not scheduled/queued/started,
+        with self.rqueue.connection.pipeline() as pipeline:
+            self.rqueue.scheduled_job_registry.exists(pipeline, self.job_name)
+            self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
+            self.rqueue.active_job_registry.exists(pipeline, self.job_name)
+            results = pipeline.execute()
+            res = any([item is not None for item in results])
+
+        # If the job_name is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
             self.job_name = None

@@ -150,7 +150,7 @@ class WorkerScheduler:
 
         for registry in self._scheduled_job_registries:
             timestamp = current_timestamp()
-            job_names = registry.get_jobs_to_schedule(timestamp)
+            job_names = registry.get_jobs_to_schedule(self.connection, timestamp)
             if len(job_names) == 0:
                 continue
             queue = get_queue(registry.name)

@@ -28,7 +28,7 @@ def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) 
     last_page = int(ceil(num_jobs / items_per_page))
     page_range = range(1, last_page + 1)
     offset = items_per_page * (page - 1)
-    job_names = registry.all(offset, offset + items_per_page - 1)
+    job_names = registry.all(queue.connection, offset, offset + items_per_page - 1)
     job_list = JobModel.get_many(job_names, connection=queue.connection)
     remove_job_names = [job_name for i, job_name in enumerate(job_names) if job_list[i] is None]
     valid_jobs = [job for job in job_list if job is not None]
@@ -84,7 +84,8 @@ def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
 def stats_json(request: HttpRequest) -> Union[JsonResponse, HttpResponseNotFound]:
     auth_token = request.headers.get("Authorization")
     token_validation_func = settings.SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
-    if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
+    if request.user.is_staff or (
+            token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
         return JsonResponse(get_statistics())
 
     return HttpResponseNotFound()
@@ -148,15 +149,15 @@ def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[s
 
             queue_data = QueueData(
                 name=queue.name,
-                queued_jobs=len(queue.queued_job_registry),
+                queued_jobs=queue.queued_job_registry.count(queue.connection),
                 oldest_job_timestamp=oldest_job_timestamp,
                 scheduler_pid=queue.scheduler_pid,
                 workers=queue_workers_count[queue.name],
-                finished_jobs=len(queue.finished_job_registry),
-                started_jobs=len(queue.active_job_registry),
-                failed_jobs=len(queue.failed_job_registry),
-                scheduled_jobs=len(queue.scheduled_job_registry),
-                canceled_jobs=len(queue.canceled_job_registry),
+                finished_jobs=queue.finished_job_registry.count(queue.connection),
+                started_jobs=queue.active_job_registry.count(queue.connection),
+                failed_jobs=queue.failed_job_registry.count(queue.connection),
+                scheduled_jobs=queue.scheduled_job_registry.count(queue.connection),
+                canceled_jobs=queue.canceled_job_registry.count(queue.connection),
             )
             queues.append(queue_data)
         except ConnectionErrorTypes as e:

@@ -184,7 +184,7 @@ class BaseTestCases:
         def test_at_front_passthrough(self):
             task = task_factory(self.task_type, at_front=True)
             queue = task.rqueue
-            jobs_to_schedule = queue.scheduled_job_registry.all()
+            jobs_to_schedule = queue.scheduled_job_registry.all(queue.connection)
             self.assertIn(task.job_name, jobs_to_schedule)
 
         def test_callable_result(self):
@@ -305,7 +305,7 @@ class BaseTestCases:
             task.refresh_from_db()
             queue = get_queue(task.queue)
             assert_has_execution_with_status(task, JobStatus.QUEUED)
-            self.assertIn(task.job_name, queue.scheduled_job_registry.all())
+            self.assertIn(task.job_name, queue.scheduled_job_registry.all(queue.connection))
 
         def test_admin_change_view(self):
             # arrange
@@ -432,7 +432,7 @@ class BaseTestCases:
             task = task_factory(self.task_type, enabled=True)
             task.save()
             queue = get_queue(task.queue)
-            scheduled_jobs = queue.scheduled_job_registry.all()
+            scheduled_jobs = queue.scheduled_job_registry.all(queue.connection)
             job_name = task.job_name
             self.assertIn(job_name, scheduled_jobs)
             data = {
@@ -449,7 +449,7 @@ class BaseTestCases:
             self.assertEqual(200, res.status_code)
             assert_response_has_msg(res, "Successfully deleted 1 task.")
             self.assertIsNone(Task.objects.filter(task_type=self.task_type).filter(id=task.id).first())
-            scheduled_jobs = queue.scheduled_job_registry.all()
+            scheduled_jobs = queue.scheduled_job_registry.all(queue.connection)
             self.assertNotIn(job_name, scheduled_jobs)
 
     class TestSchedulableTask(TestBaseTask):

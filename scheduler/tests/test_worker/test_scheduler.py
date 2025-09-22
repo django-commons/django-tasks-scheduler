@@ -3,11 +3,11 @@ from datetime import timedelta
 import time_machine
 from django.utils import timezone
 
-from scheduler.settings import SCHEDULER_CONFIG
-from scheduler.worker import create_worker
 from scheduler.models import TaskType
+from scheduler.settings import SCHEDULER_CONFIG
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 from scheduler.worker import WorkerScheduler
+from scheduler.worker import create_worker
 
 
 class TestWorkerScheduler(SchedulerBaseCase):
@@ -24,8 +24,8 @@ class TestWorkerScheduler(SchedulerBaseCase):
             # arrange
             task = task_factory(TaskType.ONCE, scheduled_time=timezone.now() + timedelta(seconds=50))
             self.assertIsNotNone(task.job_name)
-            self.assertNotIn(task.job_name, task.rqueue.queued_job_registry)
-            self.assertIn(task.job_name, task.rqueue.scheduled_job_registry)
+            self.assertFalse(task.rqueue.queued_job_registry.exists(task.rqueue.connection, task.job_name))
+            self.assertTrue(task.rqueue.scheduled_job_registry.exists(task.rqueue.connection, task.job_name))
 
             scheduler = WorkerScheduler([task.rqueue], worker_name="fake-worker", connection=task.rqueue.connection)
 
@@ -36,5 +36,5 @@ class TestWorkerScheduler(SchedulerBaseCase):
 
             # assert
             self.assertIsNotNone(task.job_name)
-            self.assertIn(task.job_name, task.rqueue.queued_job_registry)
-            self.assertNotIn(task.job_name, task.rqueue.scheduled_job_registry)
+            self.assertTrue(task.rqueue.queued_job_registry.exists(task.rqueue.connection, task.job_name))
+            self.assertFalse(task.rqueue.scheduled_job_registry.exists(task.rqueue.connection, task.job_name))

@@ -24,12 +24,12 @@ class QueueRegistryActions(Enum):
 
 def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, registry: JobNamesRegistry) -> None:
     try:
-        job_names = registry.all()
+        job_names = registry.all(queue.connection)
         for job_name in job_names:
-            registry.delete(registry.connection, job_name)
-            job_model = JobModel.get(job_name, connection=registry.connection)
+            registry.delete(queue.connection, job_name)
+            job_model = JobModel.get(job_name, connection=queue.connection)
             if job_model is not None:
-                job_model.delete(connection=registry.connection)
+                job_model.delete(connection=queue.connection)
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")
@@ -42,7 +42,7 @@ def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str) -
     except NoSuchRegistryError:
         logger.error(f"No registry named {registry_name}")
         return
-    job_names = registry.all()
+    job_names = registry.all(queue.connection)
     jobs_requeued_count = _enqueue_multiple_jobs(queue, job_names)
     messages.info(request, f"You have successfully re-queued {jobs_requeued_count} jobs!")
 
@@ -64,12 +64,12 @@ def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name:
         elif action == QueueRegistryActions.REQUEUE.value:
             _requeue_job_names(request, queue, registry_name)
         return redirect("queue_registry_jobs", queue_name, registry_name)
-    job_names = registry.all()
+    job_names = registry.all(queue.connection)
     job_list = JobModel.get_many(job_names, connection=queue.connection)
     context_data = {
         **admin.site.each_context(request),
         "queue": queue,
-        "total_jobs": len(registry),
+        "total_jobs": registry.count(queue.connection),
         "action": action,
         "jobs": job_list,
         "next_url": next_url,

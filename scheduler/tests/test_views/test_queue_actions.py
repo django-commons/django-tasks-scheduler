@@ -29,7 +29,7 @@ class QueueActionsViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         for job_name in job_names:
             self.assertFalse(JobModel.exists(job_name, connection=queue.connection), f"job {job_name} exists")
-            self.assertNotIn(job_name, queue.queued_job_registry.all())
+            self.assertNotIn(job_name, queue.queued_job_registry.all(queue.connection))
 
     def test_job_list_action_delete_jobs(self):
         queue = get_queue("django_tasks_scheduler_test")
@@ -49,7 +49,7 @@ class QueueActionsViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         for job_name in job_names:
             self.assertFalse(JobModel.exists(job_name, connection=queue.connection), f"job {job_name} exists")
-            self.assertNotIn(job_name, queue.queued_job_registry.all())
+            self.assertNotIn(job_name, queue.queued_job_registry.all(queue.connection))
 
     def test_job_list_action_requeue_jobs(self):
         queue_name = "django_tasks_scheduler_test"
@@ -98,12 +98,12 @@ class QueueActionsViewsTest(BaseTestCase):
             self.assertEqual(job.status, JobStatus.STARTED)
 
         # Stop those jobs using the view
-        self.assertEqual(len(queue.active_job_registry), len(job_names))
+        self.assertEqual(queue.active_job_registry.count(queue.connection), len(job_names))
         self.client.post(reverse("queue_job_actions", args=[queue_name]), {"action": "stop", "job_names": job_names})
-        self.assertEqual(0, len(queue.active_job_registry))
+        self.assertEqual(0, queue.active_job_registry.count(queue.connection))
 
-        self.assertEqual(0, len(queue.canceled_job_registry))
-        self.assertEqual(len(job_names), len(queue.finished_job_registry))
+        self.assertEqual(0, queue.canceled_job_registry.count(queue.connection))
+        self.assertEqual(len(job_names), queue.finished_job_registry.count(queue.connection))
 
         for job_name in job_names:
-            self.assertIn(job_name, queue.finished_job_registry)
+            self.assertTrue(queue.finished_job_registry.exists(queue.connection,job_name))
