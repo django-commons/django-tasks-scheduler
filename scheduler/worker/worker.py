@@ -182,7 +182,7 @@ class Worker:
     def _install_signal_handlers(self) -> None:
         """Installs signal handlers for handling SIGINT and SIGTERM gracefully."""
         if threading.current_thread() is not threading.main_thread():
-            self.log(DEBUG, f"Running in a thread, skipping signal handlers installation")
+            self.log(DEBUG, "Running in a thread, skipping signal handlers installation")
             return
         signal.signal(signal.SIGINT, self.request_stop)
         signal.signal(signal.SIGTERM, self.request_stop)
@@ -213,14 +213,14 @@ class Worker:
                     self.run_maintenance_tasks()
 
                 if self._model.shutdown_requested_date:
-                    self.log(INFO, f"stopping on request")
+                    self.log(INFO, "stopping on request")
                     break
 
                 timeout = None if self.burst else (SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 15)
                 job, queue = self.dequeue_job_and_maintain_ttl(timeout, max_idle_time)
                 if job is None or queue is None:
                     if self.burst:
-                        self.log(INFO, f"done, quitting")
+                        self.log(INFO, "done, quitting")
                         break
                     elif max_idle_time is not None:
                         self.log(INFO, f"idle for {max_idle_time} seconds, quitting")
@@ -239,13 +239,13 @@ class Worker:
             return self._model.completed_jobs > 0
 
         except TimeoutErrorTypes:
-            self.log(ERROR, f"Redis connection timeout, quitting...")
+            self.log(ERROR, "Redis connection timeout, quitting...")
         except StopRequested:
-            self.log(INFO, f"Worker was requested to stop, quitting")
+            self.log(INFO, "Worker was requested to stop, quitting")
         except SystemExit:  # Cold shutdown detected
             raise
         except Exception:
-            self.log(ERROR, f"found an unhandled exception, quitting...", exc_info=True)
+            self.log(ERROR, "found an unhandled exception, quitting...", exc_info=True)
         finally:
             self.teardown()
         return False
@@ -264,10 +264,10 @@ class Worker:
         stopped_job_name = self._model.get_field("stopped_job_name", self.connection)
         self._model.current_job_name = None
         if stopped_job_name == job.name:
-            self.log(DEBUG, f"Job was stopped, setting status to STOPPED")
+            self.log(DEBUG, "Job was stopped, setting status to STOPPED")
             new_job_status = JobStatus.STOPPED
         else:
-            self.log(DEBUG, f"Job has failed, setting status to FAILED")
+            self.log(DEBUG, "Job has failed, setting status to FAILED")
             new_job_status = JobStatus.FAILED
 
         queue.job_handle_failure(new_job_status, job, exc_string)
@@ -309,12 +309,12 @@ class Worker:
         while self._model.is_suspended:
             if burst:
                 self.log(
-                    INFO, f"Suspended in burst mode, exiting, Note: There could still be unfinished jobs on the queue"
+                    INFO, "Suspended in burst mode, exiting, Note: There could still be unfinished jobs on the queue"
                 )
                 raise StopRequested()
 
             if not notified:
-                self.log(INFO, f"Worker suspended, trigger ResumeCommand")
+                self.log(INFO, "Worker suspended, trigger ResumeCommand")
                 before_state = self._model.state
                 self._model.set_field("state", WorkerStatus.SUSPENDED, connection=self.connection)
                 notified = True
@@ -332,14 +332,14 @@ class Worker:
         if not self.with_scheduler:
             return
         if self.scheduler is None and self.with_scheduler:
-            self.log(DEBUG, f"Creating scheduler")
+            self.log(DEBUG, "Creating scheduler")
             self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
         if self.scheduler.status == SchedulerStatus.STOPPED:
-            self.log(DEBUG, f"Starting scheduler thread")
+            self.log(DEBUG, "Starting scheduler thread")
             self.scheduler.start()
             self._model.has_scheduler = True
         if self.burst:
-            self.log(DEBUG, f"Stopping scheduler thread (burst mode)")
+            self.log(DEBUG, "Stopping scheduler thread (burst mode)")
             self.scheduler.request_stop_and_wait()
             self._model.has_scheduler = False
         self._model.save(connection=self.connection)
@@ -407,7 +407,7 @@ class Worker:
 
     def worker_start(self) -> None:
         """Registers its own birth."""
-        self.log(DEBUG, f"Registering birth")
+        self.log(DEBUG, "Registering birth")
         now = utcnow()
         self._model.birth = now
         self._model.last_heartbeat = now
@@ -426,7 +426,7 @@ class Worker:
         except OSError as e:
             if e.errno != errno.ESRCH:  # "No such process" is fine with us
                 raise
-            self.log(DEBUG, f"Job execution process already dead")
+            self.log(DEBUG, "Job execution process already dead")
 
     def _wait_for_job_execution_process(self) -> Tuple[Optional[int], Optional[int]]:
         """Waits for the job execution process to complete.
@@ -449,10 +449,10 @@ class Worker:
         # when a user hits Ctrl+C. In this case, if we receive the second signal within 1 second, we ignore it.
         shutdown_date = self._model.shutdown_requested_date
         if shutdown_date is not None and (utcnow() - shutdown_date) < timedelta(seconds=1):
-            self.log(DEBUG, f"Shutdown signal ignored, received twice in less than 1 second")
+            self.log(DEBUG, "Shutdown signal ignored, received twice in less than 1 second")
             return
 
-        self.log(WARNING, f"Could shut down")
+        self.log(WARNING, "Could shut down")
 
         # Take down the job execution process with the worker
         if self._model.job_execution_process_pid:
@@ -472,7 +472,7 @@ class Worker:
         signal.signal(signal.SIGINT, self.request_force_stop)
         signal.signal(signal.SIGTERM, self.request_force_stop)
 
-        self.log(INFO, f"warm shut down requested")
+        self.log(INFO, "warm shut down requested")
 
         self.stop_scheduler()
         # If shutdown is requested in the middle of a job, wait until finish before shutting down and save the request.
@@ -481,7 +481,7 @@ class Worker:
 
             self.log(
                 DEBUG,
-                f"Stopping after current job execution process is finished. Press Ctrl+C again for a cold shutdown.",
+                "Stopping after current job execution process is finished. Press Ctrl+C again for a cold shutdown.",
             )
         else:
             raise StopRequested()
@@ -526,7 +526,7 @@ class Worker:
             return
         self.log(INFO, f"Stopping scheduler thread {self.scheduler.pid}")
         self.scheduler.request_stop_and_wait()
-        self.log(DEBUG, f"Scheduler thread stopped")
+        self.log(DEBUG, "Scheduler thread stopped")
         self.scheduler = None
 
     def refresh(self, update_queues: bool = False) -> None:
@@ -626,10 +626,10 @@ class Worker:
         stopped_job_name = self._model.get_field("stopped_job_name", self.connection)
 
         if job_status is None:
-            self.log(WARNING, f"Job status is None, completed and expired?")
+            self.log(WARNING, "Job status is None, completed and expired?")
             return
         elif stopped_job_name == job.name:  # job execution process killed deliberately
-            self.log(WARNING, f"Job stopped by user, moving job to failed-jobs-registry")
+            self.log(WARNING, "Job stopped by user, moving job to failed-jobs-registry")
             job.call_stopped_callback()
             self.handle_job_failure(
                 job, queue=queue, exc_string="Job stopped by user, job execution process terminated."

@@ -93,7 +93,7 @@ class WorkerScheduler:
 
     def request_stop_and_wait(self) -> None:
         """Toggle self._stop_requested that's checked on every loop"""
-        self.log(DEBUG, f"Stop Scheduler requested")
+        self.log(DEBUG, "Stop Scheduler requested")
         self._stop_requested = True
         if self._thread is not None:
             self._thread.join()
