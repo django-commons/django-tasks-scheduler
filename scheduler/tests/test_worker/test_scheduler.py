@@ -27,7 +27,7 @@ class TestWorkerScheduler(SchedulerBaseCase):
             self.assertFalse(task.rqueue.queued_job_registry.exists(task.rqueue.connection, task.job_name))
             self.assertTrue(task.rqueue.scheduled_job_registry.exists(task.rqueue.connection, task.job_name))
 
-            scheduler = WorkerScheduler([task.rqueue], worker_name="fake-worker", connection=task.rqueue.connection)
+            scheduler = WorkerScheduler([task.rqueue], worker_name="fake-worker")
 
             # act
             traveller.move_to(50)
