@@ -3,8 +3,8 @@ __all__ = [
     "InvalidJobOperation",
     "get_queue",
     "get_all_workers",
-    "perform_job",
+    "queue_perform_job",
 ]
 
 from .getters import get_queue, get_all_workers
-from .queue_logic import Queue, InvalidJobOperation, perform_job
+from .queue_logic import Queue, InvalidJobOperation, queue_perform_job

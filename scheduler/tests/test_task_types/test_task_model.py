@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from scheduler.helpers.queues import perform_job
+from scheduler.helpers.queues import queue_perform_job
 from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
 from scheduler.redis_models import JobStatus, JobModel
 from scheduler.tests import jobs, conf  # noqa
@@ -191,13 +191,13 @@ class BaseTestCases:
             task = task_factory(self.task_type)
             entry = _get_task_scheduled_job_from_registry(task)
             queue = get_queue("default")
-            self.assertEqual(perform_job(entry, connection=queue.connection), 2)
+            self.assertEqual(queue_perform_job(entry, connection=queue.connection), 2)
 
         def test_callable_empty_args_and_kwargs(self):
             task = task_factory(self.task_type, callable="scheduler.tests.jobs.test_args_kwargs")
             entry = _get_task_scheduled_job_from_registry(task)
             queue = get_queue("default")
-            self.assertEqual(perform_job(entry, connection=queue.connection), "test_args_kwargs()")
+            self.assertEqual(queue_perform_job(entry, connection=queue.connection), "test_args_kwargs()")
 
         def test_delete_args(self):
             task = task_factory(self.task_type)
@@ -244,7 +244,7 @@ class BaseTestCases:
             entry = _get_task_scheduled_job_from_registry(task)
             queue = get_queue("default")
             self.assertEqual(
-                perform_job(entry, connection=queue.connection),
+                queue_perform_job(entry, connection=queue.connection),
                 f"test_args_kwargs('one', key1=2, key2={date}, key3=False)",
             )
 

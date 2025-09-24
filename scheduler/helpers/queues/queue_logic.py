@@ -34,7 +34,7 @@ class NoSuchRegistryError(Exception):
     pass
 
 
-def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
+def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
     """The main execution method. Invokes the job function with the job arguments.
 
     :returns: The job's return value
@@ -271,7 +271,7 @@ class Queue:
         """Run a job synchronously, meaning on the same process the method was called."""
         job.prepare_for_execution("sync", self.active_job_registry, self.connection)
         try:
-            result = perform_job(job, self.connection)
+            result = queue_perform_job(job, self.connection)
             self.job_handle_success(job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl)
         except Exception as e:  # noqa
             logger.warning(f"Job {job.name} failed with exception: {e}")

@@ -106,4 +106,4 @@ class QueueActionsViewsTest(BaseTestCase):
         self.assertEqual(len(job_names), queue.finished_job_registry.count(queue.connection))
 
         for job_name in job_names:
-            self.assertTrue(queue.finished_job_registry.exists(queue.connection,job_name))
+            self.assertTrue(queue.finished_job_registry.exists(queue.connection, job_name))

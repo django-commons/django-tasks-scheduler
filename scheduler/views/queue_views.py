@@ -84,8 +84,7 @@ def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
 def stats_json(request: HttpRequest) -> Union[JsonResponse, HttpResponseNotFound]:
     auth_token = request.headers.get("Authorization")
     token_validation_func = settings.SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
-    if request.user.is_staff or (
-            token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
+    if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
         return JsonResponse(get_statistics())
 
     return HttpResponseNotFound()

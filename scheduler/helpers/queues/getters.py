@@ -46,6 +46,12 @@ def _get_connection(config: QueueConfiguration, use_strict_broker: bool = False)
     )
 
 
+def get_queue_connection(queue_name: str) -> ConnectionType:
+    queue_settings = get_queue_configuration(queue_name)
+    connection = _get_connection(queue_settings)
+    return connection
+
+
 def get_queue(name: str = "default") -> Queue:
     """Returns an DjangoQueue using parameters defined in `SCHEDULER_QUEUES`"""
     queue_settings = get_queue_configuration(name)
