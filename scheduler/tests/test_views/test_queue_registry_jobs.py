@@ -72,13 +72,13 @@ class QueueRegistryJobsViewTest(BaseTestCase):
 
         registry = queue.scheduled_job_registry
         job = queue.create_and_enqueue_job(test_job, when=datetime.now())
-        self.assertEqual(len(registry), 1)
+        self.assertEqual(registry.count(queue.connection), 1)
 
         queue.delete_job(job.name)
         res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
         self.assertEqual(res.context["jobs"], [])
 
-        self.assertEqual(len(registry), 0)
+        self.assertEqual(registry.count(queue.connection), 0)
 
     def test_started_jobs(self):
         """Ensure that active jobs page works properly."""

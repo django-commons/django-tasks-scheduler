@@ -84,13 +84,11 @@ class WorkerModel(HashModel):
         self.set_field("current_job_working_time", job_execution_time, connection=connection)
 
     def heartbeat(self, connection: ConnectionType, timeout: Optional[int] = None) -> None:
-        with connection.pipeline() as pipeline:
-            timeout = timeout or DEFAULT_WORKER_TTL + 60
-            pipeline.expire(self._key, timeout)
-            now = utcnow()
-            self.set_field("last_heartbeat", now, connection=pipeline)
-            pipeline.execute()
-            logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
+        self.last_heartbeat = utcnow()
+        self.save(connection)
+        timeout = timeout or DEFAULT_WORKER_TTL + 60
+        connection.expire(self._key, timeout)
+        logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
     @classmethod
     def cleanup(cls, connection: ConnectionType, queue_name: Optional[str] = None):

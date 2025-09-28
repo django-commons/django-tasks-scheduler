@@ -32,7 +32,7 @@ class MultiProcessTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertEqual(JobStatus.STOPPED, job.status)
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
         worker_model = WorkerModel.get(worker_name, connection=queue.connection)
         self.assertEqual(0, worker_model.completed_jobs)
         self.assertEqual(0, worker_model.failed_job_count)

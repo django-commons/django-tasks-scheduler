@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.8 🌈
+
+### 🐛 Bug Fixes
+
+- fix:registries do not keep connections
+
 ## v4.0.7 🌈
 
 ### 🐛 Bug Fixes

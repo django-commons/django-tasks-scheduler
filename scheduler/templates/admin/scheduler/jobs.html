@@ -111,7 +111,7 @@
                                 <td>
                                     {{ job.ended_at|date:"Y-m-d, H:i:s" }}
                                 </td>
-                                <td>{{ job.get_status }}</td>
+                                <td>{{ job.status }}</td>
                                 <td>{{ job|show_func_name }}</td>
                                 <td>{{ job.worker_name|default:'-' }}</td>
                                 {% block extra_columns_values %}

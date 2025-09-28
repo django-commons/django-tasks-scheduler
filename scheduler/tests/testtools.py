@@ -102,7 +102,7 @@ def taskarg_factory(cls, **kwargs):
 
 
 def _get_task_scheduled_job_from_registry(django_task: Task) -> JobModel:
-    jobs_to_schedule = django_task.rqueue.scheduled_job_registry.all()
+    jobs_to_schedule = django_task.rqueue.scheduled_job_registry.all(django_task.rqueue.connection)
     entry = next(i for i in jobs_to_schedule if i == django_task.job_name)
     return JobModel.get(entry, connection=django_task.rqueue.connection)
 

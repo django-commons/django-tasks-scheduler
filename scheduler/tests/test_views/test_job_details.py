@@ -90,7 +90,7 @@ class TestViewJobDetails(BaseTestCase):
 
         # After requeue_all is called, jobs are enqueued
         res = self.client.post(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
-        self.assertEqual(len(queue.queued_job_registry), 1)
+        self.assertEqual(queue.queued_job_registry.count(queue.connection), 1)
 
     def test_clear_queue_unknown_registry(self):
         queue_name = "django_tasks_scheduler_test"
@@ -102,7 +102,7 @@ class TestViewJobDetails(BaseTestCase):
         job = queue.create_and_enqueue_job(test_job)
         self.client.post(reverse("queue_registry_action", args=[queue.name, "queued", "empty"]), {"post": "yes"})
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection), f"job {job.name} exists")
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
 
     def test_clear_queue_scheduled(self):
         queue = get_queue("django_tasks_scheduler_test")
@@ -118,7 +118,7 @@ class TestViewJobDetails(BaseTestCase):
         assert_message_in_response(res, f"You have successfully cleared the scheduled jobs in queue {queue.name}")
         self.assertEqual(200, res.status_code)
         self.assertFalse(JobModel.exists(job.name, connection=queue.connection))
-        self.assertNotIn(job.name, queue.queued_job_registry.all())
+        self.assertNotIn(job.name, queue.queued_job_registry.all(queue.connection))
 
     def test_queue_workers(self):
         """Worker index page should show workers for a specific queue"""

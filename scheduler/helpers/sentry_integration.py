@@ -32,7 +32,7 @@ class SentryIntegration(Integration):
         version = parse_version(scheduler.__version__)
         _check_minimum_version(SentryIntegration, version)
 
-        old_perform_job = Worker.perform_job
+        old_perform_job = Worker.worker_perform_job
 
         @ensure_integration_enabled(SentryIntegration, old_perform_job)
         def sentry_patched_perform_job(self: Any, job_model: JobModel, *args: Queue, **kwargs: Any) -> bool:
@@ -65,7 +65,7 @@ class SentryIntegration(Integration):
 
             return rv
 
-        Worker.perform_job = sentry_patched_perform_job  # type: ignore[method-assign]
+        Worker.worker_perform_job = sentry_patched_perform_job  # type: ignore[method-assign]
 
         old_handle_exception = Worker.handle_exception
 

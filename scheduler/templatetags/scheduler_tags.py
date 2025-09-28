@@ -68,4 +68,4 @@ def job_runtime(job: JobModel):
 
 @register.filter
 def job_scheduled_time(job: JobModel, queue: Queue):
-    return queue.scheduled_job_registry.get_scheduled_time(job.name)
+    return queue.scheduled_job_registry.get_scheduled_time(queue.connection, job.name)

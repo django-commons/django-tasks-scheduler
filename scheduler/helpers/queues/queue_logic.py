@@ -34,7 +34,7 @@ class NoSuchRegistryError(Exception):
     pass
 
 
-def perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
+def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
     """The main execution method. Invokes the job function with the job arguments.
 
     :returns: The job's return value
@@ -82,21 +82,12 @@ class Queue:
         self.connection: ConnectionType = connection
         self.name = name
         self._is_async = is_async
-        self.queued_job_registry = QueuedJobRegistry(connection=self.connection, name=self.name)
-        self.active_job_registry = ActiveJobRegistry(connection=self.connection, name=self.name)
-        self.failed_job_registry = FailedJobRegistry(connection=self.connection, name=self.name)
-        self.finished_job_registry = FinishedJobRegistry(connection=self.connection, name=self.name)
-        self.scheduled_job_registry = ScheduledJobRegistry(connection=self.connection, name=self.name)
-        self.canceled_job_registry = CanceledJobRegistry(connection=self.connection, name=self.name)
-
-    def refresh_connection(self, connection: ConnectionType) -> None:
-        self.connection = connection
-        self.queued_job_registry.connection = connection
-        self.active_job_registry.connection = connection
-        self.failed_job_registry.connection = connection
-        self.finished_job_registry.connection = connection
-        self.scheduled_job_registry.connection = connection
-        self.canceled_job_registry.connection = connection
+        self.queued_job_registry = QueuedJobRegistry(name=self.name)
+        self.active_job_registry = ActiveJobRegistry(name=self.name)
+        self.failed_job_registry = FailedJobRegistry(name=self.name)
+        self.finished_job_registry = FinishedJobRegistry(name=self.name)
+        self.scheduled_job_registry = ScheduledJobRegistry(name=self.name)
+        self.canceled_job_registry = CanceledJobRegistry(name=self.name)
 
     def __len__(self) -> int:
         return self.count
@@ -114,7 +105,7 @@ class Queue:
         Removed jobs are added to the global failed job queue.
         """
         before_score = timestamp or current_timestamp()
-        self.queued_job_registry.compact()
+        self.queued_job_registry.compact(self.connection)
         started_jobs: List[Tuple[str, float]] = self.active_job_registry.get_job_names_before(
             self.connection, before_score
         )
@@ -142,7 +133,7 @@ class Queue:
                 getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
 
     def first_queued_job_name(self) -> Optional[str]:
-        return self.queued_job_registry.get_first()
+        return self.queued_job_registry.get_first(self.connection)
 
     @property
     def count(self) -> int:
@@ -160,12 +151,12 @@ class Queue:
 
     def get_all_job_names(self) -> List[str]:
         all_job_names = list()
-        all_job_names.extend(self.queued_job_registry.all())
-        all_job_names.extend(self.finished_job_registry.all())
-        all_job_names.extend(self.active_job_registry.all())
-        all_job_names.extend(self.failed_job_registry.all())
-        all_job_names.extend(self.scheduled_job_registry.all())
-        all_job_names.extend(self.canceled_job_registry.all())
+        all_job_names.extend(self.queued_job_registry.all(self.connection))
+        all_job_names.extend(self.finished_job_registry.all(self.connection))
+        all_job_names.extend(self.active_job_registry.all(self.connection))
+        all_job_names.extend(self.failed_job_registry.all(self.connection))
+        all_job_names.extend(self.scheduled_job_registry.all(self.connection))
+        all_job_names.extend(self.canceled_job_registry.all(self.connection))
         res = list(filter(lambda job_name: JobModel.exists(job_name, self.connection), all_job_names))
         return res
 
@@ -280,7 +271,7 @@ class Queue:
         """Run a job synchronously, meaning on the same process the method was called."""
         job.prepare_for_execution("sync", self.active_job_registry, self.connection)
         try:
-            result = perform_job(job, self.connection)
+            result = queue_perform_job(job, self.connection)
             self.job_handle_success(job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl)
         except Exception as e:  # noqa
             logger.warning(f"Job {job.name} failed with exception: {e}")
@@ -307,7 +298,7 @@ class Queue:
         while True:
             registries = [q.queued_job_registry for q in queues]
             for registry in registries:
-                registry.compact()
+                registry.compact(connection)
 
             registry_key, job_name = QueuedJobRegistry.pop(connection, registries, timeout)
             if job_name is None:
@@ -416,7 +407,7 @@ class Queue:
             if at_front:
                 score = current_timestamp()
             else:
-                score = self.queued_job_registry.get_last_timestamp() or current_timestamp()
+                score = self.queued_job_registry.get_last_timestamp(self.connection) or current_timestamp()
             self.scheduled_job_registry.delete(connection=pipe, job_name=job_model.name)
             self.queued_job_registry.add(connection=pipe, score=score, job_name=job_model.name)
             pipe.execute()

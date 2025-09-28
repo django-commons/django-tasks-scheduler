@@ -3,6 +3,7 @@ import time
 import traceback
 from datetime import datetime
 from enum import Enum
+from logging import DEBUG, INFO
 from threading import Thread
 from typing import List, Set, Optional, Sequence, Dict
 
@@ -10,11 +11,11 @@ import django
 
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue
+from scheduler.helpers.queues.getters import get_queue_connection
 from scheduler.helpers.utils import current_timestamp
 from scheduler.models import Task
 from scheduler.redis_models import SchedulerLock, JobModel, ScheduledJobRegistry
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.types import ConnectionType
 
 
 class SchedulerStatus(str, Enum):
@@ -31,22 +32,15 @@ def _reschedule_tasks() -> None:
 
 
 class WorkerScheduler:
-    def __init__(
-        self,
-        queues: Sequence[Queue],
-        connection: ConnectionType,
-        worker_name: str,
-        interval: Optional[int] = None,
-    ) -> None:
-        interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
+    def __init__(self, queues: Sequence[Queue], worker_name: str, interval: Optional[int] = None) -> None:
         self._queues = queues
+        if len(queues) == 0:
+            raise ValueError("At least one queue must be provided to WorkerScheduler")
         self._scheduled_job_registries: List[ScheduledJobRegistry] = []
         self.lock_acquisition_time: Optional[datetime] = None
-        self._pool_class = connection.connection_pool.connection_class
-        self._pool_kwargs = connection.connection_pool.connection_kwargs.copy()
         self._locks: Dict[str, SchedulerLock] = dict()
-        self.connection = connection
-        self.interval = interval
+        self.connection = get_queue_connection(queues[0].name)
+        self.interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._stop_requested = False
         self.status = SchedulerStatus.STOPPED
         self._thread: Optional[Thread] = None
@@ -56,6 +50,9 @@ class WorkerScheduler:
     @property
     def pid(self) -> Optional[int]:
         return self._pid
+
+    def log(self, level: int, message: str, *args, **kwargs) -> None:
+        logger.log(level, f"[Scheduler {self.worker_name}/{self._pid}]: {message}", *args, **kwargs)
 
     def _should_reacquire_locks(self) -> bool:
         """Returns True if lock_acquisition_time is longer than 10 minutes ago"""
@@ -70,12 +67,10 @@ class WorkerScheduler:
         if self.pid is None:
             self._pid = os.getpid()
         queue_names = [queue.name for queue in self._queues]
-        logger.debug(
-            f"""[Scheduler {self.worker_name}/{self.pid}] Trying to acquire locks for {", ".join(queue_names)}"""
-        )
+        self.log(DEBUG, f"""Trying to acquire locks for {", ".join(queue_names)}""")
         for queue in self._queues:
             lock = SchedulerLock(queue.name)
-            if lock.acquire(self.pid, connection=queue.connection, expire=self.interval + 60):
+            if lock.acquire(self.pid, connection=self.connection, expire=self.interval + 60):
                 self._locks[queue.name] = lock
                 successful_locks.add(queue.name)
 
@@ -85,7 +80,7 @@ class WorkerScheduler:
         for queue_name in self._locks:
             queue = get_queue(queue_name)
             self._scheduled_job_registries.append(queue.scheduled_job_registry)
-        logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Locks acquired for {', '.join(self._locks.keys())}")
+        self.log(DEBUG, f"Locks acquired for {', '.join(self._locks.keys())}")
         return successful_locks
 
     def start(self) -> None:
@@ -98,7 +93,7 @@ class WorkerScheduler:
 
     def request_stop_and_wait(self) -> None:
         """Toggle self._stop_requested that's checked on every loop"""
-        logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Stop Scheduler requested")
+        self.log(DEBUG, "Stop Scheduler requested")
         self._stop_requested = True
         if self._thread is not None:
             self._thread.join()
@@ -106,16 +101,14 @@ class WorkerScheduler:
     def heartbeat(self) -> None:
         """Updates the TTL on scheduler keys and the locks"""
         lock_keys = ", ".join(self._locks.keys())
-        logger.debug(f"[Scheduler {self.worker_name}/{self.pid}] Scheduler updating lock for queue {lock_keys}")
+        self.log(DEBUG, f"Scheduler updating lock for queue {lock_keys}")
         with self.connection.pipeline() as pipeline:
             for lock in self._locks.values():
                 lock.expire(self.connection, expire=self.interval + 60)
             pipeline.execute()
 
     def stop(self) -> None:
-        logger.info(
-            f"[Scheduler {self.worker_name}/{self.pid}] Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}..."
-        )
+        self.log(INFO, f"Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}...")
         self.release_locks()
         self.status = SchedulerStatus.STOPPED
 
@@ -128,7 +121,7 @@ class WorkerScheduler:
 
     def work(self) -> None:
         queue_names = [queue.name for queue in self._queues]
-        logger.info(f"""[Scheduler {self.worker_name}/{self.pid}] Scheduler for {", ".join(queue_names)} started""")
+        self.log(INFO, f"""Scheduler for {", ".join(queue_names)} started""")
         django.setup()
 
         while True:
@@ -150,7 +143,7 @@ class WorkerScheduler:
 
         for registry in self._scheduled_job_registries:
             timestamp = current_timestamp()
-            job_names = registry.get_jobs_to_schedule(timestamp)
+            job_names = registry.get_jobs_to_schedule(self.connection, timestamp)
             if len(job_names) == 0:
                 continue
             queue = get_queue(registry.name)
