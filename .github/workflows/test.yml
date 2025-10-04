@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     name: "Tests py${{ matrix.python-version }}/dj${{ matrix.django-version }}/${{ matrix.broker }}"
     strategy:
+      fail-fast: false
       max-parallel: 6
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
