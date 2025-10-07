@@ -284,7 +284,7 @@ class Worker:
         """Bootstraps the worker.
         Runs the basic tasks that should run when the worker actually starts working.
         Used so that new workers can focus on the work loop implementation rather
-        than the full bootstraping process.
+        than the full bootstrapping process.
         """
         self.worker_start()
         self.log(INFO, f"Worker {self.name} started with PID {os.getpid()}")
@@ -563,7 +563,7 @@ class Worker:
             self._set_procline(f"Forked {child_pid} at {time.time()}")
 
     def get_heartbeat_ttl(self, job: JobModel) -> int:
-        """Get's the TTL for the next heartbeat.
+        """Gets the TTL for the next heartbeat.
         :param job: The Job
         :return: The heartbeat TTL
         """

@@ -41,7 +41,7 @@ class job:
         :param result_ttl: Result time to live
         :param job_info_ttl: Time to live for job info
         :param at_front: Whether to enqueue the job at front of the queue
-        :param meta: Arbitraty metadata about the job
+        :param meta: Arbitrary metadata about the job
         :param description: Job description
         :param on_failure: Callable to run on failure
         :param on_success: Callable to run on success
