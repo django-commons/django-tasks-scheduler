@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.0.9 🌈
+
+### 🧰 Maintenance
+
+- Add python 3.14 to test matrix @cclauss #302
+- Turn off fail-fast @cclauss #303
+- Fix typos in docs @cclauss #304
+
 ## v4.0.8 🌈
 
 ### 🐛 Bug Fixes
