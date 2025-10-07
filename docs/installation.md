@@ -60,7 +60,7 @@
     SCHEDULER_INTERVAL=10,
     BROKER=Broker.REDIS,
     CALLBACK_TIMEOUT=60,  # Callback timeout in seconds (success/failure/stopped)
-    # Default values, can be overriden per task/job
+    # Default values, can be overridden per task/job
     DEFAULT_SUCCESS_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep successful job results
     DEFAULT_FAILURE_TTL=365 * 24 * 60 * 60,  # Time To Live (TTL) in seconds to keep job failure information
     DEFAULT_JOB_TTL=10 * 60,  # Time To Live (TTL) in seconds to keep job information
