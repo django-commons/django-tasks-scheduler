@@ -205,6 +205,7 @@ dependencies = [
     { name = "click" },
     { name = "croniter" },
     { name = "django" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -239,6 +240,7 @@ requires-dist = [
     { name = "pyyaml", marker = "extra == 'yaml'", specifier = "~=6.0" },
     { name = "sentry-sdk", marker = "extra == 'sentry'", specifier = "~=2.19" },
     { name = "types-pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0.12.20250516" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "valkey", marker = "extra == 'valkey'", specifier = ">=6.0.2,<7" },
 ]
 provides-extras = ["yaml", "valkey", "sentry"]

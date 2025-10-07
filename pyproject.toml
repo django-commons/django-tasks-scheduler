@@ -42,6 +42,7 @@ dependencies = [
     "django>=5",
     "croniter>=2.0",
     "click~=8.2",
+    "typing-extensions>=4.15.0",
 ]
 
 [project.optional-dependencies]

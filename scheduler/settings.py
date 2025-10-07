@@ -6,6 +6,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 from scheduler.types import SchedulerConfiguration, QueueConfiguration
 
+try:
+    from annotationlib import get_annotations
+except ImportError:
+    from typing_extensions import get_annotations
+
 logger = logging.getLogger("scheduler")
 
 _QUEUES: Dict[str, QueueConfiguration] = dict()
@@ -39,7 +44,8 @@ def conf_settings():
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
     for k, v in user_settings.items():
-        if k not in SCHEDULER_CONFIG.__annotations__:
+        annotations = get_annotations(SCHEDULER_CONFIG)
+        if k not in annotations:
             raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")
         setattr(SCHEDULER_CONFIG, k, v)
 
