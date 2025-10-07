@@ -32,7 +32,7 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13",  "3.14"]
         django-version: ["5.2.5"]
         broker: ["redis", "fakeredis", "valkey"]
         include:
@@ -76,6 +76,7 @@ jobs:
         with:
           cache-dependency-path: uv.lock
           python-version: "${{ matrix.python-version }}"
+          allow-prereleases: true
 
       - name: Install django version
         shell: bash
