@@ -6,6 +6,12 @@ Django Tasks Scheduler
 
 Documentation can be found in https://django-tasks-scheduler.readthedocs.io/
 
+## Introduction Video
+
+[![Django Tasks Scheduler Introduction](https://img.youtube.com/vi/Brfavid_fxw/0.jpg)](https://www.youtube.com/watch?v=Brfavid_fxw)
+
+Watch this introduction video to learn about django-tasks-scheduler and its features.
+
 # Usage
 
 1. Update `settings.py` to include scheduler configuration:
