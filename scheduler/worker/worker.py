@@ -58,9 +58,9 @@ class QueueConnectionDiscrepancyError(Exception):
     pass
 
 
-_signames = dict(
-    (getattr(signal, signame), signame) for signame in dir(signal) if signame.startswith("SIG") and "_" not in signame
-)
+_signames = {
+    getattr(signal, signame): signame for signame in dir(signal) if signame.startswith("SIG") and "_" not in signame
+}
 
 
 def signal_name(signum: int) -> str:

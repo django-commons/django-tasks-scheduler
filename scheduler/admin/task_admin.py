@@ -27,7 +27,7 @@ def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[J
     )
 
     res = sorted(
-        list(filter(lambda j: job_execution_of(j, scheduled_task), job_list)), key=lambda j: j.created_at, reverse=True
+        filter(lambda j: job_execution_of(j, scheduled_task), job_list), key=lambda j: j.created_at, reverse=True
     )
     return res
 
@@ -35,13 +35,13 @@ def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[J
 class JobArgInline(GenericStackedInline):
     model = TaskArg
     extra = 0
-    fieldsets = ((None, dict(fields=("arg_type", "val"))),)
+    fieldsets = ((None, {"fields": ("arg_type", "val")}),)
 
 
 class JobKwargInline(GenericStackedInline):
     model = TaskKwarg
     extra = 0
-    fieldsets = ((None, dict(fields=("key", ("arg_type", "val")))),)
+    fieldsets = ((None, {"fields": ("key", ("arg_type", "val"))}),)
 
 
 def get_message_bit(rows_updated: int) -> str:
@@ -86,40 +86,40 @@ class TaskAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
-            dict(
-                fields=(
+            {
+                "fields": (
                     "name",
                     "callable",
                     ("enabled", "timeout", "result_ttl"),
                     "task_type",
                 )
-            ),
+            },
         ),
         (
             None,
-            dict(fields=("scheduled_time",), classes=("tasktype-OnceTaskType",)),
+            {"fields": ("scheduled_time",), "classes": ("tasktype-OnceTaskType",)},
         ),
         (
             None,
-            dict(fields=("cron_string",), classes=("tasktype-CronTaskType",)),
+            {"fields": ("cron_string",), "classes": ("tasktype-CronTaskType",)},
         ),
         (
             None,
-            dict(
-                fields=(
+            {
+                "fields": (
                     (
                         "interval",
                         "interval_unit",
                     ),
                     "repeat",
                 ),
-                classes=("tasktype-RepeatableTaskType",),
-            ),
+                "classes": ("tasktype-RepeatableTaskType",),
+            },
         ),
-        (_("Queue settings"), dict(fields=(("queue", "at_front"), "job_name"))),
+        (_("Queue settings"), {"fields": (("queue", "at_front"), "job_name")}),
         (
             _("Previous runs info"),
-            dict(fields=(("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))),
+            {"fields": (("successful_runs", "last_successful_run"), ("failed_runs", "last_failed_run"))},
         ),
     )
 
@@ -157,7 +157,7 @@ class TaskAdmin(admin.ModelAdmin):
             execution_list = get_job_executions_for_task(obj.queue, obj)
         except ConnectionErrorTypes as e:
             logger.warn(f"Could not get job executions: {e}")
-            execution_list = list()
+            execution_list = []
         paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)
         page_number = request.GET.get("p", 1)
         page_obj = paginator.get_page(page_number)

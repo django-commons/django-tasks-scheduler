@@ -26,7 +26,7 @@ def _run_worker_process(worker: Worker, **kwargs):
 
 def run_worker_in_process(*args, name="test-worker") -> Tuple[multiprocessing.Process, str]:
     worker = create_worker(*args, name=name, fork_job_execution=False, with_scheduler=False)
-    process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs=dict())
+    process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs={})
     process.start()
     return process, name
 
@@ -49,32 +49,32 @@ seq = sequence_gen()
 def task_factory(
     task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
-    values = dict(
-        name="Scheduled Job %d" % next(seq),
-        queue=list(settings._QUEUES.keys())[0],
-        callable=callable_name,
-        enabled=True,
-        timeout=None,
-    )
+    values = {
+        "name": "Scheduled Job %d" % next(seq),
+        "queue": list(settings._QUEUES.keys())[0],
+        "callable": callable_name,
+        "enabled": True,
+        "timeout": None,
+    }
     if task_type == TaskType.ONCE:
         values.update(
-            dict(
-                result_ttl=None,
-                scheduled_time=timezone.now() + timedelta(days=1),
-            )
+            {
+                "result_ttl": None,
+                "scheduled_time": timezone.now() + timedelta(days=1),
+            }
         )
     elif task_type == TaskType.REPEATABLE:
         values.update(
-            dict(
-                result_ttl=None,
-                interval=1,
-                interval_unit="hours",
-                repeat=None,
-                scheduled_time=timezone.now() + timedelta(days=1),
-            )
+            {
+                "result_ttl": None,
+                "interval": 1,
+                "interval_unit": "hours",
+                "repeat": None,
+                "scheduled_time": timezone.now() + timedelta(days=1),
+            }
         )
     elif task_type == TaskType.CRON:
-        values.update(dict(cron_string="0 0 * * *"))
+        values.update({"cron_string": "0 0 * * *"})
     values.update(kwargs)
     if instance_only:
         instance = Task(task_type=task_type, **values)
@@ -87,13 +87,13 @@ def taskarg_factory(cls, **kwargs):
     content_object = kwargs.pop("content_object", None)
     if content_object is None:
         content_object = task_factory(TaskType.ONCE)
-    values = dict(
-        arg_type="str",
-        val="",
-        object_id=content_object.id,
-        content_type=ContentType.objects.get_for_model(content_object),
-        content_object=content_object,
-    )
+    values = {
+        "arg_type": "str",
+        "val": "",
+        "object_id": content_object.id,
+        "content_type": ContentType.objects.get_for_model(content_object),
+        "content_object": content_object,
+    }
     if cls == TaskKwarg:
         values["key"] = ("key%d" % next(seq),)
     values.update(kwargs)

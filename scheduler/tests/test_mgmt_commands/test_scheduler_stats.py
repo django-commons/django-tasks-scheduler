@@ -10,7 +10,7 @@ from scheduler import settings
 from scheduler.helpers.queues import get_queue
 
 
-@override_settings(SCHEDULER_QUEUES=dict(default={"HOST": "localhost", "PORT": 6379, "DB": 0}))
+@override_settings(SCHEDULER_QUEUES={"default": {"HOST": "localhost", "PORT": 6379, "DB": 0}})
 class SchedulerStatsTest(TestCase):
     EXPECTED_OUTPUT = {
         "queues": [
@@ -33,7 +33,7 @@ class SchedulerStatsTest(TestCase):
     def setUp(self):
         super(SchedulerStatsTest, self).setUp()
         SchedulerStatsTest.OLD_QUEUES = settings._QUEUES
-        settings._QUEUES = dict()
+        settings._QUEUES = {}
         settings.conf_settings()
         get_queue("default").connection.flushall()
 
