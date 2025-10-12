@@ -22,7 +22,7 @@ class ExportTest(TestCase):
         os.remove(self.tmpfile.name)
 
     def test_export__should_export_job(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True))
 
@@ -35,7 +35,7 @@ class ExportTest(TestCase):
         self.assertEqual(result[1], tasks[1].to_dict())
 
     def test_export__should_export_enabled_jobs_only(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=False))
 
@@ -47,7 +47,7 @@ class ExportTest(TestCase):
         self.assertEqual(result[0], tasks[0].to_dict())
 
     def test_export__should_export_job_yaml_without_yaml_lib(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True))
 
@@ -58,7 +58,7 @@ class ExportTest(TestCase):
             self.assertEqual(cm.exception.code, 1)
 
     def test_export__should_export_job_yaml_green(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True))
         tasks.append(task_factory(TaskType.CRON, enabled=True))

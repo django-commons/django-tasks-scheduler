@@ -20,7 +20,7 @@ from scheduler.views.helpers import get_queue
 def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> Tuple[List[JobModel], int, range]:
     items_per_page = settings.SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = registry.count(queue.connection)
-    job_list: List[JobModel] = list()
+    job_list: List[JobModel] = []
 
     if num_jobs == 0:
         return job_list, num_jobs, range(1, 1)
@@ -114,7 +114,7 @@ class QueueData:
 def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[str, Any]]]:
     queue_names = get_queue_names()
     queues: List[QueueData] = []
-    queue_workers_count: Dict[str, int] = {queue_name: 0 for queue_name in queue_names}
+    queue_workers_count: Dict[str, int] = dict.fromkeys(queue_names, 0)
     workers = get_all_workers()
     for worker in workers:
         for queue_name in worker.queue_names:

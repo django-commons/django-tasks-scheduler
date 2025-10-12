@@ -14,7 +14,7 @@ from scheduler.views.helpers import get_queue
 
 
 def get_worker_executions(worker: WorkerModel) -> List[JobModel]:
-    res = list()
+    res = []
     for queue_name in worker.queue_names:
         queue = get_queue(queue_name)
         curr_jobs = queue.get_all_jobs()
@@ -57,7 +57,7 @@ def worker_details(request: HttpRequest, name: str) -> HttpResponse:
 @staff_member_required  # type: ignore
 def workers_list(request: HttpRequest) -> HttpResponse:
     all_workers = get_all_workers()
-    worker_list = [worker for worker in all_workers]
+    worker_list = list(all_workers)
 
     context_data = {
         **admin.site.each_context(request),

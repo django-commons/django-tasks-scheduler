@@ -66,7 +66,7 @@ class Command(BaseCommand):
         click.echo(f"| {'Name':<16} |    Queued |    Active |  Finished |  Canceled |   Workers |")
         self._print_separator()
         for ind, queue in enumerate(statistics["queues"]):
-            vals = list((queue[k] for k in KEYS))
+            vals = [queue[k] for k in KEYS]
             # Deal with colors
             if not with_color:
                 colors = ["" for _ in KEYS]

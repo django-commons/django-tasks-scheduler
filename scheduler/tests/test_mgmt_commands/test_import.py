@@ -21,7 +21,7 @@ class ImportTest(TestCase):
         os.remove(self.tmpfile.name)
 
     def test_import__should_schedule_job(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = json.dumps([j.to_dict() for j in tasks])
@@ -38,7 +38,7 @@ class ImportTest(TestCase):
             self.assertEqual(getattr(tasks[0], attr), getattr(db_task, attr))
 
     def test_import__should_schedule_job_yaml(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in tasks], default_flow_style=False)
@@ -55,7 +55,7 @@ class ImportTest(TestCase):
             self.assertEqual(getattr(tasks[0], attr), getattr(task, attr))
 
     def test_import__should_schedule_job_yaml_without_yaml_lib(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True, instance_only=True))
         tasks.append(task_factory(TaskType.REPEATABLE, enabled=True, instance_only=True))
         res = yaml.dump([j.to_dict() for j in tasks], default_flow_style=False)
@@ -68,7 +68,7 @@ class ImportTest(TestCase):
             self.assertEqual(cm.exception.code, 1)
 
     def test_import__should_schedule_job_reset(self):
-        tasks = list()
+        tasks = []
         task_factory(TaskType.ONCE, enabled=True)
         task_factory(TaskType.ONCE, enabled=True)
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
@@ -91,7 +91,7 @@ class ImportTest(TestCase):
             self.assertEqual(getattr(tasks[1], attr), getattr(task, attr))
 
     def test_import__should_schedule_job_update_existing(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         res = json.dumps([j.to_dict() for j in tasks])
@@ -107,7 +107,7 @@ class ImportTest(TestCase):
             self.assertEqual(getattr(tasks[0], attr), getattr(task, attr))
 
     def test_import__should_schedule_job_without_update_existing(self):
-        tasks = list()
+        tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         tasks.append(task_factory(TaskType.ONCE, enabled=True))
         res = json.dumps([j.to_dict() for j in tasks])

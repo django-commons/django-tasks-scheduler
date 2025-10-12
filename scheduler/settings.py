@@ -13,7 +13,7 @@ except ImportError:
 
 logger = logging.getLogger("scheduler")
 
-_QUEUES: Dict[str, QueueConfiguration] = dict()
+_QUEUES: Dict[str, QueueConfiguration] = {}
 SCHEDULER_CONFIG: SchedulerConfiguration = SchedulerConfiguration()
 
 

@@ -63,14 +63,14 @@ _job_stack: List[JobModel] = []
 
 
 class Queue:
-    REGISTRIES = dict(
-        finished="finished_job_registry",
-        failed="failed_job_registry",
-        scheduled="scheduled_job_registry",
-        active="active_job_registry",
-        canceled="canceled_job_registry",
-        queued="queued_job_registry",
-    )
+    REGISTRIES = {
+        "finished": "finished_job_registry",
+        "failed": "failed_job_registry",
+        "scheduled": "scheduled_job_registry",
+        "active": "active_job_registry",
+        "canceled": "canceled_job_registry",
+        "queued": "queued_job_registry",
+    }
 
     def __init__(self, connection: ConnectionType, name: str, is_async: bool = True) -> None:
         """Initializes a Queue object.
@@ -150,7 +150,7 @@ class Queue:
         raise NoSuchRegistryError(f"Unknown registry name {name}")
 
     def get_all_job_names(self) -> List[str]:
-        all_job_names = list()
+        all_job_names = []
         all_job_names.extend(self.queued_job_registry.all(self.connection))
         all_job_names.extend(self.finished_job_registry.all(self.connection))
         all_job_names.extend(self.active_job_registry.all(self.connection))
