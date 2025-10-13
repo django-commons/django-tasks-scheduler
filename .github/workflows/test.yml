@@ -44,10 +44,7 @@ jobs:
           src: "."
 
       - name: Run Ruff Formatting 🧽
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: "format --check"
-          src: "."
+        run: ruff format --check .
 
   test-regular:
     needs: ["ruff", "uv-lock-check"]
