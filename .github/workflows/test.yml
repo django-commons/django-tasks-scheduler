@@ -39,9 +39,6 @@ jobs:
 
       - name: Run Ruff Linting 🧹
         uses: astral-sh/ruff-action@v3
-        with:
-          args: check
-          src: "."
 
       - name: Run Ruff Formatting 🧽
         run: ruff format --check .
