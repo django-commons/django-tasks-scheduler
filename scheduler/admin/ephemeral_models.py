@@ -22,7 +22,7 @@ class ImmutableAdmin(admin.ModelAdmin):
         not restrict access to the add, change or delete views. Use `ModelAdmin.has_(add|change|delete)_permission` for
         that.
         """
-        return request.user.has_module_perms("django-tasks-scheduler")  # type: ignore
+        return request.user.has_module_perms("scheduler")  # type: ignore
 
 
 @admin.register(Queue)
