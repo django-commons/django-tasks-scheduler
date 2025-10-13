@@ -231,7 +231,7 @@ class BaseTestCases:
             taskarg_factory(TaskKwarg, key="key3", arg_type="bool", val=True, content_object=task)
             taskarg_factory(TaskKwarg, key="key4", arg_type="datetime", val=date, content_object=task)
             kwargs = task.parse_kwargs()
-            self.assertEqual(kwargs, dict(key1="one", key2=2, key3=True, key4=date))
+            self.assertEqual(kwargs, {"key1": "one", "key2": 2, "key3": True, "key4": date})
 
         def test_callable_args_and_kwargs(self):
             task = task_factory(self.task_type, callable="scheduler.tests.jobs.test_args_kwargs")
@@ -418,7 +418,7 @@ class BaseTestCases:
             self.assertTrue(task.is_scheduled())
             prev_executions_count = len(_get_executions(task))
             url = reverse("admin:scheduler_task_delete", args=[task.pk])
-            data = dict(post="yes")
+            data = {"post": "yes"}
             # act
             res = self.client.post(url, data=data, follow=True)
             # assert

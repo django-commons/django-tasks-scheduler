@@ -21,12 +21,12 @@ def test_args_kwargs(*args, **kwargs):
 
 def two_seconds_job():
     sleep(2)
-    logging.info(f"Job {_counter}")
+    logging.info(f"Job {_counter}")  # noqa: LOG015
 
 
 def long_job():
     sleep(1000)
-    logging.info(f"Job {_counter}")
+    logging.info(f"Job {_counter}")  # noqa: LOG015
 
 
 test_non_callable = "I am a teapot"

@@ -71,7 +71,7 @@ class WorkerCommandsTest(BaseTestCase):
         sleep(0.1)
         command = StopJobCommand(worker_name=worker_name, job_name=job.name)
         command_payload = json.dumps(command.command_payload())
-        worker._command_listener.handle_payload(dict(data=command_payload))
+        worker._command_listener.handle_payload({"data": command_payload})
         worker.monitor_job_execution_process(job, queue)
 
         # Assert

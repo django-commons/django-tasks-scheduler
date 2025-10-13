@@ -7,7 +7,7 @@ from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"
-_WORKER_COMMANDS_REGISTRY: Dict[str, Type["WorkerCommand"]] = dict()
+_WORKER_COMMANDS_REGISTRY: Dict[str, Type["WorkerCommand"]] = {}
 
 
 class WorkerCommandError(Exception):

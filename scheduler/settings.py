@@ -9,7 +9,7 @@ from typing_extensions import get_annotations
 
 logger = logging.getLogger("scheduler")
 
-_QUEUES: Dict[str, QueueConfiguration] = dict()
+_QUEUES: Dict[str, QueueConfiguration] = {}
 SCHEDULER_CONFIG: SchedulerConfiguration = SchedulerConfiguration()
 
 
@@ -39,7 +39,10 @@ def conf_settings():
         return
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")
-    annotations = get_annotations(SCHEDULER_CONFIG)
+
+    # Use `type(obj)` because Python 3.14+ `annotationlib.get_annotations()` works only on classes/functions/modules.
+    # It reads __annotations__ or __annotate__; instances without annotations will fail.
+    annotations = get_annotations(type(SCHEDULER_CONFIG))
     for k, v in user_settings.items():
         if k not in annotations:
             raise ImproperlyConfigured(f"Unknown setting {k} in SCHEDULER_CONFIG")
