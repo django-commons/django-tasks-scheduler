@@ -8,7 +8,7 @@
 2. In `settings.py`, add `scheduler` to  `INSTALLED_APPS`:
    ```python
    INSTALLED_APPS = [
-       # ...    
+       # ...
        'scheduler',
        # ...
    ]
@@ -22,7 +22,7 @@
     import os
     from typing import Dict
     from scheduler.types import QueueConfiguration
-       
+
     SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
      'default': QueueConfiguration(
         HOST='localhost',
@@ -47,7 +47,7 @@
          'password': 'secret',
       }),
      'high': QueueConfiguration(URL=os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0')),
-     'low': QueueConfiguration(HOST='localhost', PORT=6379, DB=0, ASYNC=False), 
+     'low': QueueConfiguration(HOST='localhost', PORT=6379, DB=0, ASYNC=False),
     }
    ```
 
@@ -76,7 +76,7 @@
 5. Add `scheduler.urls` to your django application `urls.py`:
    ```python
    from django.urls import path, include
-   
+
    urlpatterns = [
        # ...
        path('scheduler/', include('scheduler.urls')),
@@ -87,4 +87,3 @@
    ```shell
    python manage.py migrate
    ```
-

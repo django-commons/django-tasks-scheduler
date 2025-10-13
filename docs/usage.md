@@ -77,7 +77,7 @@ It is possible to view list of executions of a task, as well as the details of a
         * In the Repeat field, enter the number of times the job is to be run. Leaving the field empty, means the job
           will be scheduled to run forever.
         * In the cron string field, enter a cron string describing how often the job should run.
-* In the **Callable** field, enter a Python dot notation path to the method that defines the job. For the example  
+* In the **Callable** field, enter a Python dot notation path to the method that defines the job. For the example
   above, that would be `myapp.jobs.count`
 * Choose your **Queue**.
   The queues listed are defined in your app `settings.py` under `SCHEDULER_QUEUES`.
@@ -159,7 +159,7 @@ WorkingDirectory = {{ path_to_your_project_folder } }
 ExecStart = /home/ubuntu/.virtualenv/{ { your_virtualenv } }/bin/python \
             {{ path_to_your_project_folder } }/manage.py \
             scheduler_worker high default low
-# Optional 
+# Optional
 # {{user to run scheduler_worker as}}
 User = ubuntu
 # {{group to run scheduler_worker as}}
@@ -180,7 +180,7 @@ After you are done editing the file, reload the settings and start the new worke
 
 ```shell
 sudo systemctl daemon-reload
-sudo systemctl start scheduler_worker@{1..3} 
+sudo systemctl start scheduler_worker@{1..3}
 ```
 
 You can target a specific worker using its number:

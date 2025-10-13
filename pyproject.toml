@@ -58,6 +58,7 @@ Funding = "https://github.com/sponsors/cunla"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.2",
     "time-machine>=2.19",
     "ruff>=0.13",
     "coverage[toml]>=7.10",
