@@ -36,11 +36,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Run Ruff Linting 🧹
         uses: astral-sh/ruff-action@v3
-        with:
-          args: check
-          src: "."
+
+      - name: Run Ruff Formatting 🧽
+        run: ruff format --check .
 
   test-regular:
     needs: ["ruff", "uv-lock-check"]

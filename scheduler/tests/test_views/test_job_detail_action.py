@@ -63,7 +63,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         queue = get_queue("django_tasks_scheduler_test")
         job_list = []
         # enqueue some jobs that depends on other
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(test_job)
             job_list.append(job)
 
@@ -84,7 +84,7 @@ class SingleJobActionViewsTest(BaseTestCase):
         queue = get_queue("scheduler_scheduler_active_test")
         job_list = []
         # enqueue some jobs that depends on other
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(test_job)
             job_list.append(job)
 

@@ -129,8 +129,7 @@ class Command(BaseCommand):
                 "default",
             ]
         click.echo(f"Starting worker for queues {queues}")
-        pidfile = options.pop("pidfile")
-        if pidfile:
+        if pidfile := options.pop("pidfile"):
             with open(os.path.expanduser(pidfile), "w") as fp:
                 fp.write(str(os.getpid()))
 

@@ -344,8 +344,7 @@ class Task(models.Model):
         schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
-        update_fields = kwargs.get("update_fields", None)
-        if update_fields is not None:
+        if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super(Task, self).save(**kwargs)
         if schedule_job:
