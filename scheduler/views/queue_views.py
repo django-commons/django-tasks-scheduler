@@ -159,7 +159,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[s
                 canceled_jobs=queue.canceled_job_registry.count(queue.connection),
             )
             queues.append(queue_data)
-        except ConnectionErrorTypes as e:
+        except ConnectionErrorTypes as e:  # noqa: PERF203
             logger.error(f"Could not connect for queue {queue_name}: {e}")
             continue
 

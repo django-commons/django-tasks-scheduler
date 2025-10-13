@@ -14,7 +14,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # enqueue some jobs
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(test_job, job_info_ttl=0)
             job_names.append(job.name)
 
@@ -36,7 +36,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # enqueue some jobs
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(test_job, job_info_ttl=0)
             job_names.append(job.name)
 
@@ -57,7 +57,7 @@ class QueueActionsViewsTest(BaseTestCase):
 
         # enqueue some jobs that will fail
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(failing_job)
             job_names.append(job.name)
 
