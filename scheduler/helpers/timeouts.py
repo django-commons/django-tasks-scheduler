@@ -34,7 +34,7 @@ class BaseDeathPenalty:
     def __enter__(self):
         self.setup_death_penalty()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback):  # noqa: A002
         # Always cancel immediately, since we're done
         try:
             self.cancel_death_penalty()
@@ -49,10 +49,10 @@ class BaseDeathPenalty:
         return False
 
     def setup_death_penalty(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def cancel_death_penalty(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class UnixSignalDeathPenalty(BaseDeathPenalty):

@@ -17,7 +17,7 @@ class SchedulerWorkerTestCase(TestCase):
 
         # enqueue some jobs that will fail
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(failing_job)
             job_names.append(job.name)
 
@@ -56,7 +56,7 @@ class SchedulerWorkerTestCase(TestCase):
 
         # enqueue some jobs that will fail
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(failing_job)
             job_names.append(job.name)
 
@@ -76,7 +76,7 @@ class SchedulerWorkerTestCase(TestCase):
 
         # enqueue some jobs that will fail
         job_names = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.create_and_enqueue_job(failing_job)
             job_names.append(job.name)
         job = queue2.create_and_enqueue_job(failing_job)
