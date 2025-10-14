@@ -37,6 +37,7 @@ def scheduled_task(job: JobModel) -> Optional[Task]:
     except ValueError:
         return None
 
+
 @register.filter
 def job_result(job: JobModel) -> Optional[str]:
     queue = get_queue(job.queue_name)
