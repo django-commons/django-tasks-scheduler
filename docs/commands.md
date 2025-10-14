@@ -112,7 +112,7 @@ python manage.py run_job {callable} {callable args ...}
 Run this to empty failed jobs registry from a queue.
 
 ```shell
-python manage.py delete_failed_jobs 
+python manage.py delete_failed_jobs
 ```
 
 ## `scheduler_stats` - Show scheduler stats

@@ -5,11 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from scheduler.types import SchedulerConfiguration, QueueConfiguration
-
-try:
-    from annotationlib import get_annotations
-except ImportError:
-    from typing_extensions import get_annotations
+from typing_extensions import get_annotations
 
 logger = logging.getLogger("scheduler")
 

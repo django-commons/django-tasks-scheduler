@@ -22,7 +22,7 @@ from typing import Dict
 from scheduler.types import SchedulerConfiguration, Broker, QueueConfiguration
 
 INSTALLED_APPS = [
-    # ...    
+    # ...
     'scheduler',
     # ...
 ]
@@ -66,6 +66,13 @@ python manage.py migrate
 
 4. Check out the admin views:
    ![](./docs/media/admin-tasks-list.jpg)
+
+
+# Local development environment
+
+You can install [`pre-commit` hook](https://pre-commit.com/) in the repo to add it as a git hook by
+running: `pre-commit install`. It is configured to check all change files based on configuration in
+`.pre-commit-config.yaml`.
 
 # Sponsor
 
