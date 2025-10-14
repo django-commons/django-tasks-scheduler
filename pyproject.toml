@@ -150,7 +150,7 @@ select = [
 ]
 extend-ignore = ["PIE790"]
 mccabe.max-complexity = 13
-per-file-ignores."scheduler/models/args.py" = ["DJ012", "INT001"]
+per-file-ignores."scheduler/models/args.py" = ["DJ012"]
 per-file-ignores."scheduler/models/ephemeral_models.py" = ["DJ008"]
 per-file-ignores."scheduler/models/task.py" = ["DJ001", "DJ012"]
 

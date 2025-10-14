@@ -39,13 +39,8 @@ class BaseTaskArg(models.Model):
 
     def clean(self) -> None:
         if self.arg_type not in ARG_TYPE_TYPES_DICT:
-            raise ValidationError(
-                {
-                    "arg_type": ValidationError(
-                        _(f"Could not parse {self.arg_type}, options are: {ARG_TYPE_TYPES_DICT.keys()}"), code="invalid"
-                    )
-                }
-            )
+            msg = _("Could not parse %s, options are: %s") % (self.arg_type, ARG_TYPE_TYPES_DICT.keys())
+            raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
         try:
             if self.arg_type == "callable":
                 utils.callable_func(self.val)
@@ -57,9 +52,8 @@ class BaseTaskArg(models.Model):
             elif self.arg_type == "int":
                 int(self.val)
         except Exception:
-            raise ValidationError(
-                {"arg_type": ValidationError(_(f"Could not parse {self.val} as {self.arg_type}"), code="invalid")}
-            )
+            msg = _("Could not parse %s as %s") % (self.val, self.arg_type)
+            raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
 
     def save(self, **kwargs: Any) -> None:
         super(BaseTaskArg, self).save(**kwargs)
