@@ -3,7 +3,6 @@ from django.contrib.auth.models import Permission, User
 from django.test import RequestFactory, TestCase
 
 from scheduler.admin.ephemeral_models import QueueAdmin
-from scheduler.models import Task
 from scheduler.models.ephemeral_models import Queue
 
 
@@ -33,5 +32,3 @@ class TestImmutableAdminModulePermission(TestCase):
         request.user = user
 
         assert self.admin.has_module_permission(request) is True
-
-
