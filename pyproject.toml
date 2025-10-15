@@ -58,6 +58,7 @@ Funding = "https://github.com/sponsors/cunla"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.2",
     "time-machine>=2.19",
     "ruff>=0.13",
     "coverage[toml]>=7.10",
@@ -149,7 +150,7 @@ select = [
 ]
 extend-ignore = ["PIE790"]
 mccabe.max-complexity = 13
-per-file-ignores."scheduler/models/args.py" = ["DJ012", "INT001"]
+per-file-ignores."scheduler/models/args.py" = ["DJ012"]
 per-file-ignores."scheduler/models/ephemeral_models.py" = ["DJ008"]
 per-file-ignores."scheduler/models/task.py" = ["DJ001", "DJ012"]
 

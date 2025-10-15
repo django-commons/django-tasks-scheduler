@@ -115,11 +115,11 @@ following steps in advance to help us fix any potential bug as fast as possible.
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
 - Open an [Issue](https://github.com/django-commons/django-tasks-scheduler/issues/new).
-  (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and 
+  (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and
   not to label the issue.)
 - Explain the behavior you would expect and the actual behavior.
 - Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to
-  recreate the issue on their own. This usually includes your code.  
+  recreate the issue on their own. This usually includes your code.
   For good bug reports, you should isolate the problem and create a reduced test case.
 - Provide the information you collected in the previous section.
 
@@ -228,7 +228,7 @@ contextual information and is contained within parenthesis, e.g., feat(parser): 
 
 ## Join The Project Team
 
-If you wish to be added to the project team as a collaborator, please create an issue 
+If you wish to be added to the project team as a collaborator, please create an issue
 explaining why you wish to join the team and tag @cunla in the issue.
 
 <!-- omit in toc -->
