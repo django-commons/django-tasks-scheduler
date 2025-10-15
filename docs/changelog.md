@@ -1,9 +1,18 @@
 # Changelog
 
+## v4.0.10 🌈
+
+Welcome @cclauss and @DhavalGojiya asdoc new maintainers!
+
+### 🧰 Maintenance
+
+- Add ruff linting rules to CI #314 #312 #310 #317
+- Add pre-commit rules #316
+- Add intro video to README #308
+
 ## v4.0.9 🌈
 
 ### 🐛 Bug Fixes
-
 
 ### 🧰 Maintenance
 
