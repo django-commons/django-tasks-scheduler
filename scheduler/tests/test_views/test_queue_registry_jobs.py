@@ -6,6 +6,8 @@ from django.urls import reverse
 from scheduler.helpers.queues import get_queue
 from scheduler.tests.jobs import test_job
 from scheduler.tests.test_views.base import BaseTestCase
+from scheduler.tests.testtools import task_factory
+from scheduler.models import TaskType, Task
 
 
 class QueueRegistryJobsViewTest(BaseTestCase):
@@ -90,3 +92,51 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         registry.add(queue.connection, job.name, time.time() + 20)
         res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "active"]))
         self.assertEqual(res.context["jobs"], [job])
+
+    def test_missing_task_doesnt_crash_job_detail_page(self):
+        """
+        Ensure that when a Task gets deleted and its Job doesn't get cleaned, the
+        job detail page doesn't raise an exception.
+        """
+        queue_name = "django_tasks_scheduler_test"
+
+        # No jobs in the queue
+        res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context["jobs"], [])
+
+        task = task_factory(TaskType.ONCE, queue="django_tasks_scheduler_test")
+
+        res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
+        self.assertEqual(res.status_code, 200)
+        job = res.context["jobs"][0]
+        self.assertTrue(job)
+        self.assertTrue(job.is_scheduled_task)
+        self.assertEqual(job.scheduled_task_id, task.pk)
+
+        # Job detail page works
+        url = reverse("job_details", args=[job.name])
+        res = self.client.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertIn("job", res.context)
+        self.assertEqual(res.context["job"], job)
+        self.assertNotContains(res, "ValueError(&#x27;Invalid task type OnceTaskType&#x27;)")
+        self.assertContains(res, "Link to scheduled job")
+
+        # Delete all tasks in bulk, this doesn't trigger the signal
+        # that would delete the corresponding scheduled jobs.
+        Task.objects.all().delete()
+
+        # The job lingers around :(
+        res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(job in res.context["jobs"])
+
+        # Job detail doesn't raise a 500
+        url = reverse("job_details", args=[job.name])
+        res = self.client.get(url)
+        self.assertEqual(200, res.status_code)
+        self.assertIn("job", res.context)
+        self.assertEqual(res.context["job"], job)
+        self.assertContains(res, "ValueError(&#x27;Invalid task type OnceTaskType&#x27;)")
+        self.assertNotContains(res, "Link to scheduled job")
