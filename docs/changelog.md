@@ -1,25 +1,20 @@
 # Changelog
 
-## v4.0.10 🌈
-
-Welcome @cclauss and @DhavalGojiya as new maintainers!
-
-### 🧰 Maintenance
-
-- Add ruff linting rules to CI #314 #312 #310 #317
-- Add pre-commit hooks #316, #322
-- Add intro video to README #308
-
 ## v4.0.9 🌈
+
+Welcome @cclauss and @DhavalGojiya asdoc new maintainers!
 
 ### 🐛 Bug Fixes
 
 ### 🧰 Maintenance
 
+- Add ruff linting rules to CI #314 #312 #310 #317
+- Add pre-commit hooks #316
+- Add intro video to README #308
 - Support for Python 3.14
-- Add Python 3.14 to test matrix @cclauss #302
-- Turn off fail-fast @cclauss #303
-- Fix typos in docs @cclauss #304
+- Add Python 3.14 to test matrix #302
+- Turn off fail-fast #303
+- Fix typos in docs #304
 
 ## v4.0.8 🌈
 
