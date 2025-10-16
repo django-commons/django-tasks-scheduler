@@ -132,7 +132,7 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(job in res.context["jobs"])
 
-        # Job detail does't raise a 500
+        # Job detail doesn't raise a 500
         url = reverse("job_details", args=[job.name])
         res = self.client.get(url)
         self.assertEqual(200, res.status_code)
