@@ -1,7 +1,7 @@
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar
+from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar, Set
 
 from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
 
@@ -45,7 +45,7 @@ class SchedulerConfiguration:
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class QueueConfiguration:
-    __CONNECTION_FIELDS__: ClassVar[Dict] = {
+    __CONNECTION_FIELDS__: ClassVar[Set[str]] = {
         "URL",
         "DB",
         "UNIX_SOCKET_PATH",

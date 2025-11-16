@@ -58,9 +58,9 @@ class QueueConnectionDiscrepancyError(Exception):
     pass
 
 
-_signames = dict(
-    (getattr(signal, signame), signame) for signame in dir(signal) if signame.startswith("SIG") and "_" not in signame
-)
+_signames = {
+    getattr(signal, signame): signame for signame in dir(signal) if signame.startswith("SIG") and "_" not in signame
+}
 
 
 def signal_name(signum: int) -> str:
@@ -311,7 +311,7 @@ class Worker:
                 self.log(
                     INFO, "Suspended in burst mode, exiting, Note: There could still be unfinished jobs on the queue"
                 )
-                raise StopRequested()
+                raise StopRequested
 
             if not notified:
                 self.log(INFO, "Worker suspended, trigger ResumeCommand")
@@ -459,7 +459,7 @@ class Worker:
             self.log(DEBUG, f"Taking down job execution process {self._model.job_execution_process_pid} with me")
             self._kill_job_execution_process()
             self._wait_for_job_execution_process()
-        raise SystemExit()
+        raise SystemExit
 
     def request_stop(self, signum: int, frame: Optional[FrameType]) -> None:
         """Stops the current worker loop but waits for child processes to end gracefully (warm shutdown).
@@ -484,7 +484,7 @@ class Worker:
                 "Stopping after current job execution process is finished. Press Ctrl+C again for a cold shutdown.",
             )
         else:
-            raise StopRequested()
+            raise StopRequested
 
     def reorder_queues(self, reference_queue: Queue) -> None:
         """Reorder the queues according to the strategy.
@@ -498,7 +498,8 @@ class Worker:
 
         if self._dequeue_strategy not in [e.value for e in DequeueStrategy]:
             raise ValueError(
-                f"""[Worker {self.name}/{self._pid}]: Dequeue strategy should be one of {", ".join([e.value for e in DequeueStrategy])}"""
+                f"[Worker {self.name}/{self._pid}]: Dequeue strategy should be one of "
+                f"{', '.join([e.value for e in DequeueStrategy])}"
             )
         if self._dequeue_strategy == DequeueStrategy.DEFAULT:
             return
@@ -589,7 +590,8 @@ class Worker:
                     retpid, ret_val = self._wait_for_job_execution_process()
                 break
             except JobExecutionMonitorTimeoutException:
-                # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker alive.
+                # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker
+                # alive.
                 if job.started_at is not None:
                     working_time = (utcnow() - job.started_at).total_seconds()
                     self._model.set_current_job_working_time(working_time, self.connection)
@@ -856,7 +858,8 @@ def get_queues(*queue_names: str) -> List[Queue]:
         curr_queue_config = get_queue_configuration(queue_name)
         if not queue_config.same_connection_params(curr_queue_config):
             raise QueueConnectionDiscrepancyError(
-                f'Queues must have the same broker connection. "{queue_name}" and "{queue_names[0]}" have different connection settings'
+                f'Queues must have the same broker connection. "{queue_name}" and "{queue_names[0]}" have different '
+                "connection settings"
             )
         queue = get_queue(queue_name)
         queues.append(queue)

@@ -30,9 +30,12 @@ def get_item(dictionary: Dict, key):
 
 
 @register.filter
-def scheduled_task(job: JobModel) -> Task:
-    django_scheduled_task = get_scheduled_task(*job.args)
-    return django_scheduled_task.get_absolute_url()
+def scheduled_task(job: JobModel) -> Optional[Task]:
+    try:
+        django_scheduled_task = get_scheduled_task(*job.args)
+        return django_scheduled_task.get_absolute_url()
+    except ValueError:
+        return None
 
 
 @register.filter

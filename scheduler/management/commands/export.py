@@ -40,13 +40,11 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:
         file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
-        res = list()
 
         tasks = Task.objects.all()
         if options.get("enabled"):
             tasks = tasks.filter(enabled=True)
-        for task in tasks:
-            res.append(task.to_dict())
+        res = [task.to_dict() for task in tasks]
 
         if options.get("format") == "json":
             import json

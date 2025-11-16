@@ -191,7 +191,7 @@ class Task(models.Model):
             self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
             self.rqueue.active_job_registry.exists(pipeline, self.job_name)
             results = pipeline.execute()
-            res = any([item is not None for item in results])
+            res = any(item is not None for item in results)
 
         # If the job_name is not scheduled/queued/started,
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
@@ -230,14 +230,14 @@ class Task(models.Model):
         - Set job-id to proper format
         - set job meta
         """
-        res = dict(
-            meta=dict(),
-            task_type=self.task_type,
-            scheduled_task_id=self.id,
-            on_success=Callback(success_callback),
-            on_failure=Callback(failure_callback),
-            name=self._next_job_id(),
-        )
+        res = {
+            "meta": {},
+            "task_type": self.task_type,
+            "scheduled_task_id": self.id,
+            "on_success": Callback(success_callback),
+            "on_failure": Callback(failure_callback),
+            "name": self._next_job_id(),
+        }
         if self.at_front:
             res["at_front"] = self.at_front
         if self.timeout:
@@ -287,29 +287,29 @@ class Task(models.Model):
     def to_dict(self) -> Dict[str, Any]:
         """Export model to dictionary, so it can be saved as external file backup"""
         interval_unit = str(self.interval_unit) if self.interval_unit else None
-        res = dict(
-            model=str(self.task_type),
-            name=self.name,
-            callable=self.callable,
-            callable_args=[dict(arg_type=arg.arg_type, val=arg.val) for arg in self.callable_args.all()],
-            callable_kwargs=[
-                dict(arg_type=arg.arg_type, key=arg.key, val=arg.val) for arg in self.callable_kwargs.all()
+        res = {
+            "model": str(self.task_type),
+            "name": self.name,
+            "callable": self.callable,
+            "callable_args": [{"arg_type": arg.arg_type, "val": arg.val} for arg in self.callable_args.all()],
+            "callable_kwargs": [
+                {"arg_type": arg.arg_type, "key": arg.key, "val": arg.val} for arg in self.callable_kwargs.all()
             ],
-            enabled=self.enabled,
-            queue=self.queue,
-            repeat=getattr(self, "repeat", None),
-            at_front=self.at_front,
-            timeout=self.timeout,
-            result_ttl=self.result_ttl,
-            cron_string=getattr(self, "cron_string", None),
-            scheduled_time=self._schedule_time().isoformat(),
-            interval=getattr(self, "interval", None),
-            interval_unit=interval_unit,
-            successful_runs=getattr(self, "successful_runs", None),
-            failed_runs=getattr(self, "failed_runs", None),
-            last_successful_run=getattr(self, "last_successful_run", None),
-            last_failed_run=getattr(self, "last_failed_run", None),
-        )
+            "enabled": self.enabled,
+            "queue": self.queue,
+            "repeat": getattr(self, "repeat", None),
+            "at_front": self.at_front,
+            "timeout": self.timeout,
+            "result_ttl": self.result_ttl,
+            "cron_string": getattr(self, "cron_string", None),
+            "scheduled_time": self._schedule_time().isoformat(),
+            "interval": getattr(self, "interval", None),
+            "interval_unit": interval_unit,
+            "successful_runs": getattr(self, "successful_runs", None),
+            "failed_runs": getattr(self, "failed_runs", None),
+            "last_successful_run": getattr(self, "last_successful_run", None),
+            "last_failed_run": getattr(self, "last_failed_run", None),
+        }
         return res
 
     def get_absolute_url(self) -> str:
@@ -344,8 +344,7 @@ class Task(models.Model):
         schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
-        update_fields = kwargs.get("update_fields", None)
-        if update_fields is not None:
+        if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super(Task, self).save(**kwargs)
         if schedule_job:

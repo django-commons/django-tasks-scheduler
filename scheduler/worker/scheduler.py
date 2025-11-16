@@ -38,7 +38,7 @@ class WorkerScheduler:
             raise ValueError("At least one queue must be provided to WorkerScheduler")
         self._scheduled_job_registries: List[ScheduledJobRegistry] = []
         self.lock_acquisition_time: Optional[datetime] = None
-        self._locks: Dict[str, SchedulerLock] = dict()
+        self._locks: Dict[str, SchedulerLock] = {}
         self.connection = get_queue_connection(queues[0].name)
         self.interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._stop_requested = False

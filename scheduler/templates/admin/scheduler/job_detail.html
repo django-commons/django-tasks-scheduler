@@ -14,7 +14,7 @@
 
 {% block content_title %}
     <h2>Job {{ job.name }}
-        {% if job.is_scheduled_task %}
+        {% if job.is_scheduled_task and job|scheduled_task %}
             <small>
                 <a href="{{ job|scheduled_task }}">Link to scheduled job</a>
             </small>

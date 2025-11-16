@@ -129,8 +129,7 @@ class Command(BaseCommand):
                 "default",
             ]
         click.echo(f"Starting worker for queues {queues}")
-        pidfile = options.pop("pidfile")
-        if pidfile:
+        if pidfile := options.pop("pidfile"):
             with open(os.path.expanduser(pidfile), "w") as fp:
                 fp.write(str(os.getpid()))
 
@@ -150,7 +149,7 @@ class Command(BaseCommand):
 
             # Check whether sentry is enabled
             if options.get("sentry_dsn") is not None:
-                sentry_opts = dict(ca_certs=options.get("sentry_ca_certs"), debug=options.get("sentry_debug"))
+                sentry_opts = {"ca_certs": options.get("sentry_ca_certs"), "debug": options.get("sentry_debug")}
                 dsn: str = options.get("sentry_dsn")  # type: ignore
                 register_sentry(dsn, **sentry_opts)
 

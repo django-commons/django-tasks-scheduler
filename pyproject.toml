@@ -1,102 +1,164 @@
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
+requires = [ "hatchling" ]
 
 [project]
 name = "django-tasks-scheduler"
-version = "4.0.9"
+version = "4.0.10"
 description = "An async job scheduler for django using redis/valkey brokers"
-authors = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
-requires-python = ">=3.10"
 readme = "README.md"
-license = "MIT"
-maintainers = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
 keywords = [
-    "redis",
-    "valkey",
-    "django",
-    "background-jobs",
-    "job-queue",
-    "task-queue",
-    "redis-queue",
-    "scheduled-jobs",
+  "background-jobs",
+  "django",
+  "job-queue",
+  "redis",
+  "redis-queue",
+  "scheduled-jobs",
+  "task-queue",
+  "valkey",
 ]
+license = "MIT"
+maintainers = [ { name = "Daniel Moran", email = "daniel@moransoftware.ca" } ]
+authors = [ { name = "Daniel Moran", email = "daniel@moransoftware.ca" } ]
+requires-python = ">=3.10"
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Web Environment",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
-    "Framework :: Django",
-    "Framework :: Django :: 5.0",
-    "Framework :: Django :: 5.1",
-    "Framework :: Django :: 5.2",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Web Environment",
+  "Framework :: Django",
+  "Framework :: Django :: 5.0",
+  "Framework :: Django :: 5.1",
+  "Framework :: Django :: 5.2",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "django>=5",
-    "croniter>=2.0",
-    "click~=8.2",
-    "typing-extensions>=4.15.0",
+  "click~=8.2",
+  "croniter>=2",
+  "django>=5",
+  "typing-extensions>=4.15",
 ]
 
-[project.optional-dependencies]
-yaml = ["pyyaml~=6.0", "types-PyYAML>=6.0.12.20250516"]
-valkey = ["valkey>=6.0.2,<7"]
-sentry = ["sentry-sdk~=2.19"]
-
-[project.urls]
-Homepage = "https://github.com/django-commons/django-tasks-scheduler"
-Documentation = "https://django-tasks-scheduler.readthedocs.io/"
-"Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"
-Funding = "https://github.com/sponsors/cunla"
+optional-dependencies.sentry = [ "sentry-sdk~=2.19" ]
+optional-dependencies.valkey = [ "valkey>=6.0.2,<7" ]
+optional-dependencies.yaml = [ "pyyaml~=6.0", "types-pyyaml>=6.0.12.20250516" ]
+urls."Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"
+urls.Documentation = "https://django-tasks-scheduler.readthedocs.io/"
+urls.Funding = "https://github.com/sponsors/cunla"
+urls.Homepage = "https://github.com/django-commons/django-tasks-scheduler"
 
 [dependency-groups]
 dev = [
-    "time-machine>=2.19",
-    "ruff>=0.13",
-    "coverage[toml]>=7.10",
-    "fakeredis>=2.28",
-    "pyyaml>=6",
-    "mypy>=1.18",
-    "types-croniter>=6.0.0.20250411",
-    "beautifulsoup4>=4.13.4"
+  "beautifulsoup4>=4.13.4",
+  "coverage[toml]>=7.10",
+  "fakeredis>=2.28",
+  "mypy>=1.18",
+  "pre-commit>=4.2",
+  "pyyaml>=6",
+  "ruff>=0.13",
+  "time-machine>=2.19",
+  "types-croniter>=6.0.0.20250411",
 ]
 
 [tool.hatch.build.targets.sdist]
-include = ["scheduler"]
+include = [ "scheduler" ]
 
 [tool.hatch.build.targets.wheel]
-include = ["scheduler"]
+include = [ "scheduler" ]
 
 [tool.ruff]
 line-length = 120
 exclude = [
-    'scheduler/migrations',
-    'testproject',
-    '.venv',
-    '.github',
-    '__pycache__',
+  ".github",
+  ".venv",
+  "__pycache__",
+  "scheduler/migrations",
+  "testproject",
 ]
 
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-
+lint.select = [
+  "A",     # flake8-builtins
+  "AIR",   # Airflow
+  "ASYNC", # flake8-async
+  "C4",    # flake8-comprehensions
+  "C90",   # McCabe cyclomatic complexity
+  "DJ",    # flake8-django
+  "E",     # pycodestyle
+  "EXE",   # flake8-executable
+  "F",     # Pyflakes
+  "FA",    # flake8-future-annotations
+  "FAST",  # FastAPI
+  "FIX",   # flake8-fixme
+  "FLY",   # flynt
+  "FURB",  # refurb
+  "ICN",   # flake8-import-conventions
+  "INP",   # flake8-no-pep420
+  "INT",   # flake8-gettext
+  "ISC",   # flake8-implicit-str-concat
+  "LOG",   # flake8-logging
+  "NPY",   # NumPy-specific rules
+  "PD",    # pandas-vet
+  "PERF",  # Perflint
+  "PIE",   # flake8-pie
+  "RSE",   # flake8-raise
+  "SLOT",  # flake8-slots
+  "T10",   # flake8-debugger
+  "TC",    # flake8-type-checking
+  "TD",    # flake8-todos
+  "W",     # pycodestyle
+  "YTT",   # flake8-2020
+  # "ANN",  # flake8-annotations
+  # "ARG",  # flake8-unused-arguments
+  # "B",    # flake8-bugbear
+  # "BLE",  # flake8-blind-except
+  # "COM",  # flake8-commas
+  # "CPY",  # flake8-copyright
+  # "D",    # pydocstyle
+  # "DOC",  # pydoclint
+  # "DTZ",  # flake8-datetimez
+  # "EM",   # flake8-errmsg
+  # "ERA",  # eradicate
+  # "FBT",  # flake8-boolean-trap
+  # "G",    # flake8-logging-format
+  # "I",    # isort
+  # "N",    # pep8-naming
+  # "PGH",  # pygrep-hooks
+  # "PL",   # Pylint
+  # "PT",   # flake8-pytest-style
+  # "PTH",  # flake8-use-pathlib
+  # "PYI",  # flake8-pyi
+  # "Q",    # flake8-quotes
+  # "RET",  # flake8-return
+  # "RUF",  # Ruff-specific rules
+  # "S",    # flake8-bandit
+  # "SIM",  # flake8-simplify
+  # "SLF",  # flake8-self
+  # "T20",  # flake8-print
+  # "TID",  # flake8-tidy-imports
+  # "TRY",  # tryceratops
+  # "UP",   # pyupgrade
+]
+lint.extend-ignore = [ "PIE790" ]
+lint.per-file-ignores."scheduler/models/args.py" = [ "DJ012" ]
+lint.per-file-ignores."scheduler/models/ephemeral_models.py" = [ "DJ008" ]
+lint.per-file-ignores."scheduler/models/task.py" = [ "DJ001", "DJ012" ]
+lint.mccabe.max-complexity = 13
 
 [tool.mypy]
-packages = ['scheduler', ]
-exclude = ["scheduler/tests/.*\\.py",
-    "scheduler/migrations/.*\\.py",
-    "testproject/.*\\.py",
-    "testproject/tests/.*\\.py"]
+packages = [ 'scheduler' ]
+exclude = [
+  "scheduler/tests/.*\\.py",
+  "scheduler/migrations/.*\\.py",
+  "testproject/.*\\.py",
+  "testproject/tests/.*\\.py",
+]
 strict = true
 follow_imports = "silent"
 ignore_missing_imports = true

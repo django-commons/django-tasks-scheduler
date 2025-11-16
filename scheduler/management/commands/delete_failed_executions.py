@@ -18,8 +18,7 @@ class Command(BaseCommand):
         queue = get_queue(options.get("queue", "default"))
         job_names = queue.failed_job_registry.all(queue.connection)
         jobs = JobModel.get_many(job_names, connection=queue.connection)
-        func_name = options.get("func", None)
-        if func_name is not None:
+        if func_name := options.get("func"):
             jobs = [job for job in jobs if job.func_name == func_name]
         dry_run = options.get("dry_run", False)
         click.echo(f"Found {len(jobs)} failed jobs")
