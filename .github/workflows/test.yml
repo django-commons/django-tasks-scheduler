@@ -52,11 +52,11 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: ["3.11", "3.12", "3.13",  "3.14",  "3.14t"]
-        django-version: ["5.2.5"]
+        django-version: ["5.2"]
         broker: ["redis", "fakeredis", "valkey"]
         include:
           - python-version: "3.14t"
-            django-version: "5.2.5"
+            django-version: "5.2"
             broker: "redis"
             coverage: yes
     permissions:
