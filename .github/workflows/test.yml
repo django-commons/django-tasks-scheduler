@@ -89,22 +89,23 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Install uv
         uses: astral-sh/setup-uv@v6
+
       - uses: actions/setup-python@v6
         with:
           cache-dependency-path: uv.lock
           python-version: "${{ matrix.python-version }}"
           allow-prereleases: true
 
-      - name: Install Django version
+      - name: Install dependencies
         shell: bash
         run: |
           if [ ${{ matrix.broker == 'valkey' }} == true ]; then
             additional_args="--extra valkey"
           fi
           uv sync --extra yaml $additional_args
-          uv pip install django==${{ matrix.django-version }}
 
       - name: Get version
         id: getVersion
@@ -114,21 +115,22 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check for missing migrations
-        run: |
-          cd testproject
-          uv run python manage.py makemigrations --check
+        env:
+          UV_WORKING_DIR: testproject/
+        run: uv run --with django==${{ matrix.django-version }} -- python manage.py makemigrations --check
 
       - name: Run Tests without coverage
+        env:
+          UV_WORKING_DIR: testproject/
         if: ${{ matrix.coverage != 'yes' }}
         run: |
-          cd testproject
           export FAKEREDIS=${{ matrix.broker == 'fakeredis' }}
           if [ ${{ matrix.broker == 'valkey' }} == true ]; then
             export BROKER_PORT=6380
           else
             export BROKER_PORT=6379
           fi
-          uv run python manage.py test --exclude-tag multiprocess scheduler
+          uv run --with django==${{ matrix.django-version }} -- python manage.py test --exclude-tag multiprocess scheduler
 
       # Steps for coverage check
       - name: Run tests with coverage
