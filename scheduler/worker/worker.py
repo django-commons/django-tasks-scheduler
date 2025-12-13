@@ -2,6 +2,7 @@ import contextlib
 import errno
 import math
 import os
+import platform
 import random
 import signal
 import socket
@@ -103,7 +104,7 @@ class Worker:
         maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
         job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
         dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        fork_job_execution: bool = True,
+        fork_job_execution: bool = platform.system() != "Windows",
         with_scheduler: bool = True,
         burst: bool = False,
         model: Optional[WorkerModel] = None,
@@ -839,7 +840,7 @@ def _ensure_list(obj: Any) -> List[Any]:
 
 
 def _calc_worker_name(existing_worker_names: Collection[str]) -> str:
-    hostname = os.uname()[1]
+    hostname = socket.gethostname()
     c = 1
     worker_name = f"{hostname}-worker.{c}"
     while worker_name in existing_worker_names:
