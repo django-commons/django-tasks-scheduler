@@ -125,7 +125,7 @@ class TimerDeathPenalty(BaseDeathPenalty):
 
 def get_default_death_penalty_class() -> type[BaseDeathPenalty]:
     """Returns the default death penalty class based on the platform."""
-    if hasattr(signal, 'SIGALRM'):
+    if hasattr(signal, "SIGALRM"):
         return UnixSignalDeathPenalty
     else:
         return TimerDeathPenalty
