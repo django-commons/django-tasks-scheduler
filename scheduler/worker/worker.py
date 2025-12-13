@@ -104,7 +104,7 @@ class Worker:
         maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
         job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
         dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        fork_job_execution: bool = platform.system() != 'Windows',,
+        fork_job_execution: bool = platform.system() != "Windows",
         with_scheduler: bool = True,
         burst: bool = False,
         model: Optional[WorkerModel] = None,
