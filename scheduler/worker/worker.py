@@ -839,7 +839,7 @@ def _ensure_list(obj: Any) -> List[Any]:
 
 
 def _calc_worker_name(existing_worker_names: Collection[str]) -> str:
-    hostname = os.uname()[1]
+    hostname=socket.gethostname()
     c = 1
     worker_name = f"{hostname}-worker.{c}"
     while worker_name in existing_worker_names:
