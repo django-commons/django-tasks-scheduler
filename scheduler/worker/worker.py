@@ -2,6 +2,7 @@ import contextlib
 import errno
 import math
 import os
+import platform
 import random
 import signal
 import socket
@@ -649,7 +650,7 @@ class Worker:
         The worker will wait for the job execution process and make sure it executes within the given timeout bounds, or
         will end the job execution process with SIGALRM.
         """
-        if self.fork_job_execution:
+        if platform.system() != 'Windows' and self.fork_job_execution:
             self._model.set_field("state", WorkerStatus.BUSY, connection=self.connection)
             self.fork_job_execution_process(job, queue)
             self.monitor_job_execution_process(job, queue)
