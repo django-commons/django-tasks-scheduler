@@ -104,7 +104,7 @@ class Worker:
         maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
         job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
         dequeue_strategy: DequeueStrategy = DequeueStrategy.DEFAULT,
-        fork_job_execution: bool = True,
+        fork_job_execution: bool = platform.system() != 'Windows',,
         with_scheduler: bool = True,
         burst: bool = False,
         model: Optional[WorkerModel] = None,
@@ -650,7 +650,7 @@ class Worker:
         The worker will wait for the job execution process and make sure it executes within the given timeout bounds, or
         will end the job execution process with SIGALRM.
         """
-        if platform.system() != "Windows" and self.fork_job_execution:
+        if self.fork_job_execution:
             self._model.set_field("state", WorkerStatus.BUSY, connection=self.connection)
             self.fork_job_execution_process(job, queue)
             self.monitor_job_execution_process(job, queue)
