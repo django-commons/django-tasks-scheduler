@@ -46,7 +46,6 @@ dependencies = [
   "django>=5",
   "typing-extensions>=4.15",
 ]
-
 optional-dependencies.sentry = [ "sentry-sdk~=2.19" ]
 optional-dependencies.valkey = [ "valkey>=6.0.2,<7" ]
 optional-dependencies.yaml = [ "pyyaml~=6.0", "types-pyyaml>=6.0.12.20250516" ]
@@ -68,11 +67,9 @@ dev = [
   "types-croniter>=6.0.0.20250411",
 ]
 
-[tool.hatch.build.targets.sdist]
-include = [ "scheduler" ]
-
-[tool.hatch.build.targets.wheel]
-include = [ "scheduler" ]
+[tool.hatch]
+build.targets.sdist.include = [ "scheduler" ]
+build.targets.wheel.include = [ "scheduler" ]
 
 [tool.ruff]
 line-length = 120
@@ -83,7 +80,6 @@ exclude = [
   "scheduler/migrations",
   "testproject",
 ]
-
 lint.select = [
   "A",     # flake8-builtins
   "AIR",   # Airflow
@@ -153,7 +149,7 @@ lint.per-file-ignores."scheduler/models/task.py" = [ "DJ001", "DJ012" ]
 lint.mccabe.max-complexity = 13
 
 [tool.mypy]
-packages = [ 'scheduler' ]
+packages = [ "scheduler" ]
 exclude = [
   "scheduler/tests/.*\\.py",
   "scheduler/migrations/.*\\.py",
