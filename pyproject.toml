@@ -66,6 +66,10 @@ dev = [
   "time-machine>=2.19",
   "types-croniter>=6.0.0.20250411",
 ]
+docs = [
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.7.4",
+]
 
 [tool.hatch]
 build.targets.sdist.include = [ "scheduler" ]
