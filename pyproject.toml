@@ -48,7 +48,7 @@ dependencies = [
 ]
 optional-dependencies.sentry = [ "sentry-sdk~=2.19" ]
 optional-dependencies.valkey = [ "valkey>=6.0.2" ]
-optional-dependencies.yaml = [ "pyyaml>=6.0", "types-pyyaml>=6.0.12.20250516" ]
+optional-dependencies.yaml = [ "pyyaml>=6", "types-pyyaml>=6.0.12.20250516" ]
 urls."Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"
 urls.Documentation = "https://django-tasks-scheduler.readthedocs.io/"
 urls.Funding = "https://github.com/sponsors/cunla"
