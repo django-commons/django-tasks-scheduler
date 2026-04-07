@@ -22,7 +22,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
 
       - name: Check uv.lock sync status
         run: uv lock --locked
@@ -52,18 +52,18 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t"]
-        django-version: ["5.2.9", "6.0"]
+        django-version: ["5.2.12", "6.0.3"]
         broker: ["redis", "fakeredis", "valkey"]
         exclude:
           - python-version: "3.11"
-            django-version: "6.0"
+            django-version: "6.0.3"
         include:
           - python-version: "3.14t"
-            django-version: "5.2.9"
+            django-version: "5.2.12"
             broker: "redis"
             coverage: yes
           - python-version: "3.14t"
-            django-version: "6.0"
+            django-version: "6.0.3"
             broker: "redis"
             coverage: yes
     permissions:
@@ -98,7 +98,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
 
       - uses: actions/setup-python@v6
         with:
