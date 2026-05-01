@@ -13,8 +13,10 @@ class TestInternals(SchedulerBaseCase):
     def test_get_scheduled_job(self):
         task = task_factory(TaskType.ONCE, scheduled_time=timezone.now() + timedelta(hours=1))
         self.assertEqual(task, get_scheduled_task(TaskType.ONCE, task.id))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             get_scheduled_task(task.task_type, task.id + 1)
+        self.assertIn("does not exist", str(cm.exception))
+        self.assertNotIn("Invalid task type", str(cm.exception))
         with self.assertRaises(ValueError):
             get_scheduled_task("UNKNOWN_JOBTYPE", task.id)
 
