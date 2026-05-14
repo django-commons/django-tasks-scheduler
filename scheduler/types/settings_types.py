@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar, Set
 import signal
-from scheduler.helpers.timeouts import BaseDeathPenalty, TimerDeathPenalty
+from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty, TimerDeathPenalty
 
 _DEATH_PENALTY_CLASS = UnixSignalDeathPenalty if hasattr(signal, "SIGALRM") else TimerDeathPenalty
 
