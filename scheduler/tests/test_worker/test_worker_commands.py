@@ -75,10 +75,10 @@ class WorkerCommandsTest(BaseTestCase):
         worker.monitor_job_execution_process(job, queue)
 
         # Assert
+        t.join()
         job = JobModel.get(job.name, connection=queue.connection)
         worker = WorkerModel.get(worker.name, connection=queue.connection)
         self.assertEqual(worker.stopped_job_name, job.name)
         self.assertIsNone(worker.current_job_name)
         self.assertEqual(job.status, JobStatus.STOPPED)
-        t.join()
         mock_stopped_callback.assert_called()
