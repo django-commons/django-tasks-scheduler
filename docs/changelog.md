@@ -1,20 +1,34 @@
 # Changelog
 
-## v4.0.9 🌈
+## v4.0.10 🌈
 
-Welcome @cclauss and @DhavalGojiya asdoc new maintainers!
+Welcome @cclauss and @DhavalGojiya as new maintainers!
+
+### 🚀 Features
+
+- Make worker compatible with Windows #335
+- Add support for Django 6.0 #331
 
 ### 🐛 Bug Fixes
+
+- Ensured transactional safety when writing to redis #296
+- Correct error masking in `get_scheduled_task` and worker TTL expiry #360
+- Handle `None` scheduled_time in `TaskAdmin.next_run` #363 #365
+- Fix module permission check for queues and workers admin #313
+- Check for a valid Task before rendering its link #318
+- Fix annotation handling for Python 3.14+ #305 #309
 
 ### 🧰 Maintenance
 
 - Add ruff linting rules to CI #314 #312 #310 #317
-- Add pre-commit hooks #316
+- Add pre-commit hooks with codespell, pyproject-fmt, and pyproject validation #316 #322
 - Add intro video to README #308
-- Support for Python 3.14
-- Add Python 3.14 to test matrix #302
-- Turn off fail-fast #303
+- Add Python 3.14 and free-threaded 3.14t to test matrix #302 #306
+- Turn off fail-fast in CI #303
 - Fix typos in docs #304
+- Replace legacy `US/Eastern` timezone with `America/New_York` #368
+- Improve CI pipeline speed and supply chain security #355
+- Add CI check to validate `uv.lock` is up-to-date #300
 
 ## v4.0.8 🌈
 
