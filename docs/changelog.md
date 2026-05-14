@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.0.10 🌈
+## v4.1.0 🌈
 
 Welcome @cclauss and @DhavalGojiya as new maintainers!
 
