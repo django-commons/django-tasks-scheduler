@@ -467,7 +467,7 @@ class BaseTestCases:
         @override_settings(USE_TZ=True)
         def test_schedule_time_with_tz(self):
             task = task_factory(self.task_type)
-            est = zoneinfo.ZoneInfo("US/Eastern")
+            est = zoneinfo.ZoneInfo("America/New_York")
             task.scheduled_time = datetime(2016, 12, 25, 8, 0, 0, tzinfo=est)
             self.assertEqual("2016-12-25T13:00:00+00:00", task._schedule_time().isoformat())
 
