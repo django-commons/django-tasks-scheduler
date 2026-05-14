@@ -649,7 +649,7 @@ class Worker:
         The worker will wait for the job execution process and make sure it executes within the given timeout bounds, or
         will end the job execution process with SIGALRM.
         """
-        if self.fork_job_execution:
+        if hasattr(os, "fork") and self.fork_job_execution:
             self._model.set_field("state", WorkerStatus.BUSY, connection=self.connection)
             self.fork_job_execution_process(job, queue)
             self.monitor_job_execution_process(job, queue)
@@ -839,7 +839,7 @@ def _ensure_list(obj: Any) -> List[Any]:
 
 
 def _calc_worker_name(existing_worker_names: Collection[str]) -> str:
-    hostname = os.uname()[1]
+    hostname = socket.gethostname()
     c = 1
     worker_name = f"{hostname}-worker.{c}"
     while worker_name in existing_worker_names:

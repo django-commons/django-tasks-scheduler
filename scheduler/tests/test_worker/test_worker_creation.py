@@ -1,4 +1,4 @@
-import os
+import socket
 import uuid
 
 from scheduler import settings
@@ -15,7 +15,7 @@ class TestWorker(SchedulerBaseCase):
         worker1.worker_start()
         worker2 = create_worker("default")
         worker2.worker_start()
-        hostname = os.uname()[1]
+        hostname = socket.gethostname()
         self.assertEqual(f"{hostname}-worker.1", worker1.name)
         self.assertEqual(f"{hostname}-worker.2", worker2.name)
 

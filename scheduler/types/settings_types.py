@@ -2,8 +2,10 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar, Set
+import signal
+from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty, TimerDeathPenalty
 
-from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty
+_DEATH_PENALTY_CLASS = UnixSignalDeathPenalty if hasattr(signal, "SIGALRM") else TimerDeathPenalty
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -40,7 +42,7 @@ class SchedulerConfiguration:
     DEFAULT_MAINTENANCE_TASK_INTERVAL: int = 10 * 60  # The interval to run maintenance tasks in seconds. 10 minutes.
     DEFAULT_JOB_MONITORING_INTERVAL: int = 30  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
-    DEATH_PENALTY_CLASS: Type[BaseDeathPenalty] = UnixSignalDeathPenalty
+    DEATH_PENALTY_CLASS: Type[BaseDeathPenalty] = _DEATH_PENALTY_CLASS
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
