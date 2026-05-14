@@ -120,7 +120,7 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         self.assertIn("job", res.context)
         self.assertEqual(res.context["job"], job)
-        self.assertNotContains(res, "ValueError(&#x27;Invalid task type OnceTaskType&#x27;)")
+        self.assertNotContains(res, "does not exist")
         self.assertContains(res, "Link to scheduled job")
 
         # Delete all tasks in bulk, this doesn't trigger the signal
@@ -138,5 +138,6 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         self.assertIn("job", res.context)
         self.assertEqual(res.context["job"], job)
-        self.assertContains(res, "ValueError(&#x27;Invalid task type OnceTaskType&#x27;)")
+        self.assertContains(res, "does not exist")
+        self.assertNotContains(res, "Invalid task type")
         self.assertNotContains(res, "Link to scheduled job")

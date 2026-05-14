@@ -438,17 +438,16 @@ def get_next_cron_time(cron_string: Optional[str]) -> Optional[datetime]:
 
 
 def get_scheduled_task(task_type_str: str, task_id: int) -> Task:
-    # Try with new model names
-    if task_type_str in TASK_TYPES:
-        try:
-            task_type = TaskType(task_type_str)
-            task = Task.objects.filter(task_type=task_type, id=task_id).first()
-            if task is None:
-                raise ValueError(f"Job {task_type}:{task_id} does not exit")
-            return task  # type: ignore[no-any-return]
-        except ValueError:
-            raise ValueError(f"Invalid task type {task_type_str}")
-    raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
+    if task_type_str not in TASK_TYPES:
+        raise ValueError(f"Job Model {task_type_str} does not exist, choices are {TASK_TYPES}")
+    try:
+        task_type = TaskType(task_type_str)
+    except ValueError:
+        raise ValueError(f"Invalid task type {task_type_str}")
+    task = Task.objects.filter(task_type=task_type, id=task_id).first()
+    if task is None:
+        raise ValueError(f"Job {task_type}:{task_id} does not exist")
+    return task  # type: ignore[no-any-return]
 
 
 def run_task(task_model: str, task_id: int) -> Any:

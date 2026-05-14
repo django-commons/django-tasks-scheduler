@@ -5,10 +5,8 @@ from typing import List, Optional, ClassVar, Any, Generator
 
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import HashModel, MAX_KEYS
-from scheduler.settings import logger
+from scheduler.settings import logger, SCHEDULER_CONFIG
 from scheduler.types import ConnectionType, Self
-
-DEFAULT_WORKER_TTL = 420
 
 
 class WorkerStatus(str, Enum):
@@ -56,7 +54,7 @@ class WorkerModel(HashModel):
             super(WorkerModel, self).save(pipeline, save_all)
             for queue_name in self.queue_names:
                 pipeline.sadd(self._children_key_template.format(queue_name), self.name)
-            pipeline.expire(self._key, DEFAULT_WORKER_TTL + 60)
+            pipeline.expire(self._key, SCHEDULER_CONFIG.DEFAULT_WORKER_TTL + 60)
             pipeline.execute()
 
     def delete(self, connection: ConnectionType) -> None:
@@ -85,8 +83,8 @@ class WorkerModel(HashModel):
 
     def heartbeat(self, connection: ConnectionType, timeout: Optional[int] = None) -> None:
         self.last_heartbeat = utcnow()
-        self.save(connection)
-        timeout = timeout or DEFAULT_WORKER_TTL + 60
+        self.save(connection, save_all=True)
+        timeout = timeout or SCHEDULER_CONFIG.DEFAULT_WORKER_TTL + 60
         connection.expire(self._key, timeout)
         logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
