@@ -141,11 +141,13 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description="Next run")
     def next_run(self, o: Task) -> Union[str, datetime]:
         res = o.scheduled_time
+        if res is None:
+            return _("Not scheduled")
         if res < timezone.now():
             o.save(clean=False)
             res = o.scheduled_time
-        if res is None:
-            return _("Not scheduled")
+            if res is None:
+                return _("Not scheduled")
         if is_naive(res):
             res = timezone.make_aware(res, timezone.get_current_timezone())
         return res
