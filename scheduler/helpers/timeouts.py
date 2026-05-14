@@ -121,11 +121,3 @@ class TimerDeathPenalty(BaseDeathPenalty):
             return
         self._timer.cancel()
         self._timer = None
-
-
-def get_default_death_penalty_class() -> type[BaseDeathPenalty]:
-    """Returns the default death penalty class based on the platform."""
-    if hasattr(signal, "SIGALRM"):
-        return UnixSignalDeathPenalty
-    else:
-        return TimerDeathPenalty
