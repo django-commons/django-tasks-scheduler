@@ -43,7 +43,7 @@ Pre-commit hooks run ruff, codespell, mypy, and pyproject validation. Install wi
 ### Local Broker
 
 ```bash
-docker compose up -d   # starts Redis (6379) and Valkey (6380)
+docker compose up redis8 -d   # starts Redis (6379)
 ```
 
 ## Architecture
