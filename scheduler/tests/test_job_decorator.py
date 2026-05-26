@@ -9,7 +9,7 @@ from . import conf  # noqa
 from ..decorators import JOB_METHODS_LIST, job
 from ..redis_models import JobStatus
 from ..redis_models.job import JobModel
-from ..worker import create_worker
+from ..worker import create_worker, get_current_job
 
 
 @job()
@@ -55,12 +55,27 @@ def long_running_func():
     time.sleep(1000)
 
 
+@job()
+def test_knows_itself():
+    "when a job callable is called within a job context, get_current_job() returns the job itself"
+    job = get_current_job()
+    assert job is not None
+
+    job.meta["_my_key"] = job._key
+
+
+@job()
+def test_doesnt_know_itself():
+    "when a job callable is called directly, get_current_job() should return None"
+    assert get_current_job() is None
+
+
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(7, len(JOB_METHODS_LIST))
+        self.assertEqual(9, len(JOB_METHODS_LIST))
 
     def test_job_decorator_no_params(self):
         test_job.delay()
@@ -146,3 +161,24 @@ class JobDecoratorTest(TestCase):
         self.assertEqual(j.func, long_running_func)
         self.assertEqual(j.kwargs, {})
         self.assertEqual(j.status, JobStatus.FAILED)
+
+    def test_get_current_job(self):
+        queue_name = "default"
+        job_id = test_knows_itself.delay()._key
+        assert job_id is not None
+
+        worker = create_worker(queue_name, burst=True)
+        worker.work()
+
+        jobs_list = worker.queues[0].get_all_jobs()
+        self.assertEqual(1, len(jobs_list))
+        job = jobs_list[0]
+        self.assertEqual(job.func, test_knows_itself)
+        self.assertEqual(job.kwargs, {})
+        self.assertEqual(job.status, JobStatus.FINISHED)
+
+        assert job.meta["_my_key"] == job_id
+
+    def test_direct_call_to_job(self):
+        "Calling the job function directly, get_current_job() will return None"
+        test_doesnt_know_itself()

@@ -25,6 +25,7 @@ from scheduler.types import Broker, Self
 from scheduler.types import ConnectionType, TimeoutErrorTypes, ConnectionErrorTypes, WatchErrorTypes, ResponseErrorTypes
 from .commands import WorkerCommandsChannelListener
 from .scheduler import WorkerScheduler, SchedulerStatus
+from .local import LocalStack
 from ..helpers.queues.getters import get_queue_connection
 from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
@@ -62,6 +63,8 @@ _signames = {
     getattr(signal, signame): signame for signame in dir(signal) if signame.startswith("SIG") and "_" not in signame
 }
 
+_job_stack = LocalStack()
+
 
 def signal_name(signum: int) -> str:
     try:
@@ -70,6 +73,17 @@ def signal_name(signum: int) -> str:
         return "SIG_UNKNOWN"
     except ValueError:
         return "SIG_UNKNOWN"
+
+
+def get_current_job() -> Optional[JobModel]:
+    """Returns the Job instance that is currently being executed.
+    If this function is invoked from outside a job context, None is returned.
+
+    Returns:
+        job (Optional[JobModel]): The current Job running
+    """
+
+    return _job_stack.top
 
 
 class DequeueStrategy(str, Enum):
@@ -743,6 +757,7 @@ class Worker:
         """
         self.log(DEBUG, f"Performing {job.name} code.")
 
+        _job_stack.push(job)
         try:
             connection = self.connection
             self.worker_before_execution(job, connection=connection)
@@ -762,6 +777,8 @@ class Worker:
             self.handle_job_failure(job=job, exc_string=exc_string, queue=queue)
             self.handle_exception(job, *exc_info)
             return False
+        finally:
+            assert job is _job_stack.pop()
 
         self.log(INFO, f"queue:{queue.name}/job:{job.name} performed.")
         self.log(DEBUG, f"job:{job.name} result: {str(rv)}")
