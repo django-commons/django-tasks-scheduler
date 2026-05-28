@@ -177,7 +177,7 @@ class JobDecoratorTest(TestCase):
         self.assertEqual(job.kwargs, {})
         self.assertEqual(job.status, JobStatus.FINISHED)
 
-        assert job.meta["_my_key"] == job_id
+        self.assertEqual(job.meta["_my_key"], job_id)
 
     def test_direct_call_to_job(self):
         "Calling the job function directly, get_current_job() will return None"
