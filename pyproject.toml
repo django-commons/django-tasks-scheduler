@@ -72,8 +72,8 @@ docs = [
 ]
 
 [tool.hatch]
-build.targets.sdist.include = [ "scheduler" ]
 build.targets.wheel.include = [ "scheduler" ]
+build.targets.sdist.include = [ "scheduler" ]
 
 [tool.ruff]
 line-length = 120
@@ -155,13 +155,13 @@ lint.mccabe.max-complexity = 13
 [tool.mypy]
 packages = [ "scheduler" ]
 exclude = [
-  "scheduler/tests/.*\\.py",
   "scheduler/migrations/.*\\.py",
+  "scheduler/tests/.*\\.py",
   "testproject/.*\\.py",
   "testproject/tests/.*\\.py",
 ]
-strict = true
-follow_imports = "silent"
 ignore_missing_imports = true
-scripts_are_modules = true
+follow_imports = "silent"
 check_untyped_defs = true
+strict = true
+scripts_are_modules = true
