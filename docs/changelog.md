@@ -1,5 +1,22 @@
 # Changelog
 
+## v4.2.0 🌈
+
+### 🚀 Features
+
+- Add `get_current_job()` helper to access the running job from within a task #326 #373
+- Show the job callable return value in the admin execution lists #336
+- Suggest `@job`-registered callables in the Task admin `callable` field (autocomplete) #252
+
+### 🐛 Bug Fixes
+
+- Fix workers failing to connect with `redis` (redis-py) >= 8.0.0 when configured with host/port #375
+
+### 🧰 Maintenance
+
+- Fix the `FAKEREDIS=True` test configuration so the suite can run without a real broker
+- Bump CI broker images to redis 8.8.0 and valkey 9.1.0
+
 ## v4.1.0 🌈
 
 Welcome @cclauss and @DhavalGojiya as new maintainers!

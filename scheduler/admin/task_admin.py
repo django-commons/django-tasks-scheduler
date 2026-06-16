@@ -1,14 +1,18 @@
 from datetime import datetime
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Union
 
+from django import forms
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone, formats
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.timezone import is_naive
 from django.utils.translation import gettext_lazy as _
 
+from scheduler.decorators import JOB_METHODS_LIST
 from scheduler.helpers.queues import get_queue
 from scheduler.models import TaskArg, TaskKwarg, Task, TaskType
 from scheduler.redis_models import JobModel
@@ -49,9 +53,35 @@ def get_message_bit(rows_updated: int) -> str:
     return message_bit
 
 
+class JobMethodsDatalistWidget(forms.TextInput):
+    """Text input that offers autocomplete suggestions from the ``@job``-registered callables.
+
+    The suggestions come from ``JOB_METHODS_LIST`` (populated by the ``@job`` decorator), but because ``callable``
+    accepts any importable dotted path the field stays free-text - an HTML ``<datalist>`` suggests without
+    restricting input (issue #252).
+    """
+
+    datalist_id = "id_callable_job_methods"
+
+    def __init__(self, attrs: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__({**(attrs or {}), "list": self.datalist_id, "autocomplete": "off"})
+
+    def render(self, name: str, value: Any, attrs: Optional[Dict[str, Any]] = None, renderer: Any = None) -> str:
+        text_input = super().render(name, value, attrs=attrs, renderer=renderer)
+        options = format_html_join("", '<option value="{}"></option>', ((method,) for method in JOB_METHODS_LIST))
+        datalist = format_html('<datalist id="{}">{}</datalist>', self.datalist_id, options)
+        return mark_safe(text_input + datalist)
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
+
+    def formfield_for_dbfield(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
+        # Offer autocomplete suggestions for the `callable` field from the @job-registered callables (issue #252).
+        if db_field.name == "callable":
+            kwargs["widget"] = JobMethodsDatalistWidget
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     class Media:
         js = ("admin/js/jquery.init.js", "admin/js/select-fields.js")
