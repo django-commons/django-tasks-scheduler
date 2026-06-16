@@ -40,7 +40,7 @@ jobs:
       pull-requests: write
     services:
       redis:
-        image: redis:8.0.0
+        image: redis:8.8.0
         ports:
           - 6379:6379
         options: >-
@@ -50,7 +50,7 @@ jobs:
           --health-retries 5
 
       valkey:
-        image: valkey/valkey:8.0
+        image: valkey/valkey:9.1.0
         ports:
           - 6380:6379
         options: >-
