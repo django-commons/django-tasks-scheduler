@@ -39,9 +39,19 @@ def scheduled_task(job: JobModel) -> Optional[Task]:
 
 
 @register.filter
-def job_result(job: JobModel) -> Optional[str]:
+def latest_result(job: JobModel) -> Optional[Result]:
+    """Returns the latest Result for a job (or None).
+
+    Exposing the Result object lets a template render both its type and return value while fetching from the
+    broker only once per row (via ``{% with result=job|latest_result %}``).
+    """
     queue = get_queue(job.queue_name)
-    result = Result.fetch_latest(queue.connection, job.name)
+    return Result.fetch_latest(queue.connection, job.name)
+
+
+@register.filter
+def job_result(job: JobModel) -> Optional[str]:
+    result = latest_result(job)
     return result.type.name.capitalize() if result is not None else None
 
 

@@ -14,6 +14,7 @@
                     <th>Ran for</th>
                     <th>Worker name</th>
                     <th>Result</th>
+                    <th>Return value</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -33,7 +34,10 @@
                         <td>{{ exec.started_at|date:"Y-m-d, H:i:s"|default:"-" }}</td>
                         <td>{{ exec|job_runtime }}</td>
                         <td>{{ exec.worker_name|default:"-" }}</td>
-                        <td>{{ exec|job_result|default:"-" }}</td>
+                        {% with result=exec|latest_result %}
+                            <td>{{ result.type.value|capfirst|default:"-" }}</td>
+                            <td>{{ result.return_value|default:"-"|truncatechars:100 }}</td>
+                        {% endwith %}
                     </tr>
                 {% endfor %}
                 </tbody>
