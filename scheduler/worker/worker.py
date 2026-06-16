@@ -145,12 +145,18 @@ class Worker:
     @property
     def connection(self) -> ConnectionType:
         """Configures the Broker connection to have a socket timeout.
-        This should timouet the connection in case any specific command hangs at any given time (eg. BLPOP).
-        If the connection provided already has a `socket_timeout` defined, skips.
+        This should timeout the connection in case any specific command hangs at any given time (eg. BLPOP).
+        If the user explicitly configured a `socket_timeout` in the queue's ``CONNECTION_KWARGS``, that value is
+        respected; otherwise the worker forces a value large enough for its blocking dequeue.
+
+        Note: we cannot rely on inspecting ``connection_pool.connection_kwargs`` to detect a user-provided timeout
+        because redis-py >= 8 injects a small default ``socket_timeout`` through the host/port constructor. That
+        default (5s) is smaller than the blocking ``BLPOP`` timeout, which would abort the dequeue and kill the
+        worker shortly after startup (see issue #375).
         """
         connection = get_queue_connection(self.queues[0].name)
-        current_socket_timeout = connection.connection_pool.connection_kwargs.get("socket_timeout")
-        if current_socket_timeout is None:
+        user_connection_kwargs = get_queue_configuration(self.queues[0].name).CONNECTION_KWARGS or {}
+        if "socket_timeout" not in user_connection_kwargs:
             timeout_config = {"socket_timeout": SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 5}
             connection.connection_pool.connection_kwargs.update(timeout_config)
         return connection
