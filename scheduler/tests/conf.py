@@ -3,7 +3,9 @@ import os
 
 from django.conf import settings
 
+import scheduler.settings as scheduler_settings
 from scheduler.settings import conf_settings
+from scheduler.types import Broker
 
 settings.SCHEDULER_QUEUES = {
     "default": {"HOST": "localhost", "PORT": 6379, "DB": 0},
@@ -87,8 +89,11 @@ settings.SCHEDULER_QUEUES = {
         "DB": 0,
     },
 }
-if os.getenv("FAKEREDIS", "False") == "True":  # pragma: no cover
-    for name, queue_settings in settings.SCHEDULER_QUEUES:  # pragma: no cover
-        queue_settings["BROKER"] = "fakeredis"  # pragma: no cover
-
 conf_settings()
+
+if os.getenv("FAKEREDIS", "False") == "True":  # pragma: no cover
+    # BROKER is a SchedulerConfiguration setting, not a per-queue one. Mutate the live config object in place (the
+    # same instance the connection helpers imported by reference) so every queue uses fakeredis instead of a real
+    # Redis. Reassigning settings.SCHEDULER_CONFIG would not work here: conf_settings() rebinds the module global to
+    # a new object, leaving already-imported references pointing at the old one.
+    scheduler_settings.SCHEDULER_CONFIG.BROKER = Broker.FAKEREDIS
