@@ -16,7 +16,8 @@ settings.SCHEDULER_QUEUES = {
         "DB": 1,
         "USERNAME": "redis-user",
         "PASSWORD": "secret",
-        "SENTINEL_KWARGS": {},
+        # Disable retries when connecting to the (unreachable) sentinel hosts so discovery fails fast (redis-py >= 8).
+        "SENTINEL_KWARGS": {"retry": None},
     },
     "test1": {
         "HOST": "localhost",
@@ -40,14 +41,14 @@ settings.SCHEDULER_QUEUES = {
         "ASYNC": False,
     },
     "url": {
-        "URL": "redis://username:password@host:1234/",
+        "URL": "redis://username:password@localhost:1234/",
         "DB": 4,
     },
     "url_with_db": {
-        "URL": "redis://username:password@host:1234/5",
+        "URL": "redis://username:password@localhost:1234/5",
     },
     "url_default_db": {
-        "URL": "redis://username:password@host:1234",
+        "URL": "redis://username:password@localhost:1234",
     },
     "django_tasks_scheduler_test": {
         "HOST": "localhost",
@@ -89,6 +90,14 @@ settings.SCHEDULER_QUEUES = {
         "DB": 0,
     },
 }
+
+# Several test queues point at intentionally-unreachable brokers (refused ports, fake sentinels) to exercise
+# bad-configuration handling. redis-py >= 8 retries connection errors by default, which turns each failed connect
+# into several seconds of backoff and makes any view that probes every queue (e.g. _find_job) extremely slow.
+# Disable connection retries on the test queues so unreachable brokers fail fast.
+for _queue_settings in settings.SCHEDULER_QUEUES.values():
+    _queue_settings.setdefault("CONNECTION_KWARGS", {}).setdefault("retry", None)
+
 conf_settings()
 
 if os.getenv("FAKEREDIS", "False") == "True":  # pragma: no cover
