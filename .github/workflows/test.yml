@@ -127,7 +127,7 @@ jobs:
 
       - name: Create coverage badge
         if: ${{ matrix.coverage == 'yes' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@7142847813c746736c986b42dec98541e49a2cea
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: b756396efb895f0e34558c980f1ca0c7
@@ -148,6 +148,6 @@ jobs:
     needs: test-regular
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
+      - uses: release-drafter/release-drafter@ed4bc48ec97379be2258e7b7ac2624a3e26ab809
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
