@@ -4,7 +4,8 @@ __all__ = [
     "get_queue",
     "get_all_workers",
     "queue_perform_job",
+    "get_current_job",
 ]
 
 from .getters import get_queue, get_all_workers
-from .queue_logic import Queue, InvalidJobOperation, queue_perform_job
+from .queue_logic import Queue, InvalidJobOperation, queue_perform_job, get_current_job

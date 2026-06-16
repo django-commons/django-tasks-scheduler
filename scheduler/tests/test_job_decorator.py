@@ -9,7 +9,7 @@ from . import conf  # noqa
 from ..decorators import JOB_METHODS_LIST, job
 from ..redis_models import JobStatus
 from ..redis_models.job import JobModel
-from ..worker import create_worker
+from ..worker import create_worker, get_current_job
 
 
 @job()
@@ -55,12 +55,43 @@ def long_running_func():
     time.sleep(1000)
 
 
+@job()
+def job_recording_current_job():
+    """Within a job context, get_current_job() returns the running job; record its name in meta."""
+    current = get_current_job()
+    assert current is not None
+    current.meta["seen_job_name"] = current.name
+
+
+@job()
+def job_asserting_no_current_job():
+    """When the callable is invoked directly (no worker), get_current_job() returns None."""
+    assert get_current_job() is None
+
+
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(7, len(JOB_METHODS_LIST))
+        self.assertEqual(9, len(JOB_METHODS_LIST))
+
+    def test_get_current_job__within_job_context(self):
+        enqueued = job_recording_current_job.delay()
+        worker = create_worker("default", burst=True)
+        worker.work()
+
+        queue = get_queue("default")
+        executed = JobModel.get(name=enqueued.name, connection=queue.connection)
+        self.assertEqual(JobStatus.FINISHED, executed.status)
+        self.assertEqual(enqueued.name, executed.meta["seen_job_name"])
+
+    def test_get_current_job__outside_job_context_returns_none(self):
+        self.assertIsNone(get_current_job())
+
+    def test_get_current_job__direct_call_returns_none(self):
+        # Calling the decorated function directly (no worker) runs outside a job context.
+        job_asserting_no_current_job()
 
     def test_job_decorator_no_params(self):
         test_job.delay()

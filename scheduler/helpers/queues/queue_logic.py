@@ -62,6 +62,21 @@ def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  
 _job_stack: List[JobModel] = []
 
 
+def get_current_job() -> Optional[JobModel]:
+    """Returns the job that is currently being executed, or ``None`` when called outside a job context.
+
+    This is meant to be called from within a job's callable, e.g. to update ``job.meta`` to report progress.
+    The job is persisted automatically once the callable returns, so mutating ``job.meta`` is enough::
+
+        from scheduler.worker import get_current_job
+
+        def my_task():
+            job = get_current_job()
+            job.meta["progress"] = 0.5
+    """
+    return _job_stack[-1] if _job_stack else None
+
+
 class Queue:
     REGISTRIES = {
         "finished": "finished_job_registry",
