@@ -124,7 +124,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[s
             queue_workers_count[queue_name] += 1
     for queue_name in queue_names:
         try:
-            queue = get_queue(queue_name)
+            queue = get_queue(queue_name, fail_fast=True)
             connection_kwargs = queue.connection.connection_pool.connection_kwargs
 
             if run_maintenance_tasks:

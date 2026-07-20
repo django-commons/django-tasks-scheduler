@@ -24,6 +24,8 @@ SCHEDULER_CONFIG = SchedulerConfiguration(
     DEFAULT_MAINTENANCE_TASK_INTERVAL=10 * 60,  # The interval to run maintenance tasks in seconds. 10 minutes.
     DEFAULT_JOB_MONITORING_INTERVAL=30,  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS=120,  # Period (secs) to wait before requiring to reacquire locks
+    FAIL_FAST_QUEUE_PROBING=True,  # Use fail-fast connections when admin views probe every queue
+    QUEUE_PROBE_SOCKET_CONNECT_TIMEOUT=2.0,  # Socket connect timeout (seconds) for those probes
 )
 SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
     'default': QueueConfiguration(
@@ -99,6 +101,23 @@ The interval to monitor jobs in seconds.
 ### SCHEDULER_CONFIG: `SCHEDULER_FALLBACK_PERIOD_SECS`
 
 Period (secs) to wait before requiring to reacquire locks.
+
+### SCHEDULER_CONFIG: `FAIL_FAST_QUEUE_PROBING`
+
+Admin views that probe every configured queue for read-only operations (e.g. locating a job across
+queues, queue/worker statistics) use a short-timeout, no-retry connection by default, so a single
+unreachable queue cannot stall the request for several seconds (redis-py >= 8 retries connection
+errors with backoff by default). Set to `False` to use each queue's configured connection settings
+unmodified for these probes too, e.g. if retries are required even there.
+
+Default: `True`.
+
+### SCHEDULER_CONFIG: `QUEUE_PROBE_SOCKET_CONNECT_TIMEOUT`
+
+Socket connect timeout (seconds) applied to queue connections when `FAIL_FAST_QUEUE_PROBING` is
+enabled.
+
+Default: `2.0`.
 
 ### SCHEDULER_CONFIG: `TOKEN_VALIDATION_METHOD`
 
