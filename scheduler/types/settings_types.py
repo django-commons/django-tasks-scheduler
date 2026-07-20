@@ -43,6 +43,14 @@ class SchedulerConfiguration:
     DEFAULT_JOB_MONITORING_INTERVAL: int = 30  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
     DEATH_PENALTY_CLASS: Type[BaseDeathPenalty] = _DEATH_PENALTY_CLASS
+    # Admin views that probe every configured queue for read-only operations (e.g. locating a job across
+    # queues, queue/worker statistics) use a short-timeout, no-retry connection by default, so a single
+    # unreachable queue cannot stall the request for several seconds (redis-py >= 8 retries connection
+    # errors with backoff by default). Set to False to use each queue's configured connection settings
+    # unmodified for these probes too, e.g. if retries are required even there.
+    FAIL_FAST_QUEUE_PROBING: bool = True
+    # Socket connect timeout (seconds) applied to queue connections when FAIL_FAST_QUEUE_PROBING is enabled.
+    QUEUE_PROBE_SOCKET_CONNECT_TIMEOUT: float = 2.0
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
