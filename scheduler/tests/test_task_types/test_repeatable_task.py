@@ -5,10 +5,10 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.models import TaskType, Task
+from scheduler.models import Task, TaskType
 from scheduler.redis_models import JobModel
 from scheduler.tests.test_task_types.test_task_model import BaseTestCases
-from scheduler.tests.testtools import task_factory, _get_task_scheduled_job_from_registry
+from scheduler.tests.testtools import _get_task_scheduled_job_from_registry, task_factory
 from scheduler.types import SchedulerConfiguration
 
 

@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import click
 from django.core.management.base import BaseCommand, CommandParser
@@ -19,7 +19,7 @@ class Command(BaseCommand):
     help = __doc__
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super(Command, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.table_width = 80
         self.interval = None
 
@@ -53,8 +53,8 @@ class Command(BaseCommand):
 
     def _print_stats_dashboard(
         self,
-        statistics: Dict[str, List[Dict[str, Any]]],
-        prev_stats: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        statistics: dict[str, list[dict[str, Any]]],
+        prev_stats: dict[str, list[dict[str, Any]]] | None = None,
         with_color: bool = True,
     ) -> None:
         if self.interval:

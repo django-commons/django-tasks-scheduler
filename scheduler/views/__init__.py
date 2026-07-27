@@ -1,20 +1,20 @@
 __all__ = [
-    "job_detail",
+    "get_statistics",
     "job_action",
+    "job_detail",
+    "list_registry_jobs",
+    "queue_confirm_job_action",
+    "queue_job_actions",
+    "queue_registry_actions",
+    "queue_workers",
     "stats",
     "stats_json",
-    "queue_registry_actions",
-    "queue_confirm_job_action",
-    "queue_workers",
-    "queue_job_actions",
-    "list_registry_jobs",
-    "workers_list",
     "worker_details",
-    "get_statistics",
+    "workers_list",
 ]
 
-from .job_views import job_detail, job_action
-from .queue_job_actions import queue_job_actions, queue_confirm_job_action
+from .job_views import job_action, job_detail
+from .queue_job_actions import queue_confirm_job_action, queue_job_actions
 from .queue_registry_actions import queue_registry_actions
-from .queue_views import stats, stats_json, queue_workers, list_registry_jobs, get_statistics
-from .worker_views import workers_list, worker_details
+from .queue_views import get_statistics, list_registry_jobs, queue_workers, stats, stats_json
+from .worker_views import worker_details, workers_list

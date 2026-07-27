@@ -3,6 +3,6 @@ from .task_admin import TaskAdmin
 
 __all__ = [
     "QueueAdmin",
-    "WorkerAdmin",
     "TaskAdmin",
+    "WorkerAdmin",
 ]

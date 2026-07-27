@@ -1,9 +1,9 @@
-from typing import Optional, Any
+from typing import Any
 
 from scheduler.types import ConnectionType
 
 
-class KvLock(object):
+class KvLock:
     def __init__(self, name: str) -> None:
         self.name = name
         self.acquired = False
@@ -12,11 +12,11 @@ class KvLock(object):
     def _locking_key(self) -> str:
         return f"_lock:{self.name}"
 
-    def acquire(self, val: Any, connection: ConnectionType, expire: Optional[int] = None) -> bool:
+    def acquire(self, val: Any, connection: ConnectionType, expire: int | None = None) -> bool:
         self.acquired = connection.set(self._locking_key, val, nx=True, ex=expire)
         return self.acquired
 
-    def expire(self, connection: ConnectionType, expire: Optional[int] = None) -> bool:
+    def expire(self, connection: ConnectionType, expire: int | None = None) -> bool:
         return connection.expire(self._locking_key, expire)
 
     def release(self, connection: ConnectionType) -> None:

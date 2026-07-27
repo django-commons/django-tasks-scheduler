@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
 
 from django.urls import reverse
 
@@ -11,7 +11,7 @@ from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.test_task_types.test_task_model import assert_response_has_msg
 from scheduler.tests.test_views.base import BaseTestCase
-from scheduler.tests.testtools import assert_message_in_response, task_factory, _get_task_scheduled_job_from_registry
+from scheduler.tests.testtools import _get_task_scheduled_job_from_registry, assert_message_in_response, task_factory
 from scheduler.types import QueueConfiguration
 from scheduler.worker import create_worker
 

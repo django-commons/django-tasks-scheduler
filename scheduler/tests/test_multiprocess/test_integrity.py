@@ -4,8 +4,9 @@ from django.test import tag
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import JobStatus, JobModel, WorkerModel
+from scheduler.redis_models import JobModel, JobStatus, WorkerModel
 from scheduler.tests.jobs import long_job
+
 from .. import testtools
 from ..test_views.base import BaseTestCase
 

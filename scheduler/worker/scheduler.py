@@ -1,20 +1,19 @@
 import os
 import time
 import traceback
+from collections.abc import Sequence
 from datetime import datetime
 from enum import Enum
 from logging import DEBUG, INFO
 from threading import Thread
-from typing import List, Set, Optional, Sequence, Dict
 
 import django
 
-from scheduler.helpers.queues import Queue
-from scheduler.helpers.queues import get_queue
+from scheduler.helpers.queues import Queue, get_queue
 from scheduler.helpers.queues.getters import get_queue_connection
 from scheduler.helpers.utils import current_timestamp
 from scheduler.models import Task
-from scheduler.redis_models import SchedulerLock, JobModel, ScheduledJobRegistry
+from scheduler.redis_models import JobModel, ScheduledJobRegistry, SchedulerLock
 from scheduler.settings import SCHEDULER_CONFIG, logger
 
 
@@ -27,28 +26,28 @@ class SchedulerStatus(str, Enum):
 def _reschedule_tasks() -> None:
     enabled_tasks = list(Task.objects.filter(enabled=True))
     for task in enabled_tasks:
-        logger.debug(f"Rescheduling {str(task)}")
+        logger.debug(f"Rescheduling {task!s}")
         task.save(schedule_job=True, clean=False)
 
 
 class WorkerScheduler:
-    def __init__(self, queues: Sequence[Queue], worker_name: str, interval: Optional[int] = None) -> None:
+    def __init__(self, queues: Sequence[Queue], worker_name: str, interval: int | None = None) -> None:
         self._queues = queues
         if len(queues) == 0:
             raise ValueError("At least one queue must be provided to WorkerScheduler")
-        self._scheduled_job_registries: List[ScheduledJobRegistry] = []
-        self.lock_acquisition_time: Optional[datetime] = None
-        self._locks: Dict[str, SchedulerLock] = {}
+        self._scheduled_job_registries: list[ScheduledJobRegistry] = []
+        self.lock_acquisition_time: datetime | None = None
+        self._locks: dict[str, SchedulerLock] = {}
         self.connection = get_queue_connection(queues[0].name)
         self.interval = interval or SCHEDULER_CONFIG.SCHEDULER_INTERVAL
         self._stop_requested = False
         self.status = SchedulerStatus.STOPPED
-        self._thread: Optional[Thread] = None
-        self._pid: Optional[int] = None
+        self._thread: Thread | None = None
+        self._pid: int | None = None
         self.worker_name = worker_name
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         return self._pid
 
     def log(self, level: int, message: str, *args, **kwargs) -> None:
@@ -61,7 +60,7 @@ class WorkerScheduler:
         seconds_since = (datetime.now() - self.lock_acquisition_time).total_seconds()
         return seconds_since > SCHEDULER_CONFIG.SCHEDULER_FALLBACK_PERIOD_SECS
 
-    def _acquire_locks(self) -> Set[str]:
+    def _acquire_locks(self) -> set[str]:
         """Returns names of queue it successfully acquires lock on"""
         successful_locks = set()
         if self.pid is None:
@@ -159,7 +158,7 @@ class WorkerScheduler:
 def run_scheduler(scheduler: WorkerScheduler) -> None:
     try:
         scheduler.work()
-    except Exception:  # noqa
+    except Exception:
         logger.error(f"Scheduler [PID {os.getpid()}] raised an exception.\n{traceback.format_exc()}")
         raise
     logger.info(f"Scheduler with PID {os.getpid()} has stopped")

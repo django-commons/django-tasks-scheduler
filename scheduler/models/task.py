@@ -1,6 +1,7 @@
 import math
-from datetime import timedelta, datetime
-from typing import Dict, Any, Optional, List, Tuple, Callable
+from collections.abc import Callable
+from datetime import datetime, timedelta
+from typing import Any, Optional
 
 import croniter
 from django.conf import settings as django_settings
@@ -17,13 +18,13 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler import settings
 from scheduler.helpers.callback import Callback
-from scheduler.helpers.queues import Queue
-from scheduler.helpers.queues import get_queue
+from scheduler.helpers.queues import Queue, get_queue
 from scheduler.redis_models import JobModel
-from scheduler.settings import logger, get_queue_names
-from scheduler.types import ConnectionType, TASK_TYPES
-from .args import TaskArg, TaskKwarg
+from scheduler.settings import get_queue_names, logger
+from scheduler.types import TASK_TYPES, ConnectionType
+
 from ..helpers import utils
+from .args import TaskArg, TaskKwarg
 
 
 def _get_task_for_job(job: JobModel) -> Optional["Task"]:
@@ -59,7 +60,7 @@ def success_callback(job: JobModel, connection: ConnectionType, result: Any, *ar
     task.save(schedule_job=True, clean=False)
 
 
-def get_queue_choices() -> List[Tuple[str, str]]:
+def get_queue_choices() -> list[tuple[str, str]]:
     queue_names = get_queue_names()
     return [(queue, queue) for queue in queue_names]
 
@@ -197,7 +198,7 @@ class Task(models.Model):
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
             self.job_name = None
-            super(Task, self).save()
+            super().save()
         return res
 
     @admin.display(description="Callable")  # type: ignore[misc]
@@ -208,12 +209,12 @@ class Task(models.Model):
         kwargs_list = [k + "=" + repr(v) for (k, v) in kwargs.items()]
         return self.callable + f"({', '.join(args_list + kwargs_list)})"
 
-    def parse_args(self) -> List[Any]:
+    def parse_args(self) -> list[Any]:
         """Parse args for running the job"""
         args = self.callable_args.all()
         return [arg.value() for arg in args]
 
-    def parse_kwargs(self) -> Dict[str, Any]:
+    def parse_kwargs(self) -> dict[str, Any]:
         """Parse kwargs for running the job"""
         kwargs = self.callable_kwargs.all()
         return dict([kwarg.value() for kwarg in kwargs])
@@ -222,7 +223,7 @@ class Task(models.Model):
         addition = timezone.now().strftime("%Y%m%d%H%M%S%f")
         return f"{self.queue}:{self.id}:{addition}"
 
-    def _enqueue_args(self) -> Dict[str, Any]:
+    def _enqueue_args(self) -> dict[str, Any]:
         """Args for Queue.enqueue_call.
         Set all arguments for Queue.enqueue. Particularly:
         - set job timeout and ttl
@@ -284,7 +285,7 @@ class Task(models.Model):
                 self.repeat = (self.repeat - gap) if self.repeat is not None else None
         return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export model to dictionary, so it can be saved as external file backup"""
         interval_unit = str(self.interval_unit) if self.interval_unit else None
         res = {
@@ -328,11 +329,11 @@ class Task(models.Model):
             logger.debug(f"Task {self.name} already scheduled")
             return False
         if not self.enabled:
-            logger.debug(f"Task {str(self)} disabled, enable task before scheduling")
+            logger.debug(f"Task {self!s} disabled, enable task before scheduling")
             return False
         schedule_time = self._schedule_time()
         if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and schedule_time < timezone.now():
-            logger.debug(f"Task {str(self)} scheduled time is in the past, not scheduling")
+            logger.debug(f"Task {self!s} scheduled time is in the past, not scheduling")
             return False
         kwargs = self._enqueue_args()
         job = self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=schedule_time, **kwargs)
@@ -346,14 +347,14 @@ class Task(models.Model):
             self.clean()
         if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
-        super(Task, self).save(**kwargs)
+        super().save(**kwargs)
         if schedule_job:
             self._schedule()
-            super(Task, self).save()
+            super().save()
 
     def delete(self, **kwargs: Any) -> None:
         self.unschedule()
-        super(Task, self).delete(**kwargs)
+        super().delete(**kwargs)
 
     def interval_seconds(self) -> float:
         kwargs = {
@@ -427,7 +428,7 @@ class Task(models.Model):
             )
 
 
-def get_next_cron_time(cron_string: Optional[str]) -> Optional[datetime]:
+def get_next_cron_time(cron_string: str | None) -> datetime | None:
     """Calculate the next scheduled time by creating a crontab object with a cron string"""
     if cron_string is None:
         return None
@@ -455,7 +456,7 @@ def run_task(task_model: str, task_id: int) -> Any:
     if isinstance(task_id, str):
         task_id = int(task_id)
     scheduled_task = get_scheduled_task(task_model, task_id)
-    logger.debug(f"Running task {str(scheduled_task)}")
+    logger.debug(f"Running task {scheduled_task!s}")
     args = scheduled_task.parse_args()
     kwargs = scheduled_task.parse_kwargs()
     res = scheduled_task.callable_func()(*args, **kwargs)  # type: ignore[no-untyped-call]

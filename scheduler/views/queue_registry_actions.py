@@ -4,8 +4,8 @@ from enum import Enum
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound
-from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
@@ -14,7 +14,7 @@ from scheduler.helpers.queues.queue_logic import NoSuchRegistryError
 from scheduler.redis_models import JobModel, JobNamesRegistry
 from scheduler.settings import logger
 from scheduler.types import ResponseErrorTypes
-from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
+from scheduler.views.helpers import _check_next_url, _enqueue_multiple_jobs, get_queue
 
 
 class QueueRegistryActions(Enum):

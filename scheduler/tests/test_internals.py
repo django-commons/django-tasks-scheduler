@@ -1,11 +1,12 @@
-from datetime import timedelta, timezone as dt_timezone
+from datetime import timedelta
+from datetime import timezone as dt_timezone
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
-from scheduler.models import TaskType, get_scheduled_task, get_next_cron_time
+from scheduler.models import TaskType, get_next_cron_time, get_scheduled_task
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
 

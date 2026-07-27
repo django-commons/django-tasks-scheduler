@@ -1,13 +1,13 @@
 import json
 from abc import ABC
 from datetime import datetime, timezone
-from typing import Type, Dict, Any
+from typing import Any
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"
-_WORKER_COMMANDS_REGISTRY: Dict[str, Type["WorkerCommand"]] = {}
+_WORKER_COMMANDS_REGISTRY: dict[str, type["WorkerCommand"]] = {}
 
 
 class WorkerCommandError(Exception):
@@ -22,7 +22,7 @@ class WorkerCommand(ABC):
     def __init__(self, *args: Any, worker_name: str, **kwargs: Any) -> None:
         self.worker_name: str = worker_name
 
-    def command_payload(self, **kwargs: Any) -> Dict[str, Any]:
+    def command_payload(self, **kwargs: Any) -> dict[str, Any]:
         commands_channel = WorkerCommandsChannelListener._commands_channel(self.worker_name)
         payload = {
             "command": self.command_name,
@@ -49,7 +49,7 @@ class WorkerCommand(ABC):
         _WORKER_COMMANDS_REGISTRY[cls.command_name] = cls
 
     @classmethod
-    def from_payload(cls, payload: Dict[str, Any]) -> Type[Self]:
+    def from_payload(cls, payload: dict[str, Any]) -> type[Self]:
         command_name = payload.get("command")
         if command_name is None:
             raise WorkerCommandError("Payload must contain 'command' key")
@@ -65,7 +65,7 @@ def send_command(connection: ConnectionType, command: WorkerCommand) -> None:
     connection.publish(payload["channel_name"], json.dumps(payload))
 
 
-class WorkerCommandsChannelListener(object):
+class WorkerCommandsChannelListener:
     def __init__(self, connection: ConnectionType, worker_name: str) -> None:
         self.connection = connection
         self.pubsub_channel_name = WorkerCommandsChannelListener._commands_channel(worker_name)

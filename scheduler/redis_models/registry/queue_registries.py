@@ -1,18 +1,19 @@
 import time
 from datetime import datetime, timedelta, timezone
-from typing import ClassVar, Optional, List, Tuple
+from typing import ClassVar
 
 from scheduler.helpers.utils import current_timestamp
 from scheduler.types import ConnectionType
-from .base_registry import JobNamesRegistry
+
 from .. import as_str
 from ..job import JobModel
+from .base_registry import JobNamesRegistry
 
 
 class QueuedJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:queued_jobs"
 
-    def cleanup(self, connection: ConnectionType, timestamp: Optional[float] = None) -> None:
+    def cleanup(self, connection: ConnectionType, timestamp: float | None = None) -> None:
         """This method is only here to prevent errors because this method is automatically called by `count()`
         and `all()` methods implemented in JobIdsRegistry."""
         pass
@@ -46,7 +47,7 @@ class FailedJobRegistry(JobNamesRegistry):
 class CanceledJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:canceled_jobs"
 
-    def cleanup(self, connection: ConnectionType, timestamp: Optional[float] = None) -> None:
+    def cleanup(self, connection: ConnectionType, timestamp: float | None = None) -> None:
         """This method is only here to prevent errors because this method is automatically called by `count()`
         and `all()` methods implemented in JobIdsRegistry."""
         pass
@@ -55,7 +56,7 @@ class CanceledJobRegistry(JobNamesRegistry):
 class ScheduledJobRegistry(JobNamesRegistry):
     _element_key_template: ClassVar[str] = ":registry:{}:scheduled_jobs"
 
-    def cleanup(self, connection: ConnectionType, timestamp: Optional[float] = None) -> None:
+    def cleanup(self, connection: ConnectionType, timestamp: float | None = None) -> None:
         """This method is only here to prevent errors because this method is automatically called by `count()`
         and `all()` methods implemented in JobIdsRegistry."""
         pass
@@ -76,7 +77,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         timestamp = scheduled_datetime.timestamp()
         return self.add(connection=connection, job_name=job_name, score=timestamp)
 
-    def get_jobs_to_schedule(self, connection: ConnectionType, timestamp: int, chunk_size: int = 1000) -> List[str]:
+    def get_jobs_to_schedule(self, connection: ConnectionType, timestamp: int, chunk_size: int = 1000) -> list[str]:
         """Gets a list of job names that should be scheduled.
 
         :param connection: Broker connection
@@ -87,7 +88,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         jobs_to_schedule = connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
         return [as_str(job_name) for job_name in jobs_to_schedule]
 
-    def get_scheduled_time(self, connection: ConnectionType, job_name: str) -> Optional[datetime]:
+    def get_scheduled_time(self, connection: ConnectionType, job_name: str) -> datetime | None:
         """Returns datetime (UTC) at which job is scheduled to be enqueued
 
         :param connection: Broker connection
@@ -95,7 +96,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         :returns: The scheduled time as datetime object, or None if job is not found
         """
 
-        score: Optional[float] = connection.zscore(self._key, job_name)
+        score: float | None = connection.zscore(self._key, job_name)
         if not score:
             return None
 
@@ -107,7 +108,7 @@ class ActiveJobRegistry(JobNamesRegistry):
 
     _element_key_template: ClassVar[str] = ":registry:{}:active"
 
-    def get_job_names_before(self, connection: ConnectionType, timestamp: Optional[float]) -> List[Tuple[str, float]]:
+    def get_job_names_before(self, connection: ConnectionType, timestamp: float | None) -> list[tuple[str, float]]:
         """Returns job names whose score is lower than a timestamp timestamp.
 
         Returns names for jobs with an expiry time earlier than timestamp,

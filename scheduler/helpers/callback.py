@@ -1,8 +1,9 @@
 import inspect
-from typing import Union, Callable, Any, Optional
+from collections.abc import Callable
+from typing import Any
 
-from scheduler.helpers.utils import callable_func
 from scheduler.helpers.timeouts import JobTimeoutException
+from scheduler.helpers.utils import callable_func
 
 
 class CallbackSetupError(Exception):
@@ -10,7 +11,7 @@ class CallbackSetupError(Exception):
 
 
 class Callback:
-    def __init__(self, func: Union[str, Callable[..., Any]], timeout: Optional[int] = None):
+    def __init__(self, func: str | Callable[..., Any], timeout: int | None = None):
         from scheduler.settings import SCHEDULER_CONFIG
 
         self.timeout = timeout or SCHEDULER_CONFIG.CALLBACK_TIMEOUT

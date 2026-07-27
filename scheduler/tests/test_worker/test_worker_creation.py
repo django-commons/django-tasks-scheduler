@@ -6,10 +6,10 @@ from scheduler import settings
 from scheduler.helpers.queues.getters import get_queue_connection
 from scheduler.redis_models import WorkerModel
 from scheduler.settings import SCHEDULER_CONFIG
-from scheduler.types import QueueConfiguration
-from scheduler.worker import create_worker
 from scheduler.tests import conf  # noqa
 from scheduler.tests.testtools import SchedulerBaseCase
+from scheduler.types import QueueConfiguration
+from scheduler.worker import create_worker
 from scheduler.worker.worker import QueueConnectionDiscrepancyError
 
 

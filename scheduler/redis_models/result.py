@@ -1,7 +1,7 @@
 import dataclasses
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, ClassVar, List
+from typing import Any, ClassVar, Optional
 
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import StreamModel, decode_dict
@@ -20,11 +20,11 @@ class Result(StreamModel):
     parent: str
     type: ResultType
     worker_name: str
-    ttl: Optional[int] = 0
-    name: Optional[str] = None
+    ttl: int | None = 0
+    name: str | None = None
     created_at: datetime = dataclasses.field(default_factory=utcnow)
-    return_value: Optional[Any] = None
-    exc_string: Optional[str] = None
+    return_value: Any | None = None
+    exc_string: str | None = None
 
     _list_key: ClassVar[str] = ":job-results:"
     _children_key_template: ClassVar[str] = ":job-results:{}:"
@@ -35,11 +35,11 @@ class Result(StreamModel):
         cls,
         connection: ConnectionType,
         job_name: str,
-        worker_name: Optional[str],
+        worker_name: str | None,
         _type: ResultType,
         ttl: int,
         return_value: Any = None,
-        exc_string: Optional[str] = None,
+        exc_string: str | None = None,
     ) -> Self:
         if worker_name is None:
             logger.warning(f"Job {job_name} has no worker name, will save result with 'unknown_worker'")
@@ -63,7 +63,7 @@ class Result(StreamModel):
         :param job_name: Job name.
         :return: Result instance or None if no result is available.
         """
-        response: List[Any] = connection.xrevrange(cls._children_key_template.format(job_name), "+", "-", count=1)
+        response: list[Any] = connection.xrevrange(cls._children_key_template.format(job_name), "+", "-", count=1)
         if not response:
             return None
         result_id, payload = response[0]

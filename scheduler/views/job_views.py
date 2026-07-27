@@ -3,16 +3,16 @@ from html import escape
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.http.response import HttpResponseBadRequest
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
 from scheduler.helpers.queues import InvalidJobOperation
 from scheduler.redis_models import Result
 from scheduler.settings import logger
 from scheduler.views.helpers import _find_job
-from scheduler.worker.commands import send_command, StopJobCommand
+from scheduler.worker.commands import StopJobCommand, send_command
 
 
 class JobDetailAction(str, Enum):

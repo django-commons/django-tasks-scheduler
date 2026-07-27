@@ -31,14 +31,14 @@ class SchedulerStatsTest(TestCase):
     OLD_QUEUES = None
 
     def setUp(self):
-        super(SchedulerStatsTest, self).setUp()
+        super().setUp()
         SchedulerStatsTest.OLD_QUEUES = settings._QUEUES
         settings._QUEUES = {}
         settings.conf_settings()
         get_queue("default").connection.flushall()
 
     def tearDown(self):
-        super(SchedulerStatsTest, self).tearDown()
+        super().tearDown()
         settings._QUEUES = SchedulerStatsTest.OLD_QUEUES
 
     def test_scheduler_stats__json_output(self):

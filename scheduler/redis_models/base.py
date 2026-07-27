@@ -1,9 +1,9 @@
 import dataclasses
 import json
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Union, Dict, Collection, Any, ClassVar, Set, Type
+from typing import Any, ClassVar, Optional
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
@@ -11,7 +11,7 @@ from scheduler.types import ConnectionType, Self
 MAX_KEYS = 1000
 
 
-def as_str(v: Union[bytes, str]) -> Optional[str]:
+def as_str(v: bytes | str) -> str | None:
     """Converts a `bytes` value to a string using `utf-8`.
 
     :param v: The value (None/bytes/str)
@@ -25,11 +25,11 @@ def as_str(v: Union[bytes, str]) -> Optional[str]:
     raise ValueError(f"Unknown type {type(v)} for `{v}`.")
 
 
-def decode_dict(d: Dict[bytes, bytes], exclude_keys: Set[str]) -> Dict[str, str]:
+def decode_dict(d: dict[bytes, bytes], exclude_keys: set[str]) -> dict[str, str]:
     return {k.decode(): v.decode() for (k, v) in d.items() if k.decode() not in exclude_keys}
 
 
-def _serialize(value: Any) -> Optional[Any]:
+def _serialize(value: Any) -> Any | None:
     if value is None:
         return None
     if isinstance(value, bool):
@@ -47,7 +47,7 @@ def _serialize(value: Any) -> Optional[Any]:
     return str(value)
 
 
-def _deserialize(value: str, _type: Type) -> Any:
+def _deserialize(value: str, _type: type) -> Any:
     if value is None:
         return None
     try:
@@ -61,9 +61,7 @@ def _deserialize(value: str, _type: Type) -> Any:
             return int(value)
         elif _type is float or _type == Optional[float]:
             return float(value)
-        elif _type in {List[str], Dict[str, str]}:
-            return json.loads(value)
-        elif _type == Optional[Any]:
+        elif _type in {list[str], dict[str, str]} or _type == Optional[Any]:
             return json.loads(value)
         elif issubclass(_type, Enum):
             return _type(as_str(value))
@@ -78,7 +76,7 @@ class BaseModel:
     _element_key_template: ClassVar[str] = ":element:{}"
     # fields that are not serializable using the method above and should be dealt with in the subclass
     # e.g., args/kwargs for a job
-    _non_serializable_fields: ClassVar[Set[str]] = set()
+    _non_serializable_fields: ClassVar[set[str]] = set()
 
     @classmethod
     def key_for(cls, name: str) -> str:
@@ -88,7 +86,7 @@ class BaseModel:
     def _key(self) -> str:
         return self._element_key_template.format(self.name)
 
-    def serialize(self, with_nones: bool = False) -> Dict[str, str]:
+    def serialize(self, with_nones: bool = False) -> dict[str, str]:
         data = dataclasses.asdict(
             self, dict_factory=lambda fields: {key: value for (key, value) in fields if not key.startswith("_")}
         )
@@ -99,7 +97,7 @@ class BaseModel:
         return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> Self:
+    def deserialize(cls, data: dict[str, Any]) -> Self:
         types = {f.name: f.type for f in dataclasses.fields(cls) if f.name not in cls._non_serializable_fields}
         for k in data:
             if k in cls._non_serializable_fields:
@@ -114,9 +112,9 @@ class BaseModel:
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class HashModel(BaseModel):
-    created_at: Optional[datetime] = None
-    parent: Optional[str] = None
-    _dirty_fields: Set[str] = dataclasses.field(default_factory=set)  # fields that were changed
+    created_at: datetime | None = None
+    parent: str | None = None
+    _dirty_fields: set[str] = dataclasses.field(default_factory=set)  # fields that were changed
     _save_all: bool = True  # Save all fields to broker, after init, or after delete
     _list_key: ClassVar[str] = ":list_all:"
     _children_key_template: ClassVar[str] = ":children:{}:"
@@ -131,26 +129,26 @@ class HashModel(BaseModel):
         super(HashModel, self).__setattr__(key, value)
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> Self:
+    def deserialize(cls, data: dict[str, Any]) -> Self:
         instance = super(HashModel, cls).deserialize(data)
         instance._dirty_fields = set()
         instance._save_all = False
         return instance
 
     @property
-    def _parent_key(self) -> Optional[str]:
+    def _parent_key(self) -> str | None:
         if self.parent is None:
             return None
         return self._children_key_template.format(self.parent)
 
     @classmethod
-    def all_names(cls, connection: ConnectionType, parent: Optional[str] = None) -> Collection[str]:
+    def all_names(cls, connection: ConnectionType, parent: str | None = None) -> Collection[str]:
         collection_key = cls._children_key_template.format(parent) if parent else cls._list_key
         collection_members = connection.smembers(collection_key)
         return [r.decode() for r in collection_members]
 
     @classmethod
-    def all(cls, connection: ConnectionType, parent: Optional[str] = None) -> List[Self]:
+    def all(cls, connection: ConnectionType, parent: str | None = None) -> list[Self]:
         keys = cls.all_names(connection, parent)
         items = [cls.get(k, connection) for k in keys]
         return [w for w in items if w is not None]
@@ -162,14 +160,14 @@ class HashModel(BaseModel):
         return connection.exists(cls._element_key_template.format(name)) > 0
 
     @classmethod
-    def delete_many(cls, names: List[str], connection: ConnectionType) -> None:
+    def delete_many(cls, names: list[str], connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
             for name in names:
                 pipeline.delete(cls._element_key_template.format(name))
             pipeline.execute()
 
     @classmethod
-    def get(cls, name: str, connection: ConnectionType) -> Optional[Self]:
+    def get(cls, name: str, connection: ConnectionType) -> Self | None:
         res = connection.hgetall(cls._element_key_template.format(name))
         if not res:
             return None
@@ -180,7 +178,7 @@ class HashModel(BaseModel):
             return None
 
     @classmethod
-    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> List[Optional[Self]]:
+    def get_many(cls, names: Sequence[str], connection: ConnectionType) -> list[Self | None]:
         with connection.pipeline() as pipeline:
             for name in names:
                 pipeline.hgetall(cls._element_key_template.format(name))
@@ -216,7 +214,7 @@ class HashModel(BaseModel):
             self._save_all = True
 
     @classmethod
-    def count(cls, connection: ConnectionType, parent: Optional[str] = None) -> int:
+    def count(cls, connection: ConnectionType, parent: str | None = None) -> int:
         if parent is not None:
             result = connection.scard(cls._children_key_template.format(parent))
         else:
@@ -244,7 +242,7 @@ class HashModel(BaseModel):
 class StreamModel(BaseModel):
     _children_key_template: ClassVar[str] = ":children:{}:"
 
-    def __init__(self, name: str, parent: str, created_at: Optional[datetime] = None):
+    def __init__(self, name: str, parent: str, created_at: datetime | None = None):
         self.name = name
         self.created_at: datetime = created_at or datetime.now(timezone.utc)
         self.parent: str = parent
@@ -254,7 +252,7 @@ class StreamModel(BaseModel):
         return self._children_key_template.format(self.parent)
 
     @classmethod
-    def all(cls, connection: ConnectionType, parent: str) -> List[Self]:
+    def all(cls, connection: ConnectionType, parent: str) -> list[Self]:
         results = connection.xrevrange(cls._children_key_template.format(parent), "+", "-")
         return [cls.deserialize(decode_dict(result[1], exclude_keys=set())) for result in results]
 

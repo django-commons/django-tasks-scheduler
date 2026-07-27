@@ -10,24 +10,33 @@ import threading
 import time
 import traceback
 import warnings
+from collections.abc import Collection, Iterable
 from datetime import timedelta
 from enum import Enum
-from logging import DEBUG, INFO, ERROR, WARNING
+from logging import DEBUG, ERROR, INFO, WARNING
 from random import shuffle
 from types import FrameType
-from typing import List, Optional, Tuple, Any, Iterable, Collection, Union
+from typing import Any
 
 import scheduler
 from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import WorkerModel, JobModel, JobStatus, DequeueTimeout
-from scheduler.settings import SCHEDULER_CONFIG, logger, get_queue_configuration
-from scheduler.types import Broker, Self
-from scheduler.types import ConnectionType, TimeoutErrorTypes, ConnectionErrorTypes, WatchErrorTypes, ResponseErrorTypes
-from .commands import WorkerCommandsChannelListener
-from .scheduler import WorkerScheduler, SchedulerStatus
+from scheduler.redis_models import DequeueTimeout, JobModel, JobStatus, WorkerModel
+from scheduler.settings import SCHEDULER_CONFIG, get_queue_configuration, logger
+from scheduler.types import (
+    Broker,
+    ConnectionErrorTypes,
+    ConnectionType,
+    ResponseErrorTypes,
+    Self,
+    TimeoutErrorTypes,
+    WatchErrorTypes,
+)
+
 from ..helpers.queues.getters import get_queue_connection
 from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
+from .commands import WorkerCommandsChannelListener
+from .scheduler import SchedulerStatus, WorkerScheduler
 
 try:
     from signal import SIGKILL
@@ -42,7 +51,7 @@ try:
     from setproctitle import setproctitle as setprocname
 except ImportError:
 
-    def setprocname(*args: Any, **kwargs: Any) -> None:  # noqa
+    def setprocname(*args: Any, **kwargs: Any) -> None:
         pass
 
 
@@ -98,7 +107,7 @@ class Worker:
 
     def __init__(
         self,
-        queues: Iterable[Union[str, Queue]],
+        queues: Iterable[str | Queue],
         name: str,
         maintenance_interval: int = SCHEDULER_CONFIG.DEFAULT_MAINTENANCE_TASK_INTERVAL,
         job_monitoring_interval: int = SCHEDULER_CONFIG.DEFAULT_JOB_MONITORING_INTERVAL,
@@ -106,7 +115,7 @@ class Worker:
         fork_job_execution: bool = True,
         with_scheduler: bool = True,
         burst: bool = False,
-        model: Optional[WorkerModel] = None,
+        model: WorkerModel | None = None,
     ) -> None:
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval: int = job_monitoring_interval
@@ -115,7 +124,7 @@ class Worker:
         self.name: str = name
         self._ordered_queues = self.queues[:]
         self._is_job_execution_process: bool = False
-        self.scheduler: Optional[WorkerScheduler] = None
+        self.scheduler: WorkerScheduler | None = None
         self._command_listener = WorkerCommandsChannelListener(self.connection, self.name)
         self._dequeue_strategy = dequeue_strategy
         self.with_scheduler = with_scheduler
@@ -193,7 +202,7 @@ class Worker:
         signal.signal(signal.SIGINT, self.request_stop)
         signal.signal(signal.SIGTERM, self.request_stop)
 
-    def work(self, max_jobs: Optional[int] = None, max_idle_time: Optional[int] = None) -> bool:
+    def work(self, max_jobs: int | None = None, max_idle_time: int | None = None) -> bool:
         """Starts the work loop.
 
         Pops and performs all jobs on the current list of queues.  When all
@@ -351,8 +360,8 @@ class Worker:
         self._model.save(connection=self.connection)
 
     def dequeue_job_and_maintain_ttl(
-        self, timeout: Optional[int], max_idle_time: Optional[int] = None
-    ) -> Tuple[Optional[JobModel], Optional[Queue]]:
+        self, timeout: int | None, max_idle_time: int | None = None
+    ) -> tuple[JobModel | None, Queue | None]:
         """Dequeues a job while maintaining the TTL.
         :param timeout: The timeout for the dequeue operation.
         :param max_idle_time: The maximum idle time for the worker.
@@ -434,7 +443,7 @@ class Worker:
                 raise
             self.log(DEBUG, "Job execution process already dead")
 
-    def _wait_for_job_execution_process(self) -> Tuple[Optional[int], Optional[int]]:
+    def _wait_for_job_execution_process(self) -> tuple[int | None, int | None]:
         """Waits for the job execution process to complete.
         Uses `0` as argument as to include "any child in the process group of the current process".
         """
@@ -443,7 +452,7 @@ class Worker:
             pid, stat = os.waitpid(self._model.job_execution_process_pid, 0)
         return pid, stat
 
-    def request_force_stop(self, signum: int, frame: Optional[FrameType]) -> None:
+    def request_force_stop(self, signum: int, frame: FrameType | None) -> None:
         """Terminates the application (cold shutdown).
 
         :param signum: Signal number
@@ -467,7 +476,7 @@ class Worker:
             self._wait_for_job_execution_process()
         raise SystemExit
 
-    def request_stop(self, signum: int, frame: Optional[FrameType]) -> None:
+    def request_stop(self, signum: int, frame: FrameType | None) -> None:
         """Stops the current worker loop but waits for child processes to end gracefully (warm shutdown).
         :param signum: Signal number
         :param frame: Frame
@@ -770,7 +779,7 @@ class Worker:
             return False
 
         self.log(INFO, f"queue:{queue.name}/job:{job.name} performed.")
-        self.log(DEBUG, f"job:{job.name} result: {str(rv)}")
+        self.log(DEBUG, f"job:{job.name} result: {rv!s}")
 
         return True
 
@@ -826,7 +835,7 @@ def _get_ip_address_from_connection(connection: ConnectionType, client_name: str
         warnings.warn("CLIENT SETNAME command not supported, setting ip_address to unknown", Warning)
         return "unknown"
     client_list = connection.client_list()
-    client_address_list: List[str] = [client["addr"] for client in client_list if client["name"] == client_name]
+    client_address_list: list[str] = [client["addr"] for client in client_list if client["name"] == client_name]
     if len(client_address_list) > 0:
         return client_address_list[0]
     else:
@@ -834,7 +843,7 @@ def _get_ip_address_from_connection(connection: ConnectionType, client_name: str
         return "unknown"
 
 
-def _ensure_list(obj: Any) -> List[Any]:
+def _ensure_list(obj: Any) -> list[Any]:
     """When passed an iterable of objects, does nothing, otherwise, it returns a list with just that object in it.
 
     :param obj: The object to ensure is a list
@@ -854,7 +863,7 @@ def _calc_worker_name(existing_worker_names: Collection[str]) -> str:
     return worker_name
 
 
-def get_queues(*queue_names: str) -> List[Queue]:
+def get_queues(*queue_names: str) -> list[Queue]:
     """Return queue instances from specified queue names. All instances must use the same connection configuration."""
 
     queue_config = get_queue_configuration(queue_names[0])

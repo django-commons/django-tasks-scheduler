@@ -1,19 +1,17 @@
-from typing import List
-
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpRequest, Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
 from scheduler.helpers.queues import get_all_workers
-from scheduler.redis_models import WorkerModel, JobModel
+from scheduler.redis_models import JobModel, WorkerModel
 from scheduler.settings import SCHEDULER_CONFIG
 from scheduler.views.helpers import get_queue
 
 
-def get_worker_executions(worker: WorkerModel) -> List[JobModel]:
+def get_worker_executions(worker: WorkerModel) -> list[JobModel]:
     res = []
     for queue_name in worker.queue_names:
         queue = get_queue(queue_name)

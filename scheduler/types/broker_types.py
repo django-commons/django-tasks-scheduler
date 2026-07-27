@@ -1,7 +1,7 @@
 # This is a helper module to obfuscate types used by different broker implementations.
 from collections import namedtuple
-from typing import Any, Callable, TypeVar, Union
-from typing import Dict, Tuple
+from collections.abc import Callable
+from typing import Any, TypeVar, Union
 
 import redis
 
@@ -25,7 +25,7 @@ FunctionReferenceType = TypeVar("FunctionReferenceType", str, Callable[..., Any]
 
 BrokerMetaDataType = namedtuple("BrokerMetaDataType", ["connection_type", "sentinel_type"])
 
-BrokerMetaData: Dict[Tuple[Broker, bool], BrokerMetaDataType] = {
+BrokerMetaData: dict[tuple[Broker, bool], BrokerMetaDataType] = {
     # Map of (Broker, Strict flag) => Connection Class, Sentinel Class
     (Broker.REDIS, False): BrokerMetaDataType(redis.Redis, redis.sentinel.Sentinel),
     (Broker.VALKEY, False): BrokerMetaDataType(valkey.Valkey, valkey.sentinel.Sentinel),

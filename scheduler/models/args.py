@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Any, Tuple, Dict, Type
+from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -9,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler.helpers import utils
 
-ARG_TYPE_TYPES_DICT: Dict[str, Type] = {
+ARG_TYPE_TYPES_DICT: dict[str, type] = {
     "str": str,
     "int": int,
     "bool": bool,
@@ -56,11 +57,11 @@ class BaseTaskArg(models.Model):
             raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
 
     def save(self, **kwargs: Any) -> None:
-        super(BaseTaskArg, self).save(**kwargs)
+        super().save(**kwargs)
         self.content_object.save()
 
     def delete(self, **kwargs: Any) -> None:
-        super(BaseTaskArg, self).delete(**kwargs)
+        super().delete(**kwargs)
         self.content_object.save()
 
     def value(self) -> Any:
@@ -91,5 +92,5 @@ class TaskKwarg(BaseTaskArg):
         key, value = self.value()
         return f"TaskKwarg[key={key},arg_type={self.arg_type},value={self.val}]"
 
-    def value(self) -> Tuple[str, Any]:
-        return self.key, super(TaskKwarg, self).value()
+    def value(self) -> tuple[str, Any]:
+        return self.key, super().value()

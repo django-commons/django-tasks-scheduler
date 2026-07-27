@@ -1,10 +1,10 @@
 import dataclasses
 from math import ceil
-from typing import Tuple, List, Dict, Union, Any, Optional
+from typing import Any
 
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
@@ -17,10 +17,10 @@ from scheduler.types import ConnectionErrorTypes
 from scheduler.views.helpers import get_queue
 
 
-def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> Tuple[List[JobModel], int, range]:
+def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> tuple[list[JobModel], int, range]:
     items_per_page = settings.SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = registry.count(queue.connection)
-    job_list: List[JobModel] = []
+    job_list: list[JobModel] = []
 
     if num_jobs == 0:
         return job_list, num_jobs, range(1, 1)
@@ -81,7 +81,7 @@ def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
     return render(request, "admin/scheduler/queue_workers.html", context_data)
 
 
-def stats_json(request: HttpRequest) -> Union[JsonResponse, HttpResponseNotFound]:
+def stats_json(request: HttpRequest) -> JsonResponse | HttpResponseNotFound:
     auth_token = request.headers.get("Authorization")
     token_validation_func = settings.SCHEDULER_CONFIG.TOKEN_VALIDATION_METHOD
     if request.user.is_staff or (token_validation_func and auth_token and token_validation_func(auth_token)):  # type: ignore
@@ -101,8 +101,8 @@ def stats(request: HttpRequest) -> HttpResponse:
 class QueueData:
     name: str
     queued_jobs: int
-    oldest_job_timestamp: Optional[str]
-    scheduler_pid: Optional[int]
+    oldest_job_timestamp: str | None
+    scheduler_pid: int | None
     workers: int
     finished_jobs: int
     started_jobs: int
@@ -111,10 +111,10 @@ class QueueData:
     canceled_jobs: int
 
 
-def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[str, Any]]]:
+def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[str, Any]]]:
     queue_names = get_queue_names()
-    queues: List[QueueData] = []
-    queue_workers_count: Dict[str, int] = dict.fromkeys(queue_names, 0)
+    queues: list[QueueData] = []
+    queue_workers_count: dict[str, int] = dict.fromkeys(queue_names, 0)
     workers = get_all_workers()
     for worker in workers:
         for queue_name in worker.queue_names:
@@ -159,7 +159,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> Dict[str, List[Dict[s
                 canceled_jobs=queue.canceled_job_registry.count(queue.connection),
             )
             queues.append(queue_data)
-        except ConnectionErrorTypes as e:  # noqa: PERF203
+        except ConnectionErrorTypes as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")
             continue
 

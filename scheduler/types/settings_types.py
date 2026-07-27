@@ -1,9 +1,11 @@
+import signal
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional, List, Tuple, Any, Type, ClassVar, Set
-import signal
-from scheduler.helpers.timeouts import BaseDeathPenalty, UnixSignalDeathPenalty, TimerDeathPenalty
+from typing import Any, ClassVar
+
+from scheduler.helpers.timeouts import BaseDeathPenalty, TimerDeathPenalty, UnixSignalDeathPenalty
 
 _DEATH_PENALTY_CLASS = UnixSignalDeathPenalty if hasattr(signal, "SIGALRM") else TimerDeathPenalty
 
@@ -42,7 +44,7 @@ class SchedulerConfiguration:
     DEFAULT_MAINTENANCE_TASK_INTERVAL: int = 10 * 60  # The interval to run maintenance tasks in seconds. 10 minutes.
     DEFAULT_JOB_MONITORING_INTERVAL: int = 30  # The interval to monitor jobs in seconds.
     SCHEDULER_FALLBACK_PERIOD_SECS: int = 120  # Period (secs) to wait before requiring to reacquire locks
-    DEATH_PENALTY_CLASS: Type[BaseDeathPenalty] = _DEATH_PENALTY_CLASS
+    DEATH_PENALTY_CLASS: type[BaseDeathPenalty] = _DEATH_PENALTY_CLASS
     # Admin views that probe every configured queue for read-only operations (e.g. locating a job across
     # queues, queue/worker statistics) use a short-timeout, no-retry connection by default, so a single
     # unreachable queue cannot stall the request for several seconds (redis-py >= 8 retries connection
@@ -55,7 +57,7 @@ class SchedulerConfiguration:
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class QueueConfiguration:
-    __CONNECTION_FIELDS__: ClassVar[Set[str]] = {
+    __CONNECTION_FIELDS__: ClassVar[set[str]] = {
         "URL",
         "DB",
         "UNIX_SOCKET_PATH",
@@ -66,21 +68,21 @@ class QueueConfiguration:
         "MASTER_NAME",
         "CONNECTION_KWARGS",
     }
-    DB: Optional[int] = None
+    DB: int | None = None
     # Redis connection parameters, either UNIX_SOCKET_PATH/URL/separate params (HOST, PORT, PASSWORD) should be provided
-    UNIX_SOCKET_PATH: Optional[str] = None
-    URL: Optional[str] = None
-    HOST: Optional[str] = None
-    PORT: Optional[int] = None
-    USERNAME: Optional[str] = None
-    PASSWORD: Optional[str] = None
+    UNIX_SOCKET_PATH: str | None = None
+    URL: str | None = None
+    HOST: str | None = None
+    PORT: int | None = None
+    USERNAME: str | None = None
+    PASSWORD: str | None = None
 
     ASYNC: bool = True
 
-    SENTINELS: Optional[List[Tuple[str, int]]] = None
-    SENTINEL_KWARGS: Optional[Dict[str, str]] = None
-    MASTER_NAME: Optional[str] = None
-    CONNECTION_KWARGS: Optional[Dict[str, Any]] = None
+    SENTINELS: list[tuple[str, int]] | None = None
+    SENTINEL_KWARGS: dict[str, str] | None = None
+    MASTER_NAME: str | None = None
+    CONNECTION_KWARGS: dict[str, Any] | None = None
 
     def __post_init__(self):
         if not any((self.URL, self.UNIX_SOCKET_PATH, self.HOST, self.SENTINELS)):

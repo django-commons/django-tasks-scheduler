@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
-from django.utils import timezone, formats
+from django.utils import formats, timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.timezone import is_naive
@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 
 from scheduler.decorators import JOB_METHODS_LIST
 from scheduler.helpers.queues import get_queue
-from scheduler.models import TaskArg, TaskKwarg, Task, TaskType
+from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
 from scheduler.redis_models import JobModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionErrorTypes
@@ -24,9 +24,9 @@ def job_execution_of(job: JobModel, task: Task) -> bool:
     return job.scheduled_task_id == task.id and job.task_type == task.task_type
 
 
-def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> List[JobModel]:
+def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> list[JobModel]:
     queue = get_queue(queue_name)
-    job_list: List[JobModel] = list(
+    job_list: list[JobModel] = list(
         filter(lambda job: job is not None, JobModel.get_many(queue.get_all_job_names(), connection=queue.connection))
     )
 
@@ -63,10 +63,10 @@ class JobMethodsDatalistWidget(forms.TextInput):
 
     datalist_id = "id_callable_job_methods"
 
-    def __init__(self, attrs: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, attrs: dict[str, Any] | None = None) -> None:
         super().__init__({**(attrs or {}), "list": self.datalist_id, "autocomplete": "off"})
 
-    def render(self, name: str, value: Any, attrs: Optional[Dict[str, Any]] = None, renderer: Any = None) -> str:
+    def render(self, name: str, value: Any, attrs: dict[str, Any] | None = None, renderer: Any = None) -> str:
         text_input = super().render(name, value, attrs=attrs, renderer=renderer)
         options = format_html_join("", '<option value="{}"></option>', ((method,) for method in JOB_METHODS_LIST))
         datalist = format_html('<datalist id="{}">{}</datalist>', self.datalist_id, options)
@@ -169,7 +169,7 @@ class TaskAdmin(admin.ModelAdmin):
             return f"Repeatable: {o.interval} {o.get_interval_unit_display()}"
 
     @admin.display(description="Next run")
-    def next_run(self, o: Task) -> Union[str, datetime]:
+    def next_run(self, o: Task) -> str | datetime:
         res = o.scheduled_time
         if res is None:
             return _("Not scheduled")
@@ -204,16 +204,16 @@ class TaskAdmin(admin.ModelAdmin):
             }
         )
 
-        return super(TaskAdmin, self).change_view(request, object_id, form_url, extra_context=extra)
+        return super().change_view(request, object_id, form_url, extra_context=extra)
 
     def delete_queryset(self, request: HttpRequest, queryset: QuerySet) -> None:
         for job in queryset:
             job.unschedule()
-        super(TaskAdmin, self).delete_queryset(request, queryset)
+        super().delete_queryset(request, queryset)
 
     def delete_model(self, request: HttpRequest, obj: Task) -> None:
         obj.unschedule()
-        super(TaskAdmin, self).delete_model(request, obj)
+        super().delete_model(request, obj)
 
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
     def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:

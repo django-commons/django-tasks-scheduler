@@ -5,9 +5,9 @@ from django.urls import reverse
 from scheduler.helpers.queues import get_queue
 from scheduler.redis_models import JobModel
 from scheduler.templatetags.scheduler_tags import job_result, latest_result
-from scheduler.worker import create_worker
 from scheduler.tests import conf  # noqa
 from scheduler.tests.test_views.base import BaseTestCase
+from scheduler.worker import create_worker
 
 _QUEUE = "django_tasks_scheduler_test"
 _JOBS_LIST_PARTIALS = (

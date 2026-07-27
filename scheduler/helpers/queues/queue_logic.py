@@ -2,24 +2,28 @@ import asyncio
 import sys
 import traceback
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any
 
 from redis import WatchError
 
 from scheduler.helpers.callback import Callback
-from scheduler.helpers.utils import utcnow, current_timestamp
+from scheduler.helpers.utils import current_timestamp, utcnow
 from scheduler.redis_models import (
-    JobNamesRegistry,
-    FinishedJobRegistry,
     ActiveJobRegistry,
-    FailedJobRegistry,
     CanceledJobRegistry,
-    ScheduledJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
+    JobModel,
+    JobNamesRegistry,
+    JobStatus,
     QueuedJobRegistry,
+    Result,
+    ResultType,
+    ScheduledJobRegistry,
+    SchedulerLock,
 )
-from scheduler.redis_models import JobStatus, SchedulerLock, Result, ResultType, JobModel
-from scheduler.settings import logger, SCHEDULER_CONFIG
-from scheduler.types import ConnectionType, FunctionReferenceType, Self, PipelineType
+from scheduler.settings import SCHEDULER_CONFIG, logger
+from scheduler.types import ConnectionType, FunctionReferenceType, PipelineType, Self
 
 
 class InvalidJobOperation(Exception):
@@ -34,7 +38,7 @@ class NoSuchRegistryError(Exception):
     pass
 
 
-def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  # noqa
+def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:
     """The main execution method. Invokes the job function with the job arguments.
 
     :returns: The job's return value
@@ -59,10 +63,10 @@ def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:  
         assert job_model is _job_stack.pop()
 
 
-_job_stack: List[JobModel] = []
+_job_stack: list[JobModel] = []
 
 
-def get_current_job() -> Optional[JobModel]:
+def get_current_job() -> JobModel | None:
     """Returns the job that is currently being executed, or ``None`` when called outside a job context.
 
     This is meant to be called from within a job's callable, e.g. to update ``job.meta`` to report progress.
@@ -108,12 +112,12 @@ class Queue:
         return self.count
 
     @property
-    def scheduler_pid(self) -> Optional[int]:
+    def scheduler_pid(self) -> int | None:
         lock = SchedulerLock(self.name)
         pid = lock.value(self.connection)
         return int(pid.decode()) if pid is not None else None
 
-    def clean_registries(self, timestamp: Optional[float] = None) -> None:
+    def clean_registries(self, timestamp: float | None = None) -> None:
         """Remove abandoned jobs from registry and add them to FailedJobRegistry.
 
         Removes jobs with an expiry time earlier than current_timestamp, specified as seconds since the Unix epoch.
@@ -121,7 +125,7 @@ class Queue:
         """
         before_score = timestamp or current_timestamp()
         self.queued_job_registry.compact(self.connection)
-        started_jobs: List[Tuple[str, float]] = self.active_job_registry.get_job_names_before(
+        started_jobs: list[tuple[str, float]] = self.active_job_registry.get_job_names_before(
             self.connection, before_score
         )
 
@@ -133,7 +137,7 @@ class Queue:
             logger.debug(f"Running failure callbacks for {job.name}")
             try:
                 job.call_failure_callback(job, self.connection, traceback.extract_stack())
-            except Exception:  # noqa
+            except Exception:
                 logger.exception(f"Job {self.name}: error while executing failure callback")
                 raise
 
@@ -147,7 +151,7 @@ class Queue:
             for registry in self.REGISTRIES.values():
                 getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
 
-    def first_queued_job_name(self) -> Optional[str]:
+    def first_queued_job_name(self) -> str | None:
         return self.queued_job_registry.get_first(self.connection)
 
     @property
@@ -164,7 +168,7 @@ class Queue:
             return getattr(self, Queue.REGISTRIES[name])  # type: ignore
         raise NoSuchRegistryError(f"Unknown registry name {name}")
 
-    def get_all_job_names(self) -> List[str]:
+    def get_all_job_names(self) -> list[str]:
         all_job_names = []
         all_job_names.extend(self.queued_job_registry.all(self.connection))
         all_job_names.extend(self.finished_job_registry.all(self.connection))
@@ -175,28 +179,28 @@ class Queue:
         res = list(filter(lambda job_name: JobModel.exists(job_name, self.connection), all_job_names))
         return res
 
-    def get_all_jobs(self) -> List[JobModel]:
+    def get_all_jobs(self) -> list[JobModel]:
         job_names = self.get_all_job_names()
         return JobModel.get_many(job_names, connection=self.connection)
 
     def create_and_enqueue_job(
         self,
         func: FunctionReferenceType,
-        args: Union[Tuple[Any, ...], List[Any], None] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        when: Optional[datetime] = None,
-        timeout: Optional[int] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        description: Optional[str] = None,
-        name: Optional[str] = None,
+        args: tuple[Any, ...] | list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+        when: datetime | None = None,
+        timeout: int | None = None,
+        result_ttl: int | None = None,
+        job_info_ttl: int | None = None,
+        description: str | None = None,
+        name: str | None = None,
         at_front: bool = False,
-        meta: Optional[Dict[str, Any]] = None,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
+        meta: dict[str, Any] | None = None,
+        on_success: Callback | None = None,
+        on_failure: Callback | None = None,
+        on_stopped: Callback | None = None,
+        task_type: str | None = None,
+        scheduled_task_id: int | None = None,
     ) -> JobModel:
         """Creates a job to represent the delayed function call and enqueues it.
         :param when: When to schedule the job (None to enqueue immediately)
@@ -296,8 +300,8 @@ class Queue:
 
     @classmethod
     def dequeue_any(
-        cls, queues: List[Self], timeout: Optional[int], connection: ConnectionType
-    ) -> Tuple[Optional[JobModel], Optional[Self]]:
+        cls, queues: list[Self], timeout: int | None, connection: ConnectionType
+    ) -> tuple[JobModel | None, Self | None]:
         """Class method returning a Job instance at the front of the given set of Queues, where the order of the queues
         is important.
 
@@ -399,7 +403,7 @@ class Queue:
                 pass
 
     def enqueue_job(
-        self, job_model: JobModel, pipeline: Optional[PipelineType] = None, at_front: bool = False
+        self, job_model: JobModel, pipeline: PipelineType | None = None, at_front: bool = False
     ) -> JobModel:
         """Enqueues a job for delayed execution without checking dependencies.
 

@@ -1,15 +1,14 @@
 import logging
-from typing import List, Dict
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-
-from scheduler.types import SchedulerConfiguration, QueueConfiguration
 from typing_extensions import get_annotations
+
+from scheduler.types import QueueConfiguration, SchedulerConfiguration
 
 logger = logging.getLogger("scheduler")
 
-_QUEUES: Dict[str, QueueConfiguration] = {}
+_QUEUES: dict[str, QueueConfiguration] = {}
 SCHEDULER_CONFIG: SchedulerConfiguration = SchedulerConfiguration()
 
 
@@ -52,7 +51,7 @@ def conf_settings():
 conf_settings()
 
 
-def get_queue_names() -> List[str]:
+def get_queue_names() -> list[str]:
     return list(_QUEUES.keys())
 
 

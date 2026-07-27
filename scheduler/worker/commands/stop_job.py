@@ -1,8 +1,8 @@
 import os
 import signal
-from typing import Dict, Any
+from typing import Any
 
-from scheduler.redis_models import WorkerModel, JobModel
+from scheduler.redis_models import JobModel, WorkerModel
 from scheduler.settings import logger
 from scheduler.types import ConnectionType
 from scheduler.worker.commands.worker_commands import WorkerCommand, WorkerCommandError
@@ -19,7 +19,7 @@ class StopJobCommand(WorkerCommand):
         if self.job_name is None:
             raise WorkerCommandError("job_name for kill-job command is required")
 
-    def command_payload(self, **kwargs: Any) -> Dict[str, Any]:
+    def command_payload(self, **kwargs: Any) -> dict[str, Any]:
         return super().command_payload(job_name=self.job_name)
 
     def process_command(self, connection: ConnectionType) -> None:

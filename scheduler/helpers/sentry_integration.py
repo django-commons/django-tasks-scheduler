@@ -1,11 +1,12 @@
 import weakref
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import sentry_sdk
-from sentry_sdk._types import EventProcessor, Event, ExcInfo
+from sentry_sdk._types import Event, EventProcessor, ExcInfo
 from sentry_sdk.api import continue_trace
 from sentry_sdk.consts import OP
-from sentry_sdk.integrations import _check_minimum_version, Integration
+from sentry_sdk.integrations import Integration, _check_minimum_version
 from sentry_sdk.integrations.logging import ignore_logger
 from sentry_sdk.tracing import TransactionSource
 from sentry_sdk.utils import (
@@ -17,8 +18,7 @@ from sentry_sdk.utils import (
 
 import scheduler
 from scheduler.helpers.queues import Queue
-from scheduler.redis_models import JobModel
-from scheduler.redis_models import JobStatus
+from scheduler.redis_models import JobModel, JobStatus
 from scheduler.timeouts import JobTimeoutException
 from scheduler.worker import Worker
 

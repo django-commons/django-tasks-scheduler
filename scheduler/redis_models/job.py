@@ -3,17 +3,19 @@ import dataclasses
 import inspect
 import numbers
 import pickle
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, Dict, Optional, List, Callable, Any, Union, Tuple
+from typing import Any, ClassVar
 
 from scheduler.helpers import utils
 from scheduler.helpers.callback import Callback
 from scheduler.redis_models.base import HashModel, as_str
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.types import ConnectionType, Self, FunctionReferenceType
-from .registry.base_registry import JobNamesRegistry
+from scheduler.types import ConnectionType, FunctionReferenceType, Self
+
 from ..helpers.utils import current_timestamp
+from .registry.base_registry import JobNamesRegistry
 
 
 class TimeoutFormatError(Exception):
@@ -42,8 +44,8 @@ class JobModel(HashModel):
     _element_key_template: ClassVar[str] = ":jobs:{}"
     _non_serializable_fields = {"args", "kwargs"}
 
-    args: List[Any]
-    kwargs: Dict[str, str]
+    args: list[Any]
+    kwargs: dict[str, str]
 
     queue_name: str
     description: str
@@ -53,27 +55,27 @@ class JobModel(HashModel):
     success_ttl: int = SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL
     job_info_ttl: int = SCHEDULER_CONFIG.DEFAULT_JOB_TTL
     at_front: bool = False
-    last_heartbeat: Optional[datetime] = None
-    worker_name: Optional[str] = None
-    started_at: Optional[datetime] = None
-    enqueued_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    success_callback_name: Optional[str] = None
+    last_heartbeat: datetime | None = None
+    worker_name: str | None = None
+    started_at: datetime | None = None
+    enqueued_at: datetime | None = None
+    ended_at: datetime | None = None
+    success_callback_name: str | None = None
     success_callback_timeout: int = SCHEDULER_CONFIG.CALLBACK_TIMEOUT
-    failure_callback_name: Optional[str] = None
+    failure_callback_name: str | None = None
     failure_callback_timeout: int = SCHEDULER_CONFIG.CALLBACK_TIMEOUT
-    stopped_callback_name: Optional[str] = None
+    stopped_callback_name: str | None = None
     stopped_callback_timeout: int = SCHEDULER_CONFIG.CALLBACK_TIMEOUT
-    task_type: Optional[str] = None
-    scheduled_task_id: Optional[int] = None
+    task_type: str | None = None
+    scheduled_task_id: int | None = None
     status: JobStatus
     created_at: datetime
-    meta: Dict[str, str]
+    meta: dict[str, str]
 
     def __hash__(self):
         return hash(self.name)
 
-    def __eq__(self, other):  # noqa
+    def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name
 
     def __str__(self):
@@ -136,8 +138,8 @@ class JobModel(HashModel):
         job_info_ttl: int,
         status: JobStatus,
         connection: ConnectionType,
-        prev_registry: Optional[JobNamesRegistry] = None,
-        new_registry: Optional[JobNamesRegistry] = None,
+        prev_registry: JobNamesRegistry | None = None,
+        new_registry: JobNamesRegistry | None = None,
     ) -> None:
         """After the job is executed, update the status, heartbeat, and other metadata."""
         self.status = status
@@ -149,21 +151,21 @@ class JobModel(HashModel):
             new_registry.add(connection, self.name, current_timestamp() + job_info_ttl)
         self.save(connection=connection)
 
-    def call_failure_callback(self, *args, **kwargs) -> Optional[Callback]:
+    def call_failure_callback(self, *args, **kwargs) -> Callback | None:
         if self.failure_callback_name is None:
             return None
         logger.debug(f"Running failure callback for {self.name}")
         callback = Callback(self.failure_callback_name, self.failure_callback_timeout)
         return callback(*args, **kwargs)
 
-    def call_success_callback(self, *args, **kwargs) -> Optional[Any]:
+    def call_success_callback(self, *args, **kwargs) -> Any | None:
         if self.success_callback_name is None:
             return None
         logger.debug(f"Running success callback for {self.name}")
         callback = Callback(self.success_callback_name, self.success_callback_timeout)
         return callback(*args, **kwargs)
 
-    def call_stopped_callback(self, *args, **kwargs) -> Optional[Any]:
+    def call_stopped_callback(self, *args, **kwargs) -> Any | None:
         if self.stopped_callback_name is None:
             return None
         logger.debug(f"Running stopped callbacks for {self.name}")
@@ -173,7 +175,7 @@ class JobModel(HashModel):
     def get_call_string(self):
         return _get_call_string(self.func_name, self.args, self.kwargs)
 
-    def serialize(self, with_nones: bool = False) -> Dict[str, str]:
+    def serialize(self, with_nones: bool = False) -> dict[str, str]:
         """Serialize the job model to a dictionary."""
         res = super(JobModel, self).serialize(with_nones=with_nones)
         res["args"] = base64.encodebytes(pickle.dumps(self.args)).decode("utf-8")
@@ -181,7 +183,7 @@ class JobModel(HashModel):
         return res
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> Self:
+    def deserialize(cls, data: dict[str, Any]) -> Self:
         """Deserialize the job model from a dictionary."""
         res = super(JobModel, cls).deserialize(data)
         res.args = pickle.loads(base64.decodebytes(data.get("args").encode("utf-8")))
@@ -194,22 +196,22 @@ class JobModel(HashModel):
         connection: ConnectionType,
         func: FunctionReferenceType,
         queue_name: str,
-        args: Union[List[Any], Optional[Tuple]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
-        status: Optional[JobStatus] = None,
-        description: Optional[str] = None,
-        timeout: Optional[int] = None,
-        name: Optional[str] = None,
-        task_type: Optional[str] = None,
-        scheduled_task_id: Optional[int] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        args: list[Any] | tuple | None = None,
+        kwargs: dict[str, Any] | None = None,
+        result_ttl: int | None = None,
+        job_info_ttl: int | None = None,
+        status: JobStatus | None = None,
+        description: str | None = None,
+        timeout: int | None = None,
+        name: str | None = None,
+        task_type: str | None = None,
+        scheduled_task_id: int | None = None,
+        meta: dict[str, Any] | None = None,
         *,
-        on_success: Optional[Callback] = None,
-        on_failure: Optional[Callback] = None,
-        on_stopped: Optional[Callback] = None,
-        at_front: Optional[bool] = None,
+        on_success: Callback | None = None,
+        on_failure: Callback | None = None,
+        on_stopped: Callback | None = None,
+        at_front: bool | None = None,
     ) -> Self:
         """Creates a new job-model for the given function, arguments, and keyword arguments.
         :returns: A job-model instance.
@@ -283,8 +285,8 @@ class JobModel(HashModel):
 
 
 def _get_call_string(
-    func_name: Optional[str], args: Any, kwargs: Dict[Any, Any], max_length: Optional[int] = None
-) -> Optional[str]:
+    func_name: str | None, args: Any, kwargs: dict[Any, Any], max_length: int | None = None
+) -> str | None:
     """
     Returns a string representation of the call, formatted as a regular
     Python function invocation statement. If max_length is not None, truncate
@@ -308,14 +310,14 @@ def _get_call_string(
     return f"{func_name}({args})"
 
 
-def _truncate_long_string(data: str, max_length: Optional[int] = None) -> str:
+def _truncate_long_string(data: str, max_length: int | None = None) -> str:
     """Truncate arguments with representation longer than max_length"""
     if max_length is None:
         return data
     return (data[:max_length] + "...") if len(data) > max_length else data
 
 
-def _parse_timeout(timeout: Union[int, float, str]) -> int:
+def _parse_timeout(timeout: float | str) -> int:
     """Transfer all kinds of timeout format to an integer representing seconds"""
     if not isinstance(timeout, numbers.Integral) and timeout is not None:
         try:

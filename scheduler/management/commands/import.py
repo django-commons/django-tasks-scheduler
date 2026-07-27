@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, Any, Optional
+from typing import Any
 
 import click
 from django.conf import settings
@@ -7,8 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandParser
 from django.utils import timezone
 
-from scheduler.models import TaskArg, TaskKwarg, Task
-from scheduler.models import TaskType
+from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
 
 
 def job_model_str(model_str: str) -> str:
@@ -32,7 +31,7 @@ def get_task_type(model_str: str) -> TaskType:
     raise ValueError(f"Invalid model {model_str}")
 
 
-def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[Task]:
+def create_task_from_dict(task_dict: dict[str, Any], update: bool) -> Task | None:
     existing_task = Task.objects.filter(name=task_dict["name"]).first()
     task_type = get_task_type(task_dict["model"])
     if existing_task:
