@@ -1,7 +1,7 @@
 from typing import Any
 
 from django.contrib import admin
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 
 from scheduler import views
 from scheduler.models.ephemeral_models import Queue, Worker

@@ -4,8 +4,8 @@ from enum import Enum
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest, HttpResponseNotFound
-from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
@@ -14,7 +14,7 @@ from scheduler.helpers.queues.queue_logic import NoSuchRegistryError
 from scheduler.redis_models import JobModel, JobNamesRegistry
 from scheduler.settings import logger
 from scheduler.types import ResponseErrorTypes
-from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
+from scheduler.views.helpers import _check_next_url, _enqueue_multiple_jobs, get_queue
 
 
 class QueueRegistryActions(Enum):
@@ -33,7 +33,7 @@ def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, regi
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")
-        raise e
+        raise
 
 
 def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str) -> None:

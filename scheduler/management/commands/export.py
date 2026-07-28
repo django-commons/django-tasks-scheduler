@@ -1,4 +1,5 @@
 import sys
+from contextlib import ExitStack
 from typing import Any
 
 import click
@@ -39,26 +40,28 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        file = open(options.get("filename"), "w") if options.get("filename") else sys.stdout
+        with ExitStack() as stack:
+            filename = options.get("filename")
+            file = stack.enter_context(open(filename, "w")) if filename else sys.stdout
 
-        tasks = Task.objects.all()
-        if options.get("enabled"):
-            tasks = tasks.filter(enabled=True)
-        res = [task.to_dict() for task in tasks]
+            tasks = Task.objects.all()
+            if options.get("enabled"):
+                tasks = tasks.filter(enabled=True)
+            res = [task.to_dict() for task in tasks]
 
-        if options.get("format") == "json":
-            import json
+            if options.get("format") == "json":
+                import json
 
-            click.echo(json.dumps(res, indent=2, default=str), file=file)
-            return
+                click.echo(json.dumps(res, indent=2, default=str), file=file)
+                return
 
-        if options.get("format") == "yaml":
-            try:
-                import yaml
-            except ImportError:
-                click.echo("Aborting. LibYAML is not installed.")
-                exit(1)
-            # Disable YAML alias
-            yaml.Dumper.ignore_aliases = lambda *x: True
-            click.echo(yaml.dump(res, default_flow_style=False), file=file)
-            return
+            if options.get("format") == "yaml":
+                try:
+                    import yaml
+                except ImportError:
+                    click.echo("Aborting. LibYAML is not installed.")
+                    sys.exit(1)
+                # Disable YAML alias
+                yaml.Dumper.ignore_aliases = lambda *x: True
+                click.echo(yaml.dump(res, default_flow_style=False), file=file)
+                return

@@ -7,9 +7,9 @@ import yaml
 from django.core.management import call_command
 from django.test import TestCase
 
+from scheduler.models import TaskType
 from scheduler.tests import conf  # noqa
 from scheduler.tests.testtools import task_factory
-from scheduler.models import TaskType
 
 
 class ExportTest(TestCase):

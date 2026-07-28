@@ -1,18 +1,14 @@
-from typing import Optional, List
-from typing import Tuple
 from urllib.parse import urlparse
 
 from django.contrib import messages
-from django.http import Http404
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
 from django.urls import resolve
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue as get_queue_base
 from scheduler.redis_models import JobModel
-from scheduler.settings import QueueNotFoundError
-from scheduler.settings import get_queue_names, logger
+from scheduler.settings import QueueNotFoundError, get_queue_names, logger
 
 
 def get_queue(queue_name: str, fail_fast: bool = False) -> Queue:
@@ -23,7 +19,7 @@ def get_queue(queue_name: str, fail_fast: bool = False) -> Queue:
         raise Http404(e)
 
 
-def _find_job(job_name: str) -> Tuple[Optional[Queue], Optional[JobModel]]:
+def _find_job(job_name: str) -> tuple[Queue | None, JobModel | None]:
     queue_names = get_queue_names()
     for queue_name in queue_names:
         try:
@@ -54,7 +50,7 @@ def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
     return next_url
 
 
-def _enqueue_multiple_jobs(queue: Queue, job_names: List[str], at_front: bool = False) -> int:
+def _enqueue_multiple_jobs(queue: Queue, job_names: list[str], at_front: bool = False) -> int:
     jobs = JobModel.get_many(job_names, connection=queue.connection)
     jobs_requeued = 0
     with queue.connection.pipeline() as pipe:

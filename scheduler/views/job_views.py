@@ -3,16 +3,16 @@ from html import escape
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.http.response import HttpResponseBadRequest
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 
 from scheduler.helpers.queues import InvalidJobOperation
 from scheduler.redis_models import Result
 from scheduler.settings import logger
 from scheduler.views.helpers import _find_job
-from scheduler.worker.commands import send_command, StopJobCommand
+from scheduler.worker.commands import StopJobCommand, send_command
 
 
 class JobDetailAction(str, Enum):
@@ -29,7 +29,7 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     try:
-        job.func_name
+        _ = job.func_name
         data_is_valid = True
     except Exception:
         data_is_valid = False

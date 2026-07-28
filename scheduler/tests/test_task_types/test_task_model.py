@@ -9,17 +9,16 @@ from django.urls import reverse
 from django.utils import timezone
 
 from scheduler import settings
-from scheduler.helpers.queues import get_queue
-from scheduler.helpers.queues import queue_perform_job
-from scheduler.models import TaskType, Task, TaskArg, TaskKwarg, run_task
-from scheduler.redis_models import JobStatus, JobModel
-from scheduler.tests import jobs, conf  # noqa
+from scheduler.helpers.queues import get_queue, queue_perform_job
+from scheduler.models import Task, TaskArg, TaskKwarg, TaskType, run_task
+from scheduler.redis_models import JobModel, JobStatus
+from scheduler.tests import conf, jobs  # noqa
 from scheduler.tests.testtools import (
-    task_factory,
-    taskarg_factory,
-    _get_task_scheduled_job_from_registry,
     SchedulerBaseCase,
     _get_executions,
+    _get_task_scheduled_job_from_registry,
+    task_factory,
+    taskarg_factory,
 )
 from scheduler.worker import create_worker
 
@@ -261,8 +260,8 @@ class BaseTestCases:
             taskarg_factory(TaskKwarg, key="key4", arg_type="bool", val=False, content_object=task)
             self.assertEqual(
                 task.function_string(),
-                f"scheduler.tests.jobs.test_job('one', 1, {repr(date)}, True, "
-                f"key1='one', key2=2, key3={repr(date)}, key4=False)",
+                f"scheduler.tests.jobs.test_job('one', 1, {date!r}, True, "
+                f"key1='one', key2=2, key3={date!r}, key4=False)",
             )
 
         def test_admin_changelist_view(self):

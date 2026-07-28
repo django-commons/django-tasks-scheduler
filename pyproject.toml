@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = [ "hatchling" ]
+requires = ["hatchling"]
 
 [project]
 name = "django-tasks-scheduler"
@@ -18,8 +18,8 @@ keywords = [
   "valkey",
 ]
 license = "MIT"
-maintainers = [ { name = "Daniel Moran", email = "daniel@moransoftware.ca" } ]
-authors = [ { name = "Daniel Moran", email = "daniel@moransoftware.ca" } ]
+maintainers = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
+authors = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
 requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -46,9 +46,9 @@ dependencies = [
   "django>=5",
   "typing-extensions>=4.15",
 ]
-optional-dependencies.sentry = [ "sentry-sdk~=2.19" ]
-optional-dependencies.valkey = [ "valkey>=6.0.2" ]
-optional-dependencies.yaml = [ "pyyaml>=6", "types-pyyaml>=6.0.12.20250516" ]
+optional-dependencies.sentry = ["sentry-sdk~=2.19"]
+optional-dependencies.valkey = ["valkey>=6.0.2"]
+optional-dependencies.yaml = ["pyyaml>=6", "types-pyyaml>=6.0.12.20250516"]
 urls."Bug Tracker" = "https://github.com/django-commons/django-tasks-scheduler/issues"
 urls.Documentation = "https://django-tasks-scheduler.readthedocs.io/"
 urls.Funding = "https://github.com/sponsors/cunla"
@@ -62,35 +62,44 @@ dev = [
   "mypy>=1.20",
   "pre-commit>=4.2",
   "pyyaml>=6",
-  "ruff>=0.15",
+  "ruff>=0.16",
   "time-machine>=2.19",
   "types-croniter>=6.0.0.20250411",
 ]
-docs = [
-  "mkdocs>=1.6.1",
-  "mkdocs-material>=9.7.4",
-]
+docs = ["mkdocs>=1.6.1", "mkdocs-material>=9.7.4"]
 
 [tool.hatch]
-build.targets.wheel.include = [ "scheduler" ]
-build.targets.sdist.include = [ "scheduler" ]
+build.targets.wheel.include = ["scheduler"]
+build.targets.sdist.include = ["scheduler"]
 
 [tool.ruff]
+target-version = "py310"
 line-length = 120
-exclude = [
-  ".venv",
-  "__pycache__",
-  "scheduler/migrations",
-  "testproject",
+exclude = [".venv", "__pycache__", "scheduler/migrations", "testproject"]
+lint.extend-ignore = [
+  # Broad `except Exception` is deliberate: worker/view/template code must degrade gracefully rather than crash.
+  "BLE001",
+  "PIE790",
+  # Django conventions use plain lists/tuples for admin options and `Meta` attributes.
+  "RUF012",
 ]
-lint.extend-ignore = [ "PIE790" ]
-lint.per-file-ignores."scheduler/models/args.py" = [ "DJ012" ]
-lint.per-file-ignores."scheduler/models/ephemeral_models.py" = [ "DJ008" ]
-lint.per-file-ignores."scheduler/models/task.py" = [ "DJ001", "DJ012" ]
+lint.per-file-ignores."scheduler/management/commands/import.py" = [
+  "N999", # module name is dictated by the management command name
+]
+lint.per-file-ignores."scheduler/models/args.py" = ["DJ012"]
+lint.per-file-ignores."scheduler/models/ephemeral_models.py" = ["DJ008"]
+lint.per-file-ignores."scheduler/models/task.py" = ["DJ001", "DJ012"]
+lint.per-file-ignores."scheduler/tests/**" = [
+  "B017",   # assertRaises(Exception) is fine when the broker-specific error type is irrelevant
+  "DTZ001", # naive datetimes are used on purpose to exercise Django's USE_TZ handling
+  "DTZ005",
+  "S110",   # try/except/pass in test setup
+  "SIM115", # NamedTemporaryFile handles are kept on the test case across setUp/tearDown
+]
 lint.mccabe.max-complexity = 13
 
 [tool.mypy]
-packages = [ "scheduler" ]
+packages = ["scheduler"]
 exclude = [
   "scheduler/migrations/.*\\.py",
   "scheduler/tests/.*\\.py",

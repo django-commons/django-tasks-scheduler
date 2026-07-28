@@ -1,5 +1,6 @@
 import sys
-from typing import Dict, Any, Optional
+from contextlib import ExitStack
+from typing import Any
 
 import click
 from django.conf import settings
@@ -7,8 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandParser
 from django.utils import timezone
 
-from scheduler.models import TaskArg, TaskKwarg, Task
-from scheduler.models import TaskType
+from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
 
 
 def job_model_str(model_str: str) -> str:
@@ -32,7 +32,7 @@ def get_task_type(model_str: str) -> TaskType:
     raise ValueError(f"Invalid model {model_str}")
 
 
-def create_task_from_dict(task_dict: Dict[str, Any], update: bool) -> Optional[Task]:
+def create_task_from_dict(task_dict: dict[str, Any], update: bool) -> Task | None:
     existing_task = Task.objects.filter(name=task_dict["name"]).first()
     task_type = get_task_type(task_dict["model"])
     if existing_task:
@@ -113,25 +113,27 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        file = open(options.get("filename")) if options.get("filename") else sys.stdin  # type: ignore[arg-type]
-        jobs = []
-        if options.get("format") == "json":
-            import json
+        with ExitStack() as stack:
+            filename = options.get("filename")
+            file = stack.enter_context(open(filename)) if filename else sys.stdin
+            jobs = []
+            if options.get("format") == "json":
+                import json
 
-            try:
-                jobs = json.load(file)
-            except json.decoder.JSONDecodeError:
-                click.echo("Error decoding json", err=True)
-                exit(1)
-        elif options.get("format") == "yaml":
-            try:
-                import yaml
-            except ImportError:
-                click.echo("Aborting. LibYAML is not installed.")
-                exit(1)
-            # Disable YAML alias
-            yaml.Dumper.ignore_aliases = lambda *x: True  # type: ignore[method-assign]
-            jobs = yaml.load(file, yaml.SafeLoader)
+                try:
+                    jobs = json.load(file)
+                except json.decoder.JSONDecodeError:
+                    click.echo("Error decoding json", err=True)
+                    sys.exit(1)
+            elif options.get("format") == "yaml":
+                try:
+                    import yaml
+                except ImportError:
+                    click.echo("Aborting. LibYAML is not installed.")
+                    sys.exit(1)
+                # Disable YAML alias
+                yaml.Dumper.ignore_aliases = lambda *x: True  # type: ignore[method-assign]
+                jobs = yaml.load(file, yaml.SafeLoader)
 
         if options.get("reset"):
             Task.objects.all().delete()

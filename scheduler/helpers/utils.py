@@ -1,7 +1,8 @@
 import datetime
 import importlib
 import time
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
 
 def current_timestamp() -> int:

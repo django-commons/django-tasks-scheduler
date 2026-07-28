@@ -1,8 +1,8 @@
 import os
 import signal
 
-from scheduler.types import ConnectionType
 from scheduler.settings import logger
+from scheduler.types import ConnectionType
 from scheduler.worker.commands.worker_commands import WorkerCommand
 
 

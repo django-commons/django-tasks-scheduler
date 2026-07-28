@@ -1,6 +1,5 @@
 import multiprocessing
 from datetime import timedelta
-from typing import List, Tuple
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -11,11 +10,9 @@ from django.utils import timezone
 from scheduler import settings
 from scheduler.admin.task_admin import job_execution_of
 from scheduler.helpers.queues import get_queue
-from scheduler.models import Task, TaskType
-from scheduler.models import TaskKwarg
+from scheduler.models import Task, TaskKwarg, TaskType
 from scheduler.redis_models import JobModel
-from scheduler.worker import Worker
-from scheduler.worker import create_worker
+from scheduler.worker import Worker, create_worker
 
 multiprocessing.set_start_method("fork")
 
@@ -24,7 +21,7 @@ def _run_worker_process(worker: Worker, **kwargs):
     worker.work(**kwargs)
 
 
-def run_worker_in_process(*args, name="test-worker") -> Tuple[multiprocessing.Process, str]:
+def run_worker_in_process(*args, name="test-worker") -> tuple[multiprocessing.Process, str]:
     worker = create_worker(*args, name=name, fork_job_execution=False, with_scheduler=False)
     process = multiprocessing.Process(target=_run_worker_process, args=(worker,), kwargs={})
     process.start()
@@ -50,8 +47,8 @@ def task_factory(
     task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = {
-        "name": "Scheduled Job %d" % next(seq),
-        "queue": list(settings._QUEUES.keys())[0],
+        "name": f"Scheduled Job {next(seq)}",
+        "queue": next(iter(settings._QUEUES.keys())),
         "callable": callable_name,
         "enabled": True,
         "timeout": None,
@@ -95,7 +92,7 @@ def taskarg_factory(cls, **kwargs):
         "content_object": content_object,
     }
     if cls == TaskKwarg:
-        values["key"] = ("key%d" % next(seq),)
+        values["key"] = (f"key{next(seq)}",)
     values.update(kwargs)
     instance = cls.objects.create(**values)
     return instance
@@ -109,7 +106,7 @@ def _get_task_scheduled_job_from_registry(django_task: Task) -> JobModel:
 
 def _get_executions(task: Task):
     job_names = task.rqueue.get_all_job_names()
-    job_list: List[JobModel] = JobModel.get_many(job_names, connection=task.rqueue.connection)
+    job_list: list[JobModel] = JobModel.get_many(job_names, connection=task.rqueue.connection)
     return list(filter(lambda j: job_execution_of(j, task), job_list))
 
 
@@ -124,9 +121,9 @@ class SchedulerBaseCase(TestCase):
         cls.client = Client()
 
     def setUp(self) -> None:
-        super(SchedulerBaseCase, self).setUp()
+        super().setUp()
         queue = get_queue("default")
         queue.connection.flushall()
 
     def tearDown(self) -> None:
-        super(SchedulerBaseCase, self).tearDown()
+        super().tearDown()

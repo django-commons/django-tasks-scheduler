@@ -5,12 +5,13 @@ from unittest import mock
 
 from scheduler.helpers.queues import get_queue
 from scheduler.tests.jobs import test_job, two_seconds_job
-from ..test_views.base import BaseTestCase
+
 from ...helpers.callback import Callback
 from ...redis_models import JobModel, JobStatus, WorkerModel
 from ...worker import create_worker
-from ...worker.commands import send_command, StopJobCommand
+from ...worker.commands import StopJobCommand, send_command
 from ...worker.commands.suspend_worker import SuspendWorkCommand
+from ..test_views.base import BaseTestCase
 
 
 def _callback_func():

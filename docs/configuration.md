@@ -28,18 +28,18 @@ SCHEDULER_CONFIG = SchedulerConfiguration(
     QUEUE_PROBE_SOCKET_CONNECT_TIMEOUT=2.0,  # Socket connect timeout (seconds) for those probes
 )
 SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
-    'default': QueueConfiguration(
-        HOST='localhost',
+    "default": QueueConfiguration(
+        HOST="localhost",
         PORT=6379,
-        USERNAME='some-user',
-        PASSWORD='some-password',
+        USERNAME="some-user",
+        PASSWORD="some-password",
         CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
-            'ssl_cert_reqs': 'required',
-            'ssl': True,
+            "ssl_cert_reqs": "required",
+            "ssl": True,
         },
     ),
-    'high': QueueConfiguration(URL=os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0')),
-    'low': QueueConfiguration(HOST='localhost', PORT=6379, DB=0, ASYNC=False),
+    "high": QueueConfiguration(URL=os.getenv("REDISTOGO_URL", "redis://localhost:6379/0")),
+    "low": QueueConfiguration(HOST="localhost", PORT=6379, DB=0, ASYNC=False),
 }
 ```
 

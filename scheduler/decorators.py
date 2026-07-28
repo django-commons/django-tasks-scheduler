@@ -1,26 +1,27 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Union, List
+from typing import Any, Union
 
 from scheduler.helpers.callback import Callback
 from scheduler.types import ConnectionType
 
-JOB_METHODS_LIST: List[str] = []
+JOB_METHODS_LIST: list[str] = []
 
 
 class job:
     def __init__(
         self,
         queue: Union["Queue", str, None] = None,  # noqa: F821
-        connection: Optional[ConnectionType] = None,
-        timeout: Optional[int] = None,
-        result_ttl: Optional[int] = None,
-        job_info_ttl: Optional[int] = None,
+        connection: ConnectionType | None = None,
+        timeout: int | None = None,
+        result_ttl: int | None = None,
+        job_info_ttl: int | None = None,
         at_front: bool = False,
-        meta: Optional[Dict[Any, Any]] = None,
-        description: Optional[str] = None,
-        on_failure: Optional[Union[Callback, Callable[..., Any]]] = None,
-        on_success: Optional[Union[Callback, Callable[..., Any]]] = None,
-        on_stopped: Optional[Union[Callback, Callable[..., Any]]] = None,
+        meta: dict[Any, Any] | None = None,
+        description: str | None = None,
+        on_failure: Callback | Callable[..., Any] | None = None,
+        on_success: Callback | Callable[..., Any] | None = None,
+        on_stopped: Callback | Callable[..., Any] | None = None,
     ):
         """A decorator that adds a ``delay`` method to the decorated function, which in turn creates a RQ job when
         called. Accepts a required ``queue`` argument that can be either a ``Queue`` instance or a string
