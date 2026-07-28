@@ -42,7 +42,7 @@ class JobModel(HashModel):
     _list_key: ClassVar[str] = ":jobs:ALL:"
     _children_key_template: ClassVar[str] = ":{}:jobs:"
     _element_key_template: ClassVar[str] = ":jobs:{}"
-    _non_serializable_fields = {"args", "kwargs"}
+    _non_serializable_fields: ClassVar[set[str]] = {"args", "kwargs"}
 
     args: list[Any]
     kwargs: dict[str, str]
@@ -246,7 +246,7 @@ class JobModel(HashModel):
             _func_name = f"{func.__module__}.{func.__qualname__}"
         elif isinstance(func, str):
             _func_name = as_str(func)
-        elif not inspect.isclass(func) and hasattr(func, "__call__"):  # a callable class instance
+        elif not inspect.isclass(func) and callable(func):  # a callable class instance
             _func_name = "__call__"
         else:
             raise TypeError(f"Expected a callable or a string, but got: {func}")

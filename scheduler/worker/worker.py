@@ -177,9 +177,7 @@ class Worker:
         """Maintenance tasks should run on first startup or every 10 minutes."""
         if self._model.last_cleaned_at is None:
             return True
-        if (utcnow() - self._model.last_cleaned_at) > timedelta(seconds=self.maintenance_interval):
-            return True
-        return False
+        return (utcnow() - self._model.last_cleaned_at) > timedelta(seconds=self.maintenance_interval)
 
     def clean_registries(self) -> None:
         """Runs maintenance jobs on each Queue's registries."""
@@ -596,13 +594,13 @@ class Worker:
         :param job: The Job
         :param queue: The Queue
         """
-        retpid = ret_val = None
+        ret_val = None
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
                     self.job_monitoring_interval, JobExecutionMonitorTimeoutException
                 ):
-                    retpid, ret_val = self._wait_for_job_execution_process()
+                    _retpid, ret_val = self._wait_for_job_execution_process()
                 break
             except JobExecutionMonitorTimeoutException:
                 # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker

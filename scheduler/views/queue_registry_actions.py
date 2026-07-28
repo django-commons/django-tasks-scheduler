@@ -33,7 +33,7 @@ def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, regi
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")
-        raise e
+        raise
 
 
 def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str) -> None:

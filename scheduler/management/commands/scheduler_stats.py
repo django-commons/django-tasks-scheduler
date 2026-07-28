@@ -1,3 +1,4 @@
+import sys
 import time
 from typing import Any
 
@@ -90,7 +91,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         if options.get("json") and options.get("yaml"):
             click.secho("Aborting. Cannot output as both json and yaml", err=True, fg="red")
-            exit(1)
+            sys.exit(1)
         if options.get("json"):
             import json
 

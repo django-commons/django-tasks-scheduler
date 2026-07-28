@@ -47,8 +47,8 @@ def task_factory(
     task_type: TaskType, callable_name: str = "scheduler.tests.jobs.test_job", instance_only=False, **kwargs
 ):
     values = {
-        "name": "Scheduled Job %d" % next(seq),
-        "queue": list(settings._QUEUES.keys())[0],
+        "name": f"Scheduled Job {next(seq)}",
+        "queue": next(iter(settings._QUEUES.keys())),
         "callable": callable_name,
         "enabled": True,
         "timeout": None,
@@ -92,7 +92,7 @@ def taskarg_factory(cls, **kwargs):
         "content_object": content_object,
     }
     if cls == TaskKwarg:
-        values["key"] = ("key%d" % next(seq),)
+        values["key"] = (f"key{next(seq)}",)
     values.update(kwargs)
     instance = cls.objects.create(**values)
     return instance

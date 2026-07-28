@@ -41,9 +41,7 @@ class MyClass:
         print("Hello")
 
     def __eq__(self, other):
-        if not isinstance(other, MyClass):
-            return False
-        return True
+        return isinstance(other, MyClass)
 
 
 @job()

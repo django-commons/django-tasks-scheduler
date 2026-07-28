@@ -11,7 +11,7 @@ import django
 
 from scheduler.helpers.queues import Queue, get_queue
 from scheduler.helpers.queues.getters import get_queue_connection
-from scheduler.helpers.utils import current_timestamp
+from scheduler.helpers.utils import current_timestamp, utcnow
 from scheduler.models import Task
 from scheduler.redis_models import JobModel, ScheduledJobRegistry, SchedulerLock
 from scheduler.settings import SCHEDULER_CONFIG, logger
@@ -57,7 +57,7 @@ class WorkerScheduler:
         """Returns True if lock_acquisition_time is longer than 10 minutes ago"""
         if not self.lock_acquisition_time:
             return True
-        seconds_since = (datetime.now() - self.lock_acquisition_time).total_seconds()
+        seconds_since = (utcnow() - self.lock_acquisition_time).total_seconds()
         return seconds_since > SCHEDULER_CONFIG.SCHEDULER_FALLBACK_PERIOD_SECS
 
     def _acquire_locks(self) -> set[str]:
@@ -74,7 +74,7 @@ class WorkerScheduler:
                 successful_locks.add(queue.name)
 
         # Always reset _scheduled_job_registries when acquiring locks
-        self.lock_acquisition_time = datetime.now()
+        self.lock_acquisition_time = utcnow()
         self._scheduled_job_registries = []
         for queue_name in self._locks:
             queue = get_queue(queue_name)

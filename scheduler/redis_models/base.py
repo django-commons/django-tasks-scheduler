@@ -3,7 +3,7 @@ import json
 from collections.abc import Collection, Sequence
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, Self
@@ -51,17 +51,17 @@ def _deserialize(value: str, _type: type) -> Any:
     if value is None:
         return None
     try:
-        if _type is str or _type == Optional[str]:
+        if _type is str or _type == str | None:
             return as_str(value)
-        if _type is datetime or _type == Optional[datetime]:
+        if _type is datetime or _type == datetime | None:
             return datetime.fromisoformat(as_str(value))
         elif _type is bool:
             return bool(int(value))
-        elif _type is int or _type == Optional[int]:
+        elif _type is int or _type == int | None:
             return int(value)
-        elif _type is float or _type == Optional[float]:
+        elif _type is float or _type == float | None:
             return float(value)
-        elif _type in {list[str], dict[str, str]} or _type == Optional[Any]:
+        elif _type in {list[str], dict[str, str]} or _type == Any | None:
             return json.loads(value)
         elif issubclass(_type, Enum):
             return _type(as_str(value))
@@ -99,13 +99,13 @@ class BaseModel:
     @classmethod
     def deserialize(cls, data: dict[str, Any]) -> Self:
         types = {f.name: f.type for f in dataclasses.fields(cls) if f.name not in cls._non_serializable_fields}
-        for k in data:
+        for k, v in data.items():
             if k in cls._non_serializable_fields:
                 continue
             if k not in types:
                 logger.warning(f"Unknown field {k} in {cls.__name__}")
                 continue
-            data[k] = _deserialize(data[k], types[k])
+            data[k] = _deserialize(v, types[k])
         res = cls(**data)
         return res
 

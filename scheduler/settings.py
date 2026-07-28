@@ -17,7 +17,6 @@ class QueueNotFoundError(Exception):
 
 
 def conf_settings():
-    global _QUEUES
     global SCHEDULER_CONFIG
 
     app_queues = getattr(settings, "SCHEDULER_QUEUES", None)

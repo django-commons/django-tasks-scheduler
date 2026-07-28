@@ -82,7 +82,7 @@ def get_current_job() -> JobModel | None:
 
 
 class Queue:
-    REGISTRIES = {
+    REGISTRIES: ClassVar[dict[str, str]] = {
         "finished": "finished_job_registry",
         "failed": "failed_job_registry",
         "scheduled": "scheduled_job_registry",
@@ -145,7 +145,7 @@ class Queue:
                 logger.warning(
                     f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)"
                 )
-                exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {datetime.now()}"
+                exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {utcnow()}"
                 self.job_handle_failure(JobStatus.FAILED, job, exc_string)
 
             for registry in self.REGISTRIES.values():
@@ -292,7 +292,7 @@ class Queue:
         try:
             result = queue_perform_job(job, self.connection)
             self.job_handle_success(job, result=result, job_info_ttl=job.job_info_ttl, result_ttl=job.success_ttl)
-        except Exception as e:  # noqa
+        except Exception as e:
             logger.warning(f"Job {job.name} failed with exception: {e}")
             exc_string = "".join(traceback.format_exception(*sys.exc_info()))
             self.job_handle_failure(JobStatus.FAILED, job, exc_string)
@@ -367,23 +367,15 @@ class Queue:
         pipe = self.connection.pipeline()
         new_status = JobStatus.CANCELED if job.status == JobStatus.QUEUED else JobStatus.STOPPED
 
-        while True:
-            try:
-                job.set_field("status", new_status, connection=pipe)
-                self._remove_from_registries(job_name, connection=pipe)
-                pipe.execute()
-                if new_status == JobStatus.CANCELED:
-                    self.canceled_job_registry.add(pipe, job_name, 0)
-                else:
-                    self.finished_job_registry.add(
-                        pipe, job_name, current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL
-                    )
-                pipe.execute()
-                break
-            except WatchError:
-                # if the pipeline comes from the caller, we re-raise the exception as it is the responsibility of the
-                # caller to handle it
-                raise
+        # A WatchError here is deliberately left to propagate: handling it is the caller's responsibility.
+        job.set_field("status", new_status, connection=pipe)
+        self._remove_from_registries(job_name, connection=pipe)
+        pipe.execute()
+        if new_status == JobStatus.CANCELED:
+            self.canceled_job_registry.add(pipe, job_name, 0)
+        else:
+            self.finished_job_registry.add(pipe, job_name, current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL)
+        pipe.execute()
 
     def delete_job(self, job_name: str, expire_job_model: bool = True) -> None:
         """Deletes the given job from the queue and all its registries"""

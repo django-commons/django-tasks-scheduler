@@ -66,6 +66,6 @@ class Result(StreamModel):
         response: list[Any] = connection.xrevrange(cls._children_key_template.format(job_name), "+", "-", count=1)
         if not response:
             return None
-        result_id, payload = response[0]
+        _result_id, payload = response[0]
         res = cls.deserialize(decode_dict(payload, set()))
         return res

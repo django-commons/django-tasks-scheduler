@@ -1,7 +1,7 @@
 # This is a helper module to obfuscate types used by different broker implementations.
 from collections import namedtuple
 from collections.abc import Callable
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar
 
 import redis
 
@@ -18,9 +18,9 @@ ConnectionErrorTypes = (redis.ConnectionError, valkey.ConnectionError)
 ResponseErrorTypes = (redis.ResponseError, valkey.ResponseError)
 TimeoutErrorTypes = (redis.TimeoutError, valkey.TimeoutError)
 WatchErrorTypes = (redis.WatchError, valkey.WatchError)
-ConnectionType = Union[redis.Redis, valkey.Valkey]
-PipelineType = Union[redis.client.Pipeline, valkey.client.Pipeline]
-SentinelType = Union[redis.sentinel.Sentinel, valkey.sentinel.Sentinel]
+ConnectionType = redis.Redis | valkey.Valkey
+PipelineType = redis.client.Pipeline | valkey.client.Pipeline
+SentinelType = redis.sentinel.Sentinel | valkey.sentinel.Sentinel
 FunctionReferenceType = TypeVar("FunctionReferenceType", str, Callable[..., Any])
 
 BrokerMetaDataType = namedtuple("BrokerMetaDataType", ["connection_type", "sentinel_type"])

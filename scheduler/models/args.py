@@ -89,7 +89,7 @@ class TaskKwarg(BaseTaskArg):
     key = models.CharField(max_length=255)
 
     def __str__(self) -> str:
-        key, value = self.value()
+        key, _value = self.value()
         return f"TaskKwarg[key={key},arg_type={self.arg_type},value={self.val}]"
 
     def value(self) -> tuple[str, Any]:

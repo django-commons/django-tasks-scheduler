@@ -23,7 +23,7 @@ from scheduler.types import SchedulerConfiguration, Broker, QueueConfiguration
 
 INSTALLED_APPS = [
     # ...
-    'scheduler',
+    "scheduler",
     # ...
 ]
 SCHEDULER_CONFIG = SchedulerConfiguration(
@@ -43,7 +43,7 @@ SCHEDULER_CONFIG = SchedulerConfiguration(
     SCHEDULER_FALLBACK_PERIOD_SECS=120,  # Period (secs) to wait before requiring to reacquire locks
 )
 SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
-    'default': QueueConfiguration(URL='redis://localhost:6379/0'),
+    "default": QueueConfiguration(URL="redis://localhost:6379/0"),
 }
 ```
 
@@ -54,7 +54,7 @@ from django.urls import path, include
 
 urlpatterns = [
     # ...
-    path('scheduler/', include('scheduler.urls')),
+    path("scheduler/", include("scheduler.urls")),
 ]
 ```
 

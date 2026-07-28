@@ -107,12 +107,12 @@ class JobNamesRegistry(ZSetModel):
             if not result:
                 logger.debug(f"BZMPOP timeout, no jobs found on queues {colored_registries}")
                 raise DequeueTimeout(timeout, registry_keys)
-            registry_key, job_name, timestamp = result
+            registry_key, job_name, _timestamp = result
             return as_str(registry_key), as_str(job_name)
         else:  # non-blocking variant
             for registry_key in registry_keys:
                 results: list[Any] = connection.zpopmin(registry_key)
                 if results:
-                    job_name, timestamp = results[0]
+                    job_name, _timestamp = results[0]
                     return as_str(registry_key), as_str(job_name)
             return None, None

@@ -25,7 +25,7 @@ def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) 
     if num_jobs == 0:
         return job_list, num_jobs, range(1, 1)
 
-    last_page = int(ceil(num_jobs / items_per_page))
+    last_page = ceil(num_jobs / items_per_page)
     page_range = range(1, last_page + 1)
     offset = items_per_page * (page - 1)
     job_names = registry.all(queue.connection, offset, offset + items_per_page - 1)

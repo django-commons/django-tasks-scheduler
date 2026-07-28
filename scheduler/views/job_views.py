@@ -29,7 +29,7 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
         messages.warning(request, f"Job {escape(job_name)} does not exist, maybe its TTL has passed")
         return redirect("queues_home")
     try:
-        job.func_name
+        _ = job.func_name
         data_is_valid = True
     except Exception:
         data_is_valid = False
