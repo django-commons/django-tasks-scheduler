@@ -5,11 +5,12 @@ from django.test import TestCase
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from . import conf  # noqa
+
 from ..decorators import JOB_METHODS_LIST, job
 from ..redis_models import JobStatus
 from ..redis_models.job import JobModel
 from ..worker import create_worker, get_current_job
+from . import conf  # noqa
 
 
 @job()
@@ -40,9 +41,7 @@ class MyClass:
         print("Hello")
 
     def __eq__(self, other):
-        if not isinstance(other, MyClass):
-            return False
-        return True
+        return isinstance(other, MyClass)
 
 
 @job()

@@ -17,7 +17,7 @@ long_running_func.delay()  # Enqueue function in "default" queue
 Specifying the queue where the job should be queued:
 
 ```python
-@job('high')
+@job("high")
 def long_running_func():
     pass
 
@@ -31,7 +31,7 @@ You can pass in any arguments that RQ's job decorator accepts:
 from scheduler import job
 
 
-@job('default', timeout=3600)
+@job("default", timeout=3600)
 def long_running_func():
     pass
 

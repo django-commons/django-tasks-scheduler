@@ -4,14 +4,14 @@ from enum import Enum
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpRequest
-from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 from scheduler.redis_models import JobModel
 from scheduler.settings import logger
-from scheduler.views.helpers import get_queue, _check_next_url, _enqueue_multiple_jobs
+from scheduler.views.helpers import _check_next_url, _enqueue_multiple_jobs, get_queue
 from scheduler.worker.commands import StopJobCommand, send_command
 
 

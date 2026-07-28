@@ -4,10 +4,10 @@ from datetime import datetime
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
+from scheduler.models import Task, TaskType
 from scheduler.tests.jobs import test_job
 from scheduler.tests.test_views.base import BaseTestCase
 from scheduler.tests.testtools import task_factory
-from scheduler.models import TaskType, Task
 
 
 class QueueRegistryJobsViewTest(BaseTestCase):

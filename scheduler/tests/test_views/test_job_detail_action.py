@@ -1,12 +1,13 @@
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.worker import create_worker
-from scheduler.redis_models import JobStatus, JobModel
+from scheduler.redis_models import JobModel, JobStatus
 from scheduler.tests.jobs import failing_job, long_job, test_job
 from scheduler.tests.testtools import assert_message_in_response
-from .base import BaseTestCase
+from scheduler.worker import create_worker
+
 from ..test_task_types.test_task_model import assert_response_has_msg
+from .base import BaseTestCase
 
 
 class SingleJobActionViewsTest(BaseTestCase):

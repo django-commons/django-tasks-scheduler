@@ -1,11 +1,12 @@
 import dataclasses
+from collections.abc import Generator
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, ClassVar, Any, Generator
+from typing import Any, ClassVar
 
 from scheduler.helpers.utils import utcnow
-from scheduler.redis_models.base import HashModel, MAX_KEYS
-from scheduler.settings import logger, SCHEDULER_CONFIG
+from scheduler.redis_models.base import MAX_KEYS, HashModel
+from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionType, Self
 
 
@@ -22,7 +23,7 @@ class WorkerStatus(str, Enum):
 @dataclasses.dataclass(slots=True, kw_only=True)
 class WorkerModel(HashModel):
     name: str
-    queue_names: List[str]
+    queue_names: list[str]
     pid: int
     hostname: str
     ip_address: str
@@ -33,17 +34,17 @@ class WorkerModel(HashModel):
     successful_job_count: int = 0
     failed_job_count: int = 0
     completed_jobs: int = 0
-    birth: Optional[datetime] = None
-    last_heartbeat: Optional[datetime] = None
+    birth: datetime | None = None
+    last_heartbeat: datetime | None = None
     is_suspended: bool = False
-    current_job_name: Optional[str] = None
-    stopped_job_name: Optional[str] = None
+    current_job_name: str | None = None
+    stopped_job_name: str | None = None
     total_working_time_ms: float = 0.0
     current_job_working_time: float = 0
-    last_cleaned_at: Optional[datetime] = None
-    shutdown_requested_date: Optional[datetime] = None
+    last_cleaned_at: datetime | None = None
+    shutdown_requested_date: datetime | None = None
     has_scheduler: bool = False
-    death: Optional[datetime] = None
+    death: datetime | None = None
 
     _list_key: ClassVar[str] = ":workers:ALL:"
     _children_key_template: ClassVar[str] = ":queue-workers:{}:"
@@ -81,7 +82,7 @@ class WorkerModel(HashModel):
     def set_current_job_working_time(self, job_execution_time: float, connection: ConnectionType) -> None:
         self.set_field("current_job_working_time", job_execution_time, connection=connection)
 
-    def heartbeat(self, connection: ConnectionType, timeout: Optional[int] = None) -> None:
+    def heartbeat(self, connection: ConnectionType, timeout: int | None = None) -> None:
         self.last_heartbeat = utcnow()
         self.save(connection, save_all=True)
         timeout = timeout or SCHEDULER_CONFIG.DEFAULT_WORKER_TTL + 60
@@ -89,14 +90,14 @@ class WorkerModel(HashModel):
         logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
     @classmethod
-    def cleanup(cls, connection: ConnectionType, queue_name: Optional[str] = None):
+    def cleanup(cls, connection: ConnectionType, queue_name: str | None = None):
         worker_names = cls.all_names(connection, queue_name)
         worker_keys = [cls.key_for(worker_name) for worker_name in worker_names]
         with connection.pipeline() as pipeline:
             for worker_key in worker_keys:
                 pipeline.exists(worker_key)
-            worker_exist: List[int] = pipeline.execute()
-            invalid_workers: List[str] = [
+            worker_exist: list[int] = pipeline.execute()
+            invalid_workers: list[str] = [
                 worker_name for i, worker_name in enumerate(worker_names) if not worker_exist[i]
             ]
             if len(invalid_workers) == 0:
@@ -108,7 +109,7 @@ class WorkerModel(HashModel):
                 pipeline.execute()
 
 
-def _split_list(a_list: List[str], segment_size: int) -> Generator[list[str], Any, None]:
+def _split_list(a_list: list[str], segment_size: int) -> Generator[list[str], Any, None]:
     """Splits a list into multiple smaller lists having size `segment_size`
 
     :param a_list: The list to split

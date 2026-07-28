@@ -1,12 +1,10 @@
-from typing import Dict, Optional
-
 from django import template
 from django.utils.safestring import mark_safe
 
 from scheduler.helpers.queues import Queue
 from scheduler.models import Task, get_scheduled_task
 from scheduler.models.task import run_task
-from scheduler.redis_models import Result, JobModel
+from scheduler.redis_models import JobModel, Result
 from scheduler.views.helpers import get_queue
 
 register = template.Library()
@@ -25,12 +23,12 @@ def show_func_name(job: JobModel) -> str:
 
 
 @register.filter
-def get_item(dictionary: Dict, key):
+def get_item(dictionary: dict, key):
     return dictionary.get(key)
 
 
 @register.filter
-def scheduled_task(job: JobModel) -> Optional[Task]:
+def scheduled_task(job: JobModel) -> Task | None:
     try:
         django_scheduled_task = get_scheduled_task(*job.args)
         return django_scheduled_task.get_absolute_url()
@@ -39,7 +37,7 @@ def scheduled_task(job: JobModel) -> Optional[Task]:
 
 
 @register.filter
-def latest_result(job: JobModel) -> Optional[Result]:
+def latest_result(job: JobModel) -> Result | None:
     """Returns the latest Result for a job (or None).
 
     Exposing the Result object lets a template render both its type and return value while fetching from the
@@ -50,13 +48,13 @@ def latest_result(job: JobModel) -> Optional[Result]:
 
 
 @register.filter
-def job_result(job: JobModel) -> Optional[str]:
+def job_result(job: JobModel) -> str | None:
     result = latest_result(job)
     return result.type.name.capitalize() if result is not None else None
 
 
 @register.filter
-def job_scheduled_task(job: JobModel) -> Optional[str]:
+def job_scheduled_task(job: JobModel) -> str | None:
     task = Task.objects.filter(id=job.scheduled_task_id).first()
     return task.name if task is not None else None
 

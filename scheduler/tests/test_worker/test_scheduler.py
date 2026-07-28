@@ -6,8 +6,7 @@ from django.utils import timezone
 from scheduler.models import TaskType
 from scheduler.settings import SCHEDULER_CONFIG
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
-from scheduler.worker import WorkerScheduler
-from scheduler.worker import create_worker
+from scheduler.worker import WorkerScheduler, create_worker
 
 
 class TestWorkerScheduler(SchedulerBaseCase):

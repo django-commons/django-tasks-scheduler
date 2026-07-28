@@ -1,12 +1,13 @@
-from typing import Any, Dict, Set
+from typing import Any
 
 from scheduler.redis_models.worker import WorkerModel
-from scheduler.settings import SCHEDULER_CONFIG, get_queue_names, get_queue_configuration, logger
-from scheduler.types import ConnectionErrorTypes, BrokerMetaData, Broker, ConnectionType, QueueConfiguration
+from scheduler.settings import SCHEDULER_CONFIG, get_queue_configuration, get_queue_names, logger
+from scheduler.types import Broker, BrokerMetaData, ConnectionErrorTypes, ConnectionType, QueueConfiguration
+
 from .queue_logic import Queue
 
 
-def _fail_fast_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def _fail_fast_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     """Returns a copy of `kwargs` with short-timeout, no-retry connection settings applied, unless the
     user already configured them explicitly (see `SchedulerConfiguration.FAIL_FAST_QUEUE_PROBING`)."""
     kwargs = dict(kwargs)
@@ -83,14 +84,14 @@ def get_queue(name: str = "default", fail_fast: bool = False) -> Queue:
     return Queue(name=name, connection=connection, is_async=is_async)
 
 
-def get_all_workers() -> Set[WorkerModel]:
+def get_all_workers() -> set[WorkerModel]:
     queue_names = get_queue_names()
 
-    workers_set: Set[WorkerModel] = set()
+    workers_set: set[WorkerModel] = set()
     for queue_name in queue_names:
         connection = _get_connection(get_queue_configuration(queue_name), fail_fast=True)
         try:
-            curr_workers: Set[WorkerModel] = set(WorkerModel.all(connection=connection))
+            curr_workers: set[WorkerModel] = set(WorkerModel.all(connection=connection))
             workers_set.update(curr_workers)
         except ConnectionErrorTypes as e:
             logger.error(f"Could not connect for queue {queue_name}: {e}")

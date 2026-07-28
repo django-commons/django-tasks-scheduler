@@ -34,7 +34,7 @@ class BaseDeathPenalty:
     def __enter__(self):
         self.setup_death_penalty()
 
-    def __exit__(self, type, value, traceback):  # noqa: A002
+    def __exit__(self, type, value, traceback):
         # Always cancel immediately, since we're done
         try:
             self.cancel_death_penalty()
@@ -85,7 +85,7 @@ class TimerDeathPenalty(BaseDeathPenalty):
 
         # Monkey-patch exception with the message ahead of time
         # since PyThreadState_SetAsyncExc can only take a class
-        def init_with_message(self, *args, **kwargs):  # noqa
+        def init_with_message(self, *args, **kwargs):
             super(exception, self).__init__(f"Task exceeded maximum timeout value ({timeout} seconds)")
 
         self._exception.__init__ = init_with_message

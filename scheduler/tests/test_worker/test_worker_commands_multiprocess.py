@@ -3,11 +3,12 @@ from time import sleep
 from django.test import tag
 
 from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import JobStatus, JobModel, WorkerModel
+from scheduler.redis_models import JobModel, JobStatus, WorkerModel
 from scheduler.tests.jobs import long_job, two_seconds_job
+
+from ...worker.commands import KillWorkerCommand, StopJobCommand, send_command
 from .. import testtools
 from ..test_views.base import BaseTestCase
-from ...worker.commands import KillWorkerCommand, send_command, StopJobCommand
 
 
 @tag("multiprocess")

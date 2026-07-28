@@ -160,18 +160,18 @@ Settings:
   `QueueConfiguration`
   ```python
   SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
-    'default': QueueConfiguration(
-        HOST='localhost',
-        PORT=6379,
-        USERNAME='some-user',
-        PASSWORD='some-password',
-        CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
-            'ssl_cert_reqs': 'required',
-            'ssl':True,
-        },
-    ),
-   # ...
-   }
+      "default": QueueConfiguration(
+          HOST="localhost",
+          PORT=6379,
+          USERNAME="some-user",
+          PASSWORD="some-password",
+          CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
+              "ssl_cert_reqs": "required",
+              "ssl": True,
+          },
+      ),
+      # ...
+  }
    ```
 - For how to configure in `settings.py`, please see the [settings documentation](./configuration.md).
 

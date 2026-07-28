@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from argparse import ArgumentParser
-from typing import Any, Optional
+from typing import Any
 
 import click
 from django.core.management.base import BaseCommand
@@ -41,6 +41,7 @@ def reset_db_connections() -> None:
 def register_sentry(sentry_dsn: str, **opts: Any) -> None:
     try:
         import sentry_sdk
+
         from scheduler.helpers.sentry_integration import SentryIntegration
     except ImportError:
         logger.error("Sentry SDK not installed. Skipping Sentry Integration")
@@ -153,8 +154,8 @@ class Command(BaseCommand):
                 dsn: str = options.get("sentry_dsn")  # type: ignore
                 register_sentry(dsn, **sentry_opts)
 
-            max_jobs: Optional[int] = options.get("max_jobs", None)
-            max_idle_time: Optional[int] = options.get("max_idle_time", None)
+            max_jobs: int | None = options.get("max_jobs", None)
+            max_idle_time: int | None = options.get("max_idle_time", None)
             w.work(max_jobs=max_jobs, max_idle_time=max_idle_time)
         except ConnectionErrorTypes as e:
             click.echo(str(e), err=True)

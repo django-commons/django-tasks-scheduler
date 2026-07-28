@@ -1,33 +1,33 @@
 __all__ = [
-    "Result",
-    "ResultType",
-    "as_str",
-    "SchedulerLock",
-    "WorkerModel",
+    "ActiveJobRegistry",
+    "CanceledJobRegistry",
     "DequeueTimeout",
-    "KvLock",
-    "JobStatus",
+    "FailedJobRegistry",
+    "FinishedJobRegistry",
     "JobModel",
     "JobNamesRegistry",
-    "FinishedJobRegistry",
-    "ActiveJobRegistry",
-    "FailedJobRegistry",
-    "CanceledJobRegistry",
-    "ScheduledJobRegistry",
+    "JobStatus",
+    "KvLock",
     "QueuedJobRegistry",
+    "Result",
+    "ResultType",
+    "ScheduledJobRegistry",
+    "SchedulerLock",
+    "WorkerModel",
+    "as_str",
 ]
 
 from .base import as_str
-from .job import JobStatus, JobModel
-from .lock import SchedulerLock, KvLock
+from .job import JobModel, JobStatus
+from .lock import KvLock, SchedulerLock
 from .registry.base_registry import DequeueTimeout, JobNamesRegistry
 from .registry.queue_registries import (
-    FinishedJobRegistry,
     ActiveJobRegistry,
-    FailedJobRegistry,
     CanceledJobRegistry,
-    ScheduledJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
     QueuedJobRegistry,
+    ScheduledJobRegistry,
 )
 from .result import Result, ResultType
 from .worker import WorkerModel
