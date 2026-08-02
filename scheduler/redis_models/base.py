@@ -256,6 +256,23 @@ class StreamModel(BaseModel):
         results = connection.xrevrange(cls._children_key_template.format(parent), "+", "-")
         return [cls.deserialize(decode_dict(result[1], exclude_keys=set())) for result in results]
 
-    def save(self, connection: ConnectionType) -> bool:
-        result = connection.xadd(self._parent_key, self.serialize(), maxlen=10)
+    def save(self, connection: ConnectionType, ttl: int | None = None) -> bool:
+        """Append the model to its parent stream and apply `ttl` to the stream key.
+
+        :param connection: Broker connection.
+        :param ttl: `0` deletes the stream instead of writing to it, a negative value keeps it indefinitely,
+            a positive value expires the stream after that many seconds, and `None` leaves the expiry untouched.
+        :returns: Whether an entry was written to the stream.
+        """
+        if ttl == 0:
+            connection.delete(self._parent_key)
+            return False
+        with connection.pipeline() as pipeline:
+            pipeline.xadd(self._parent_key, self.serialize(), maxlen=10)
+            if ttl is not None:
+                if ttl > 0:
+                    pipeline.expire(self._parent_key, ttl)
+                else:
+                    pipeline.persist(self._parent_key)
+            result = pipeline.execute()[0]
         return bool(result)

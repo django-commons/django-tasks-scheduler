@@ -1,5 +1,9 @@
 from django.urls import reverse
 
+from scheduler import settings
+from scheduler.helpers.queues import get_queue
+from scheduler.redis_models import Result, ResultType
+from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.testtools import SchedulerBaseCase
 
 
@@ -14,6 +18,90 @@ class TestWorkerAdmin(SchedulerBaseCase):
         res = self.client.get(url)
         # assert
         self.assertEqual(200, res.status_code)
+
+
+class TestResult(SchedulerBaseCase):
+    def _create_result(self, job_name: str, ttl: int) -> str:
+        """Creates a successful result for `job_name`, returning the key of the job results stream."""
+        Result.create(
+            get_queue("default").connection,
+            job_name=job_name,
+            worker_name="worker-name",
+            _type=ResultType.SUCCESSFUL,
+            ttl=ttl,
+            return_value=1,
+        )
+        return Result._children_key_template.format(job_name)
+
+    def test_result_positive_ttl__expires_stream(self):
+        # arrange
+        queue = get_queue("default")
+        # act
+        key = self._create_result("job-positive-ttl", ttl=100)
+        # assert
+        self.assertEqual(100, queue.connection.ttl(key))
+        self.assertIsNotNone(Result.fetch_latest(queue.connection, "job-positive-ttl"))
+
+    def test_result_zero_ttl__deletes_stream(self):
+        # arrange
+        queue = get_queue("default")
+        # act
+        key = self._create_result("job-zero-ttl", ttl=0)
+        # assert
+        self.assertEqual(0, queue.connection.exists(key))
+        self.assertIsNone(Result.fetch_latest(queue.connection, "job-zero-ttl"))
+
+    def test_result_negative_ttl__keeps_stream_indefinitely(self):
+        # arrange
+        queue = get_queue("default")
+        # act
+        key = self._create_result("job-negative-ttl", ttl=-1)
+        # assert
+        self.assertEqual(1, queue.connection.exists(key))
+        self.assertEqual(-1, queue.connection.ttl(key))
+        self.assertIsNotNone(Result.fetch_latest(queue.connection, "job-negative-ttl"))
+
+    def test_result_negative_ttl__removes_existing_expiry(self):
+        # arrange
+        queue = get_queue("default")
+        self._create_result("job-mixed-ttl", ttl=100)
+        # act
+        key = self._create_result("job-mixed-ttl", ttl=-1)
+        # assert
+        self.assertEqual(-1, queue.connection.ttl(key))
+
+    def test_job_handle_success__expires_result_stream(self):
+        # arrange
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(test_job, result_ttl=100)
+        # act
+        queue.run_sync(job)
+        # assert
+        self.assertEqual(100, queue.connection.ttl(Result._children_key_template.format(job.name)))
+
+    def test_job_handle_success_without_result_ttl__expires_result_stream(self):
+        # arrange
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(test_job)
+        # act
+        queue.run_sync(job)
+        # assert
+        self.assertEqual(
+            settings.SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL,
+            queue.connection.ttl(Result._children_key_template.format(job.name)),
+        )
+
+    def test_job_handle_failure__expires_result_stream(self):
+        # arrange
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(failing_job)
+        # act
+        queue.run_sync(job)
+        # assert
+        self.assertEqual(
+            settings.SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
+            queue.connection.ttl(Result._children_key_template.format(job.name)),
+        )
 
 
 class TestQueueAdmin(SchedulerBaseCase):
