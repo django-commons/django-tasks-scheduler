@@ -20,7 +20,7 @@ class Result(StreamModel):
     parent: str
     type: ResultType
     worker_name: str
-    ttl: int | None = 0
+    ttl: int | None = None
     name: str | None = None
     created_at: datetime = dataclasses.field(default_factory=utcnow)
     return_value: Any | None = None
@@ -54,6 +54,10 @@ class Result(StreamModel):
         )
         result.save(connection)
         return result
+
+    def save(self, connection: ConnectionType, ttl: int | None = None) -> bool:
+        """Saves the result, expiring the job results stream according to the result ttl."""
+        return super(Result, self).save(connection, ttl=self.ttl if ttl is None else ttl)
 
     @classmethod
     def fetch_latest(cls, connection: ConnectionType, job_name: str) -> Optional["Result"]:

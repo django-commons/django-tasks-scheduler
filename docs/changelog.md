@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.2.1 🌈
+
+### 🐛 Bug Fixes
+
+- Apply `result_ttl` to the job results stream, so results no longer accumulate in the broker forever #387
+
 ## v4.2.0 🌈
 
 ### 🚀 Features

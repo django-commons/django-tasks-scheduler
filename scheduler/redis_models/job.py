@@ -222,7 +222,7 @@ class JobModel(HashModel):
         if timeout == 0:
             raise ValueError("0 timeout is not allowed. Use -1 for infinite timeout")
         job_info_ttl = _parse_timeout(job_info_ttl if job_info_ttl is not None else SCHEDULER_CONFIG.DEFAULT_JOB_TTL)
-        result_ttl = _parse_timeout(result_ttl)
+        result_ttl = _parse_timeout(result_ttl if result_ttl is not None else SCHEDULER_CONFIG.DEFAULT_SUCCESS_TTL)
         if not isinstance(args, (tuple, list)):
             raise TypeError(f"{args!r} is not a valid args list")
         if not isinstance(kwargs, dict):
