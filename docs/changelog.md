@@ -5,6 +5,7 @@
 ### 🐛 Bug Fixes
 
 - Apply `result_ttl` to the job results stream, so results no longer accumulate in the broker forever #387
+- Fix documented default values for `DEFAULT_FAILURE_TTL` and `DEFAULT_JOB_TTL`, which did not match the code #389
 
 ## v4.2.0 🌈
 

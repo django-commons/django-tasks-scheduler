@@ -58,7 +58,15 @@ Default: `10` (10 seconds).
 
 ### SCHEDULER_CONFIG: `BROKER`
 
+Broker to use, one of `Broker.REDIS`, `Broker.VALKEY`, `Broker.FAKEREDIS`.
+
+Default: `Broker.REDIS`.
+
 ### SCHEDULER_CONFIG: `CALLBACK_TIMEOUT`
+
+Timeout (seconds) for a job callback (success/failure/stopped).
+
+Default: `60` (1 minute).
 
 ### SCHEDULER_CONFIG: `DEFAULT_SUCCESS_TTL`
 
@@ -70,13 +78,13 @@ Default: `600` (10 minutes).
 
 Default time to live for job execution result when it is failed.
 
-Default: `600` (10 minutes).
+Default: `31536000` (365 days).
 
 ### SCHEDULER_CONFIG: `DEFAULT_JOB_TTL`
 
 Default timeout for job info.
 
-Default: `300` (5 minutes).
+Default: `600` (10 minutes).
 
 ### SCHEDULER_CONFIG: `DEFAULT_JOB_TIMEOUT`
 
@@ -98,9 +106,13 @@ Default: `600` 10 minutes.
 
 The interval to monitor jobs in seconds.
 
+Default: `30` (30 seconds).
+
 ### SCHEDULER_CONFIG: `SCHEDULER_FALLBACK_PERIOD_SECS`
 
 Period (secs) to wait before requiring to reacquire locks.
+
+Default: `120` (2 minutes).
 
 ### SCHEDULER_CONFIG: `FAIL_FAST_QUEUE_PROBING`
 
