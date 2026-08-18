@@ -140,11 +140,8 @@ jobs:
   # If accepted and published, the release workflow would be triggered
   update_release_draft:
     permissions:
-      # write permission is required to create a GitHub release
-      contents: write
-      # write permission is required for auto-labeler
-      # otherwise, read permission is required at least
-      pull-requests: write
+      contents: write # write permission is required to create a GitHub release
+      pull-requests: write # write permission is required for auto-labeler otherwise, read permission is required at least
     needs: test-regular
     runs-on: ubuntu-latest
     steps:
