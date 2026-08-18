@@ -15,7 +15,10 @@ from scheduler.tests.testtools import task_factory
 class ExportTest(TestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.tmpfile = tempfile.NamedTemporaryFile()
+        # tearDown removes the file itself. With delete=True (The default behaviour), __del__ unlinks it a
+        # second time and python<3.12 dumps that FileNotFoundError to stderr.
+        # https://github.com/python/cpython/blob/3.11/Lib/tempfile.py#L463
+        self.tmpfile = tempfile.NamedTemporaryFile(delete=False)
 
     def tearDown(self) -> None:
         super().tearDown()
