@@ -32,6 +32,7 @@ from scheduler.types import (
     WatchErrorTypes,
 )
 
+from ..helpers.db import close_db_connections
 from ..helpers.queues.getters import get_queue_connection
 from ..redis_models.lock import QueueLock
 from ..redis_models.worker import WorkerStatus
@@ -341,7 +342,13 @@ class Worker:
         1. Check if scheduler should be started.
         2. Cleaning registries
         """
-        self.clean_registries()
+        try:
+            self.clean_registries()
+        finally:
+            # Abandoned jobs' failure callbacks run here, in this process, and are Django ORM
+            # (scheduler.models.task.failure_callback), so this pass can leave the worker
+            # holding a connection that the next fork would inherit.
+            close_db_connections()
         if not self.with_scheduler:
             return
         if self.scheduler is None and self.with_scheduler:
@@ -562,6 +569,9 @@ class Worker:
         :param job: The job to be executed
         :param queue: The queue from which the job was dequeued
         """
+        # The child must not inherit an open Django DB connection - see
+        # scheduler.helpers.db.close_db_connections for what happens when it does.
+        close_db_connections()
         child_pid = os.fork()
         os.environ["SCHEDULER_WORKER_NAME"] = self.name
         os.environ["SCHEDULER_JOB_NAME"] = job.name
