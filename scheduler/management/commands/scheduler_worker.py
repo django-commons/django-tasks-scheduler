@@ -6,8 +6,8 @@ from typing import Any
 
 import click
 from django.core.management.base import BaseCommand
-from django.db import connections
 
+from scheduler.helpers.db import close_db_connections
 from scheduler.settings import logger
 from scheduler.types import ConnectionErrorTypes
 from scheduler.worker import create_worker
@@ -31,11 +31,6 @@ WORKER_ARGUMENTS = {
     "with_scheduler",
     "burst",
 }
-
-
-def reset_db_connections() -> None:
-    for c in connections.all():
-        c.close()
 
 
 def register_sentry(sentry_dsn: str, **opts: Any) -> None:
@@ -145,8 +140,9 @@ class Command(BaseCommand):
             # Instantiate a worker
             w = create_worker(*queues, **init_options)
 
-            # Close any opened DB connection before any fork
-            reset_db_connections()
+            # Close any opened DB connection before any fork. The worker closes them again
+            # before each fork, so an ORM call made while working cannot reach a child.
+            close_db_connections()
 
             # Check whether sentry is enabled
             if options.get("sentry_dsn") is not None:
