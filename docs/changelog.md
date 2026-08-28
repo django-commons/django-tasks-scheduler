@@ -1,16 +1,11 @@
 # Changelog
 
-## v4.2.2 🌈
-
-### 🐛 Bug Fixes
-
-- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
-- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
-
 ## v4.2.1 🌈
 
 ### 🐛 Bug Fixes
 
+-- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
+- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
 - Apply `result_ttl` to the job results stream, so results no longer accumulate in the broker forever #387
 - Fix documented default values for `DEFAULT_FAILURE_TTL` and `DEFAULT_JOB_TTL`, which did not match the code #389
 
