@@ -520,7 +520,7 @@ wheels = [
 
 [[package]]
 name = "django-tasks-scheduler"
-version = "4.2.1"
+version = "4.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
