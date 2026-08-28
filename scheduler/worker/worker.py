@@ -605,6 +605,11 @@ class Worker:
         :param queue: The Queue
         """
         ret_val = None
+        # Measured here, on this process's own clock. `job` is the copy this process dequeued before
+        # forking and is never refreshed, while `started_at` is recorded by the job execution process
+        # against its own copy - so reading it here left the working time at 0 for ever, and the kill
+        # below could never fire however long the child hung.
+        forked_at = utcnow()
         while True:
             try:
                 with SCHEDULER_CONFIG.DEATH_PENALTY_CLASS(
@@ -615,11 +620,8 @@ class Worker:
             except JobExecutionMonitorTimeoutException:
                 # job execution process has not exited yet and is still running. Send a heartbeat to keep the worker
                 # alive.
-                if job.started_at is not None:
-                    working_time = (utcnow() - job.started_at).total_seconds()
-                    self._model.set_current_job_working_time(working_time, self.connection)
-                else:
-                    self.log(WARNING, f"job {job.name} does not have started_at, cannot set working time")
+                working_time = (utcnow() - forked_at).total_seconds()
+                self._model.set_current_job_working_time(working_time, self.connection)
                 # Kill the job from this side if something is really wrong (interpreter lock/etc).
                 if job.timeout != -1 and self._model.current_job_working_time > (job.timeout + 60):
                     self._model.heartbeat(self.connection, self.job_monitoring_interval + 60)
