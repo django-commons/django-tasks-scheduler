@@ -416,7 +416,8 @@ class Queue:
 
         if self._is_async:
             if at_front:
-                score = current_timestamp()
+                first = self.connection.zrange(self.queued_job_registry.key, 0, 0, withscores=True)
+                score = int(first[0][1]) - 1 if first else current_timestamp()
             else:
                 score = self.queued_job_registry.get_last_timestamp(self.connection) or current_timestamp()
             self.scheduled_job_registry.delete(connection=pipe, job_name=job_model.name)
