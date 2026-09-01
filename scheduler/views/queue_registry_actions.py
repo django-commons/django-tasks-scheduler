@@ -74,5 +74,6 @@ def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name:
         "jobs": job_list,
         "next_url": next_url,
         "action_url": reverse("queue_registry_action", args=[queue_name, registry_name, action]),
+        "post_job_names": False,
     }
     return render(request, "admin/scheduler/confirm_action.html", context_data)

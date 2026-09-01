@@ -86,5 +86,6 @@ def queue_confirm_job_action(request: HttpRequest, queue_name: str) -> HttpRespo
                 queue_name,
             ],
         ),
+        "post_job_names": True,
     }
     return render(request, "admin/scheduler/confirm_action.html", context_data)
