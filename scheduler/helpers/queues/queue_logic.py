@@ -148,8 +148,8 @@ class Queue:
                 exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {utcnow()}"
                 self.job_handle_failure(JobStatus.FAILED, job, exc_string)
 
-            for registry in self.REGISTRIES.values():
-                getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
+        for registry in self.REGISTRIES.values():
+            getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
 
     def first_queued_job_name(self) -> str | None:
         return self.queued_job_registry.get_first(self.connection)

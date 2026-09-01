@@ -104,6 +104,7 @@ class JobModel(HashModel):
     def is_scheduled_task(self) -> bool:
         return self.scheduled_task_id is not None
 
+    @property
     def has_failure_callback(self) -> bool:
         return self.failure_callback_name is not None
 
