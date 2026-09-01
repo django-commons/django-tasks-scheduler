@@ -6,7 +6,12 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
+from scheduler.helpers.queues import get_queue
+from scheduler.helpers.utils import current_timestamp
 from scheduler.models import TaskType, get_next_cron_time, get_scheduled_task
+from scheduler.redis_models import QueuedJobRegistry
+from scheduler.tests import conf  # noqa
+from scheduler.tests.jobs import test_job
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
 
@@ -45,6 +50,23 @@ class TestInternals(SchedulerBaseCase):
         with self.assertRaises(CallbackSetupError) as cm:
             Callback(1)
         self.assertEqual(str(cm.exception), "Callback `func` must be a string or function, received 1")
+
+
+class TestEnqueueJobScore(SchedulerBaseCase):
+    def test_enqueue_job__score_is_current_time_not_registry_max(self):
+        # arrange
+        queue = get_queue("default")
+        registry = queue.queued_job_registry
+        first_job = queue.create_and_enqueue_job(test_job, name="z-job-enqueued-first")
+        registry.add(queue.connection, first_job.name, current_timestamp() - 100)
+        # act
+        enqueue_time = current_timestamp()
+        second_job = queue.create_and_enqueue_job(test_job, name="a-job-enqueued-second")
+        # assert
+        self.assertGreaterEqual(queue.connection.zscore(registry.key, second_job.name), enqueue_time)
+        _, first_dequeued = QueuedJobRegistry.pop(queue.connection, [registry], timeout=None)
+        _, second_dequeued = QueuedJobRegistry.pop(queue.connection, [registry], timeout=None)
+        self.assertEqual([first_job.name, second_job.name], [first_dequeued, second_dequeued])
 
 
 class TestConfSettings(SchedulerBaseCase):
