@@ -6,6 +6,8 @@ from django.test import override_settings
 from django.utils import timezone
 
 from scheduler.helpers.callback import Callback, CallbackSetupError
+from scheduler.helpers.queues import get_queue
+from scheduler.helpers.utils import current_timestamp
 from scheduler.models import TaskType, get_next_cron_time, get_scheduled_task
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
@@ -45,6 +47,16 @@ class TestInternals(SchedulerBaseCase):
         with self.assertRaises(CallbackSetupError) as cm:
             Callback(1)
         self.assertEqual(str(cm.exception), "Callback `func` must be a string or function, received 1")
+
+
+class TestCleanRegistries(SchedulerBaseCase):
+    def test_active_registry_entry_without_job_is_removed(self):
+        queue = get_queue("default")
+        queue.active_job_registry.add(queue.connection, "orphan-job-name", current_timestamp() - 3600)
+
+        queue.clean_registries()
+
+        self.assertFalse(queue.active_job_registry.exists(queue.connection, "orphan-job-name"))
 
 
 class TestConfSettings(SchedulerBaseCase):

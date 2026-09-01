@@ -131,7 +131,10 @@ class Queue:
 
         for job_name, job_score in started_jobs:
             job = JobModel.get(job_name, connection=self.connection)
-            if job is None or not job.has_failure_callback or job_score + job.timeout > before_score:
+            if job is None:
+                self.active_job_registry.delete(connection=self.connection, job_name=job_name)
+                continue
+            if not job.has_failure_callback or job_score + job.timeout > before_score:
                 continue
 
             logger.debug(f"Running failure callbacks for {job.name}")
