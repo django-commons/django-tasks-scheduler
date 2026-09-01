@@ -26,14 +26,15 @@ class QueuedJobRegistry(JobNamesRegistry):
                 self.delete(connection=connection, job_name=job_name)
 
     def empty(self, connection: ConnectionType) -> None:
-        queued_jobs_count = self.count(connection=connection)
-        with connection.pipeline() as pipe:
-            for offset in range(0, queued_jobs_count, 1000):
-                job_names = self.all(connection, offset, 1000)
+        while True:
+            job_names = self.all(connection, 0, 999)
+            if not job_names:
+                return
+            with connection.pipeline() as pipe:
                 for job_name in job_names:
                     self.delete(connection=pipe, job_name=job_name)
                 JobModel.delete_many(job_names, connection=pipe)
-            pipe.execute()
+                pipe.execute()
 
 
 class FinishedJobRegistry(JobNamesRegistry):

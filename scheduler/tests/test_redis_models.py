@@ -104,6 +104,20 @@ class TestResult(SchedulerBaseCase):
         )
 
 
+class TestQueuedJobRegistry(SchedulerBaseCase):
+    def test_empty__more_than_1001_jobs__registry_emptied(self):
+        # arrange
+        queue = get_queue("default")
+        registry = queue.queued_job_registry
+        connection = queue.connection
+        connection.zadd(registry.key, {f"job-{i}": float(i) for i in range(1005)})
+        self.assertEqual(1005, registry.count(connection))
+        # act
+        registry.empty(connection)
+        # assert
+        self.assertEqual(0, registry.count(connection))
+
+
 class TestQueueAdmin(SchedulerBaseCase):
     def test_admin_list_view(self):
         # arrange
