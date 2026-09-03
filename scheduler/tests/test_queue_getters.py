@@ -4,6 +4,7 @@ from redis.retry import Retry
 
 from scheduler.helpers.queues.getters import _fail_fast_kwargs, _get_connection
 from scheduler.settings import SCHEDULER_CONFIG
+from scheduler.tests import conf  # noqa: F401  -- applies FAKEREDIS=True when running this module alone
 from scheduler.tests.testtools import SchedulerBaseCase
 from scheduler.types import Broker, QueueConfiguration
 
@@ -79,3 +80,37 @@ class TestGetConnectionFailFast(SchedulerBaseCase):
         with self.assertRaises(Exception):
             connection.ping()
         self.assertLess(time.time() - start, 1.0)
+
+
+class TestGetConnectionFakeredisSentinel(SchedulerBaseCase):
+    """A sentinel-configured queue must still resolve under `FAKEREDIS=True`.
+
+    `_get_connection` special-cased fakeredis when picking the connection class but not in the
+    sentinel branch, which looked up `BrokerMetaData[(Broker.FAKEREDIS, ...)].sentinel_type` --
+    a key that does not exist, because fakeredis has no sentinel support. Any admin view that
+    probes every configured queue raised `KeyError` as soon as one of them used sentinels.
+    """
+
+    def setUp(self) -> None:
+        # Set the broker before `super().setUp()`, which reaches for the default queue's connection.
+        self._orig_broker = SCHEDULER_CONFIG.BROKER
+        SCHEDULER_CONFIG.BROKER = Broker.FAKEREDIS
+        super().setUp()
+
+    def tearDown(self) -> None:
+        SCHEDULER_CONFIG.BROKER = self._orig_broker
+        super().tearDown()
+
+    def test_sentinel_config_under_fakeredis__returns_a_working_fake_connection(self):
+        import fakeredis
+
+        config = QueueConfiguration(
+            SENTINELS=[("localhost", 26736), ("localhost", 26737)],
+            MASTER_NAME="mymaster",
+            DB=0,
+        )
+
+        connection = _get_connection(config)
+
+        self.assertIsInstance(connection, fakeredis.FakeRedis)
+        self.assertTrue(connection.ping())

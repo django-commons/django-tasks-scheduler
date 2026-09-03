@@ -26,7 +26,8 @@ def _get_connection(
     cannot stall the request for several seconds (redis-py >= 8 retries connection errors with backoff
     by default). See `SchedulerConfiguration.FAIL_FAST_QUEUE_PROBING` to opt out.
     """
-    if SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS:
+    use_fakeredis = SCHEDULER_CONFIG.BROKER == Broker.FAKEREDIS
+    if use_fakeredis:
         import fakeredis
 
         broker_cls = fakeredis.FakeRedis if not use_strict_broker else fakeredis.FakeStrictRedis
@@ -42,6 +43,13 @@ def _get_connection(
         return broker_cls.from_url(config.URL, db=config.DB, **connection_kwargs)
     if config.UNIX_SOCKET_PATH:
         return broker_cls(unix_socket_path=config.UNIX_SOCKET_PATH, db=config.DB)
+
+    if config.SENTINELS and use_fakeredis:
+        # fakeredis implements no Sentinel, and there is no `(Broker.FAKEREDIS, ...)` row in
+        # `BrokerMetaData` to look one up in. A sentinel-configured queue also carries no HOST/PORT
+        # to fall through with, so serve it from an in-memory server keyed by the master name --
+        # two sentinel queues then stay as separate as they would be against a real broker.
+        return broker_cls(host=config.MASTER_NAME or "fakeredis-sentinel", port=6379, db=config.DB or 0)
 
     if config.SENTINELS:
         full_connection_kwargs = {
