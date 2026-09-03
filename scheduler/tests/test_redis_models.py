@@ -2,7 +2,8 @@ from django.urls import reverse
 
 from scheduler import settings
 from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import Result, ResultType
+from scheduler.redis_models import JobNamesRegistry, Result, ResultType
+from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_job
 from scheduler.tests.testtools import SchedulerBaseCase
 
@@ -102,6 +103,20 @@ class TestResult(SchedulerBaseCase):
             settings.SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL,
             queue.connection.ttl(Result._children_key_template.format(job.name)),
         )
+
+
+class TestQueuedJobRegistry(SchedulerBaseCase):
+    def test_enqueue_job_at_front__dequeued_first(self):
+        # arrange
+        queue = get_queue("default")
+        normal_job = queue.create_and_enqueue_job(test_job)
+        # act
+        at_front_job = queue.create_and_enqueue_job(test_job, at_front=True)
+        # assert
+        scores = dict(queue.queued_job_registry.all_with_timestamps(queue.connection))
+        self.assertLess(scores[at_front_job.name], scores[normal_job.name])
+        _, job_name = JobNamesRegistry.pop(queue.connection, [queue.queued_job_registry], None)
+        self.assertEqual(at_front_job.name, job_name)
 
 
 class TestQueueAdmin(SchedulerBaseCase):
