@@ -69,7 +69,10 @@ class WorkerCommandsTest(BaseTestCase):
         # Act
         t = Thread(target=worker.work, args=(0,), name="worker-thread")
         t.start()
-        sleep(0.1)
+        for _ in range(100):
+            if WorkerModel.get(worker.name, connection=queue.connection).current_job_name == job.name:
+                break
+            sleep(0.05)
         command = StopJobCommand(worker_name=worker_name, job_name=job.name)
         command_payload = json.dumps(command.command_payload())
         worker._command_listener.handle_payload({"data": command_payload})
