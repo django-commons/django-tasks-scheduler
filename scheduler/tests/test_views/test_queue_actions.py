@@ -107,3 +107,34 @@ class QueueActionsViewsTest(BaseTestCase):
 
         for job_name in job_names:
             self.assertTrue(queue.finished_job_registry.exists(queue.connection, job_name))
+
+
+class QueueConfirmJobActionViewTest(BaseTestCase):
+    """`action in QueueJobAction` raised `TypeError` on python < 3.12.
+
+    `EnumType.__contains__` only started accepting non-member values in python 3.12; before that it
+    raised, so posting an action to the confirmation view returned a 500 on python 3.11. The enum's
+    own `__contains__` did not help -- it was an instance method, and the check is on the class.
+    """
+
+    def test_confirm_job_action__known_action_renders(self):
+        queue = get_queue("django_tasks_scheduler_test")
+        job = queue.create_and_enqueue_job(test_job)
+
+        res = self.client.post(
+            reverse("queue_confirm_job_action", args=[queue.name]),
+            {"action": "delete", "_selected_action": [job.name]},
+        )
+
+        self.assertEqual(200, res.status_code)
+
+    def test_confirm_job_action__unknown_action_redirects(self):
+        queue = get_queue("django_tasks_scheduler_test")
+        job = queue.create_and_enqueue_job(test_job)
+
+        res = self.client.post(
+            reverse("queue_confirm_job_action", args=[queue.name]),
+            {"action": "not-an-action", "_selected_action": [job.name]},
+        )
+
+        self.assertEqual(302, res.status_code)

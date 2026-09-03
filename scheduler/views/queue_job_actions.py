@@ -20,8 +20,9 @@ class QueueJobAction(Enum):
     REQUEUE = "requeue"
     STOP = "stop"
 
-    def __contains__(self, item: str) -> bool:
-        return item in [a.value for a in self.__class__]
+    @classmethod
+    def values(cls) -> list[str]:
+        return [item.value for item in cls]
 
 
 @never_cache  # type: ignore
@@ -31,7 +32,7 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
     action = request.POST.get("action", False)
     job_names = request.POST.get("job_names", False)
-    if request.method != "POST" or not action or not job_names or action not in [item.value for item in QueueJobAction]:
+    if request.method != "POST" or not action or not job_names or action not in QueueJobAction.values():
         return redirect(next_url)
     job_names = request.POST.getlist("job_names")
     if action == QueueJobAction.DELETE.value:
@@ -69,7 +70,7 @@ def queue_confirm_job_action(request: HttpRequest, queue_name: str) -> HttpRespo
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
     action = request.POST.get("action", None)
     job_names = request.POST.getlist("_selected_action", None)
-    if request.method != "POST" or action is None or job_names is None or action not in QueueJobAction:
+    if request.method != "POST" or action is None or job_names is None or action not in QueueJobAction.values():
         return redirect(next_url)
 
     # confirm action
