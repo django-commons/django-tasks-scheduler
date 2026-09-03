@@ -143,6 +143,10 @@ jobs:
       contents: write # write permission is required to create a GitHub release
       pull-requests: write # write permission is required for auto-labeler otherwise, read permission is required at least
     needs: test-regular
+    # Pull requests from a fork get a read-only GITHUB_TOKEN, so release-drafter cannot create the
+    # draft release and the job fails on every outside contribution. The draft only needs refreshing
+    # once a change is on master anyway.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@ed4bc48ec97379be2258e7b7ac2624a3e26ab809
