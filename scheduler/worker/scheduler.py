@@ -148,9 +148,11 @@ class WorkerScheduler:
             queue = get_queue(registry.name)
             jobs = JobModel.get_many(job_names, connection=self.connection)
             with self.connection.pipeline() as pipeline:
-                for job in jobs:
+                for job_name, job in zip(job_names, jobs):
                     if job is not None:
                         queue.enqueue_job(job, pipeline=pipeline, at_front=job.at_front)
+                    else:
+                        registry.delete(connection=pipeline, job_name=job_name)
                 pipeline.execute()
         self.status = SchedulerStatus.STARTED
 

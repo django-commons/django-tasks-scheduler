@@ -69,6 +69,16 @@ class TestEnqueueJobScore(SchedulerBaseCase):
         self.assertEqual([first_job.name, second_job.name], [first_dequeued, second_dequeued])
 
 
+class TestCleanRegistries(SchedulerBaseCase):
+    def test_active_registry_entry_without_job_is_removed(self):
+        queue = get_queue("default")
+        queue.active_job_registry.add(queue.connection, "orphan-job-name", current_timestamp() - 3600)
+
+        queue.clean_registries()
+
+        self.assertFalse(queue.active_job_registry.exists(queue.connection, "orphan-job-name"))
+
+
 class TestConfSettings(SchedulerBaseCase):
     @override_settings(SCHEDULER_CONFIG=[])
     def test_conf_settings__bad_scheduler_config(self):
