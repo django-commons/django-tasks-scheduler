@@ -129,12 +129,14 @@ class Queue:
             self.connection, before_score
         )
 
-        for job_name, job_score in started_jobs:
+        # `job_score` is already the job's expiry: `prepare_for_execution` scores the active registry
+        # entry with `started_at + timeout`, and nothing refreshes it afterwards. So
+        # `get_job_names_before` has done the whole comparison, and re-testing `job_score + timeout`
+        # here would count the timeout twice, holding a job back until `started_at + 2 * timeout`.
+        for job_name, _job_score in started_jobs:
             job = JobModel.get(job_name, connection=self.connection)
             if job is None:
                 self.active_job_registry.delete(connection=self.connection, job_name=job_name)
-                continue
-            if job_score + job.timeout > before_score:
                 continue
 
             # Only the callback is conditional. Every abandoned job is moved to the failed registry,

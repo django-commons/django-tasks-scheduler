@@ -177,6 +177,22 @@ class TestQueueCleanRegistries(SchedulerBaseCase):
         self.assertTrue(queue.failed_job_registry.exists(queue.connection, job.name))
         self.assertFalse(queue.active_job_registry.exists(queue.connection, job.name))
 
+    def test_abandoned_job_is_handled_after_one_timeout_not_two(self):
+        # The active registry entry is scored `started_at + timeout`, so an entry that
+        # `get_job_names_before` returns is already expired. Re-testing `job_score + timeout` held a
+        # job back until `started_at + 2 * timeout`; here the job is one timeout past its expiry,
+        # which is short of that doubled threshold.
+        # arrange
+        queue = get_queue("default")
+        timeout = 60
+        job = queue.create_and_enqueue_job(test_job, timeout=timeout)
+        started_at = current_timestamp() - timeout - 1
+        queue.active_job_registry.add(queue.connection, job.name, started_at + timeout)
+        # act
+        queue.clean_registries()
+        # assert
+        self.assertTrue(queue.failed_job_registry.exists(queue.connection, job.name))
+
     def test_abandoned_job_with_failure_callback__moved_to_failed_registry(self):
         # arrange
         queue = get_queue("default")
