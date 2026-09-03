@@ -11,12 +11,18 @@
 - Stop rendering one hidden `job_names` input per job on registry action confirmations, which made Empty Queue fail with HTTP 400 on any queue above `DATA_UPLOAD_MAX_NUMBER_FIELDS` #401
 - Make `has_failure_callback` a property and run the registry sweep once per `clean_registries` call rather than once per abandoned job #402
 - Fix a python 3.11 crash in the job-action confirmation view: `action in QueueJobAction` raises `TypeError` before python 3.12
+- Stop `clean_registries` counting the job timeout twice: an active-registry entry is already scored `started_at + timeout`, so an abandoned job waited `2 * timeout` before its failure callback ran and it moved to the failed registry
+- Resolve a sentinel-configured queue when the broker is fakeredis, instead of raising `KeyError`; this broke any admin view that probes every configured queue
 
 ### 🧰 Maintenance
 
 - Stop `TestWorkerAdmin` leaking broker configuration into the rest of the suite, which silently disabled `FAKEREDIS=True` for every test that ran after it
 - Wait for the worker to pick a job up before sending the stop command, instead of sleeping a fixed 100ms #409
 - Skip release-drafter on pull requests, where a fork's read-only token makes it fail
+
+### ⚠️ Removed
+
+- `JobNamesRegistry.get_last_timestamp()`. Its only caller was the queued-job scoring removed above, and that scoring was the bug
 
 ## v4.2.2 🌈
 
