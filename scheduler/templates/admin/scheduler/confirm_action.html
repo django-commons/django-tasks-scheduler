@@ -30,9 +30,11 @@
         <form action="{{ action_url }}" method="post">
             {% csrf_token %}
             <div>
-                {% for job in jobs %}
-                    <input type="hidden" name="job_names" value="{{ job.name }}">
-                {% endfor %}
+                {% if post_job_names %}
+                    {% for job in jobs %}
+                        <input type="hidden" name="job_names" value="{{ job.name }}">
+                    {% endfor %}
+                {% endif %}
                 <input type="hidden" name="action" value="{{ action }}"/>
                 <input type="hidden" name="next_url" value="{{ next_url }}"/>
                 <input type="submit" value="Yes, I'm sure"/>
