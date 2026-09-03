@@ -418,7 +418,7 @@ class Queue:
             if at_front:
                 score = current_timestamp()
             else:
-                score = self.queued_job_registry.get_last_timestamp(self.connection) or current_timestamp()
+                score = current_timestamp()
             self.scheduled_job_registry.delete(connection=pipe, job_name=job_model.name)
             self.queued_job_registry.add(connection=pipe, score=score, job_name=job_model.name)
             pipe.execute()
