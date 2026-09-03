@@ -134,25 +134,28 @@ class Queue:
             if job is None:
                 self.active_job_registry.delete(connection=self.connection, job_name=job_name)
                 continue
-            if not job.has_failure_callback or job_score + job.timeout > before_score:
+            if job_score + job.timeout > before_score:
                 continue
 
-            logger.debug(f"Running failure callbacks for {job.name}")
-            try:
-                job.call_failure_callback(job, self.connection, traceback.extract_stack())
-            except Exception:
-                logger.exception(f"Job {self.name}: error while executing failure callback")
-                raise
+            # Only the callback is conditional. Every abandoned job is moved to the failed registry,
+            # which is what this method documents and what it did while `has_failure_callback` was a
+            # bound method and the guard was therefore always true. Skipping the move for a job with
+            # no failure callback would drop it from the active registry in the sweep below without
+            # recording it anywhere, leaving `status=STARTED` and nothing visible in the admin.
+            if job.has_failure_callback:
+                logger.debug(f"Running failure callbacks for {job.name}")
+                try:
+                    job.call_failure_callback(job, self.connection, traceback.extract_stack())
+                except Exception:
+                    logger.exception(f"Job {self.name}: error while executing failure callback")
+                    raise
 
-            else:
-                logger.warning(
-                    f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)"
-                )
-                exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {utcnow()}"
-                self.job_handle_failure(JobStatus.FAILED, job, exc_string)
+            logger.warning(f"Queue cleanup: Moving job to {self.failed_job_registry.key} (due to AbandonedJobError)")
+            exc_string = f"Moved to {self.failed_job_registry.key}, due to AbandonedJobError, at {utcnow()}"
+            self.job_handle_failure(JobStatus.FAILED, job, exc_string)
 
-            for registry in self.REGISTRIES.values():
-                getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
+        for registry in self.REGISTRIES.values():
+            getattr(self, registry).cleanup(connection=self.connection, timestamp=before_score)
 
     def first_queued_job_name(self) -> str | None:
         return self.queued_job_registry.get_first(self.connection)

@@ -1,10 +1,12 @@
 from django.urls import reverse
 
 from scheduler import settings
+from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import get_queue
+from scheduler.helpers.utils import current_timestamp
 from scheduler.redis_models import JobNamesRegistry, Result, ResultType
 from scheduler.tests import conf  # noqa
-from scheduler.tests.jobs import failing_job, test_job
+from scheduler.tests.jobs import failing_job, test_args_kwargs, test_job
 from scheduler.tests.testtools import SchedulerBaseCase
 
 
@@ -129,6 +131,61 @@ class TestQueuedJobRegistry(SchedulerBaseCase):
         registry.empty(connection)
         # assert
         self.assertEqual(0, registry.count(connection))
+
+
+class TestJobModelHasFailureCallback(SchedulerBaseCase):
+    def test_job_without_failure_callback__has_failure_callback_is_false(self):
+        # arrange
+        queue = get_queue("default")
+        # act
+        job = queue.create_and_enqueue_job(test_job)
+        # assert
+        self.assertIs(False, job.has_failure_callback)
+
+    def test_job_with_failure_callback__has_failure_callback_is_true(self):
+        # arrange
+        queue = get_queue("default")
+        # act
+        job = queue.create_and_enqueue_job(failing_job, on_failure=Callback(test_job))
+        # assert
+        self.assertIs(True, job.has_failure_callback)
+
+
+class TestQueueCleanRegistries(SchedulerBaseCase):
+    def test_no_abandoned_jobs__expired_registry_entries_are_swept(self):
+        # arrange
+        queue = get_queue("default")
+        registry = queue.finished_job_registry
+        registry.add(queue.connection, "expired-job", current_timestamp() - 100)
+        self.assertTrue(registry.exists(queue.connection, "expired-job"))
+        # act
+        queue.clean_registries()
+        # assert
+        self.assertFalse(registry.exists(queue.connection, "expired-job"))
+
+    def test_abandoned_job_without_failure_callback__moved_to_failed_registry(self):
+        # A job with no failure callback is still abandoned, and the sweep at the end of
+        # clean_registries drops it from the active registry either way -- so it has to be recorded
+        # in the failed registry, not silently forgotten with status=STARTED.
+        # arrange
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(test_job, timeout=60)
+        queue.active_job_registry.add(queue.connection, job.name, current_timestamp() - 3600)
+        # act
+        queue.clean_registries()
+        # assert
+        self.assertTrue(queue.failed_job_registry.exists(queue.connection, job.name))
+        self.assertFalse(queue.active_job_registry.exists(queue.connection, job.name))
+
+    def test_abandoned_job_with_failure_callback__moved_to_failed_registry(self):
+        # arrange
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(failing_job, timeout=60, on_failure=Callback(test_args_kwargs))
+        queue.active_job_registry.add(queue.connection, job.name, current_timestamp() - 3600)
+        # act
+        queue.clean_registries()
+        # assert
+        self.assertTrue(queue.failed_job_registry.exists(queue.connection, job.name))
 
 
 class TestQueueAdmin(SchedulerBaseCase):
