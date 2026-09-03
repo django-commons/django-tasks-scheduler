@@ -1,11 +1,34 @@
 # Changelog
 
+## v4.3.0 🌈
+
+### 🐛 Bug Fixes
+
+- Score queued jobs with the enqueue time instead of the registry maximum, so a non-empty queue keeps advancing and drains FIFO rather than in lexicographic order by job name #397
+- Score `at_front` jobs below the current queue minimum, so they are dequeued first instead of last #398
+- Remove a scheduled-registry entry whose job model is gone, so a task whose job was evicted is scheduled again instead of frozen forever #399
+- Drain `QueuedJobRegistry.empty()` past 1001 jobs; it silently left the rest behind #400
+- Stop rendering one hidden `job_names` input per job on registry action confirmations, which made Empty Queue fail with HTTP 400 on any queue above `DATA_UPLOAD_MAX_NUMBER_FIELDS` #401
+- Make `has_failure_callback` a property and run the registry sweep once per `clean_registries` call rather than once per abandoned job #402
+- Fix a python 3.11 crash in the job-action confirmation view: `action in QueueJobAction` raises `TypeError` before python 3.12
+
+### 🧰 Maintenance
+
+- Stop `TestWorkerAdmin` leaking broker configuration into the rest of the suite, which silently disabled `FAKEREDIS=True` for every test that ran after it
+- Wait for the worker to pick a job up before sending the stop command, instead of sleeping a fixed 100ms #409
+- Skip release-drafter on pull requests, where a fork's read-only token makes it fail
+
+## v4.2.2 🌈
+
+### 🐛 Bug Fixes
+
+- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
+- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
+
 ## v4.2.1 🌈
 
 ### 🐛 Bug Fixes
 
--- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
-- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
 - Apply `result_ttl` to the job results stream, so results no longer accumulate in the broker forever #387
 - Fix documented default values for `DEFAULT_FAILURE_TTL` and `DEFAULT_JOB_TTL`, which did not match the code #389
 
