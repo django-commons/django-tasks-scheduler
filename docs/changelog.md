@@ -13,6 +13,8 @@
 - Fix a python 3.11 crash in the job-action confirmation view: `action in QueueJobAction` raises `TypeError` before python 3.12
 - Stop `clean_registries` counting the job timeout twice: an active-registry entry is already scored `started_at + timeout`, so an abandoned job waited `2 * timeout` before its failure callback ran and it moved to the failed registry
 - Resolve a sentinel-configured queue when the broker is fakeredis, instead of raising `KeyError`; this broke any admin view that probes every configured queue
+- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
+- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
 
 ### 🧰 Maintenance
 
@@ -23,13 +25,6 @@
 ### ⚠️ Removed
 
 - `JobNamesRegistry.get_last_timestamp()`. Its only caller was the queued-job scoring removed above, and that scoring was the bug
-
-## v4.2.2 🌈
-
-### 🐛 Bug Fixes
-
-- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer inherit a live connection and fail on their first query #393
-- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so the kill can actually fire #395
 
 ## v4.2.1 🌈
 
