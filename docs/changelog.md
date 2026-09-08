@@ -25,6 +25,9 @@
   inherit a live connection and fail on their first query #393
 - Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so
   the kill can actually fire #395
+- Stop a manual **Enqueue now** run, or a save from a stale `Task` instance, starting a second recurring chain: the
+  completion callbacks now schedule a successor only for the job the task actually points at, and write back only the
+  fields they own, so the outcome counters can no longer be rolled back either #412
 
 ### 🧰 Maintenance
 
