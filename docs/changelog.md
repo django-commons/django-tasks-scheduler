@@ -4,42 +4,30 @@
 
 ### 🐛 Bug Fixes
 
-- Score queued jobs with the enqueue time instead of the registry maximum, so a non-empty queue keeps advancing and
-  drains FIFO rather than in lexicographic order by job name #397
-- Score `at_front` jobs below the current queue minimum, so they are dequeued first instead of last #398
-- Remove a scheduled-registry entry whose job model is gone, so a task whose job was evicted is scheduled again instead
-  of frozen forever #399
+- Drain queues FIFO instead of in lexicographic order by job name #397
+- Dequeue `at_front` jobs first instead of last #398
+- Reschedule a task whose job was evicted from the broker, instead of leaving it frozen forever #399
 - Drain `QueuedJobRegistry.empty()` past 1001 jobs; it silently left the rest behind #400
-- Stop rendering one hidden `job_names` input per job on registry action confirmations, which made Empty Queue fail with
-  HTTP 400 on any queue above `DATA_UPLOAD_MAX_NUMBER_FIELDS` #401
-- Make `has_failure_callback` a property and run the registry sweep once per `clean_registries` call rather than once
-  per abandoned job #402
-- Fix a python 3.11 crash in the job-action confirmation view: `action in QueueJobAction` raises `TypeError` before
-  python 3.12
-- Stop `clean_registries` counting the job timeout twice: an active-registry entry is already scored
-  `started_at + timeout`, so an abandoned job waited `2 * timeout` before its failure callback ran and it moved to the
-  failed registry
-- Resolve a sentinel-configured queue when the broker is fakeredis, instead of raising `KeyError`; this broke any admin
-  view that probes every configured queue
-- Close the worker's Django DB connections before forking a job execution process, so job execution processes no longer
-  inherit a live connection and fail on their first query #393
-- Kill a job execution process that hangs past its timeout: the monitor loop now measures working time from the fork, so
-  the kill can actually fire #395
-- Stop a manual **Enqueue now** run, or a save from a stale `Task` instance, starting a second recurring chain: the
-  completion callbacks now schedule a successor only for the job the task actually points at, and write back only the
-  fields they own, so the outcome counters can no longer be rolled back either #412
+- Fix Empty Queue failing with HTTP 400 on any queue above `DATA_UPLOAD_MAX_NUMBER_FIELDS` #401
+- Sweep registries once per `clean_registries` call rather than once per abandoned job; `has_failure_callback` is now a
+  property #402
+- Fix a python 3.11 crash in the job-action confirmation view, where `action in QueueJobAction` raises `TypeError`
+- Run an abandoned job's failure callback after one timeout instead of two
+- Fix the `KeyError` that broke every admin view probing queues when a sentinel queue runs on the fakeredis broker
+- Close the worker's Django DB connections before forking, so job execution processes no longer fail on their first
+  query #393
+- Kill a job execution process that hangs past its timeout #395
+- Stop a manual **Enqueue now**, or a save from a stale `Task` instance, starting a duplicate recurring chain #412
 
 ### 🧰 Maintenance
 
-- Stop `TestWorkerAdmin` leaking broker configuration into the rest of the suite, which silently disabled
-  `FAKEREDIS=True` for every test that ran after it
+- Stop `TestWorkerAdmin` leaking broker configuration into the rest of the suite, silently disabling `FAKEREDIS=True`
 - Wait for the worker to pick a job up before sending the stop command, instead of sleeping a fixed 100ms #409
 - Skip release-drafter on pull requests, where a fork's read-only token makes it fail
 
 ### ⚠️ Removed
 
-- `JobNamesRegistry.get_last_timestamp()`. Its only caller was the queued-job scoring removed above, and that scoring
-  was the bug
+- `JobNamesRegistry.get_last_timestamp()`, whose only caller was the queued-job scoring fixed in #397
 
 ## v4.2.1 🌈
 
