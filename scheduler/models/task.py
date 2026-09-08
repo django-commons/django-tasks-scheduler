@@ -10,6 +10,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.core.mail import mail_admins
 from django.db import models
+from django.db.models import F
 from django.templatetags.tz import utc
 from django.urls import reverse
 from django.utils import timezone
@@ -26,6 +27,16 @@ from scheduler.types import TASK_TYPES, ConnectionType
 from ..helpers import utils
 from .args import TaskArg, TaskKwarg
 
+# Fields that `_schedule()` may change. Everything that writes back a task it read before a run finished - the
+# completion callbacks and the scheduler loop - restricts itself to these, so a stale instance cannot restore an old
+# job name or roll back the outcome counters.
+_SCHEDULING_FIELDS = ("job_name", "scheduled_time", "repeat")
+
+# Fields the run machinery owns. The completion callbacks maintain them and the admin marks them read-only, so they
+# are never edited through a form and a save may re-read them instead of writing back what the instance holds -
+# which, for an instance read before a run finished, is a stale job name and stale counters.
+_RUN_STATE_FIELDS = ("job_name", "successful_runs", "last_successful_run", "failed_runs", "last_failed_run")
+
 
 def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     if job.task_type is None or job.scheduled_task_id is None:
@@ -34,30 +45,53 @@ def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     return task
 
 
+def _complete_run(task: "Task", job: JobModel, failed: bool) -> None:
+    """Record the outcome of a finished job and, when that job owned the task's recurring chain, schedule its
+    successor.
+
+    :param task: The task the job belongs to, read from the database by the caller.
+    :param job: The job that just finished.
+    :param failed: Whether the job failed.
+    """
+    now = timezone.now()
+    if failed:
+        counters: dict[str, Any] = {"failed_runs": F("failed_runs") + 1, "last_failed_run": now}
+    else:
+        counters = {"successful_runs": F("successful_runs") + 1, "last_successful_run": now}
+    # Increment in the database rather than through this instance: another run of the same task may be finishing
+    # concurrently, and a read-modify-write here would drop its result.
+    Task.objects.filter(id=task.id).update(updated_at=now, **counters)
+
+    if task.job_name != job.name:
+        # This job is not the task's pending execution - it is a manual "Enqueue now" run, or a leftover duplicate.
+        # The scheduled job is still waiting, so scheduling a successor here would start a second recurring chain
+        # that then sustains itself forever.
+        logger.debug(f"Job {job.name} is not the scheduled run of task {task.name}, not scheduling a successor")
+        return
+
+    if not task._schedule(exclude_job_name=job.name) and task.job_name == job.name:
+        task.job_name = None
+    task.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
+
+
 def failure_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
     task = _get_task_for_job(job)
     if task is None:
-        logger.warn(f"Could not find task for job {job.name}")
+        logger.warning(f"Could not find task for job {job.name}")
         return
     mail_admins(
         f"Task {task.id}/{task.name} has failed",
         "See django-admin for logs",
     )
-    task.job_name = None
-    task.failed_runs += 1
-    task.last_failed_run = timezone.now()
-    task.save(schedule_job=True, clean=False)
+    _complete_run(task, job, failed=True)
 
 
 def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
     task = _get_task_for_job(job)
     if task is None:
-        logger.warn(f"Could not find task for job {job.name}")
+        logger.warning(f"Could not find task for job {job.name}")
         return
-    task.job_name = None
-    task.successful_runs += 1
-    task.last_successful_run = timezone.now()
-    task.save(schedule_job=True, clean=False)
+    _complete_run(task, job, failed=False)
 
 
 def get_queue_choices() -> list[tuple[str, str]]:
@@ -198,7 +232,7 @@ class Task(models.Model):
         # update the job_id to None. (The job_id belongs to a previous run which is completed)
         if not res:
             self.job_name = None
-            super().save()
+            super().save(update_fields=["job_name", "updated_at"])
         return res
 
     @admin.display(description="Callable")  # type: ignore[misc]
@@ -321,11 +355,15 @@ class Task(models.Model):
         func = self.function_string()
         return f"{self.task_type}[{self.name}={func}]"
 
-    def _schedule(self) -> bool:
+    def _schedule(self, exclude_job_name: str | None = None) -> bool:
         """Schedule the next execution for the task to run.
+
+        :param exclude_job_name: Name of a job that should not count as this task's pending execution. The completion
+            callbacks pass the job that is finishing: it is still in the active registry while they run, so without
+            this the task would look like it is already scheduled and never get a successor.
         :returns: True if a job was scheduled, False otherwise.
         """
-        if self.is_scheduled():
+        if self.job_name != exclude_job_name and self.is_scheduled():
             logger.debug(f"Task {self.name} already scheduled")
             return False
         if not self.enabled:
@@ -340,17 +378,41 @@ class Task(models.Model):
         self.job_name = job.name
         return True
 
+    def _refresh_run_state(self) -> None:
+        """Re-read the fields the run machinery owns, so saving a stale instance cannot undo a finished run."""
+        if self.pk is None:
+            return
+        current = Task.objects.filter(pk=self.pk).values(*_RUN_STATE_FIELDS).first()
+        if current is None:  # deleted underneath us
+            return
+        for field_name, value in current.items():
+            setattr(self, field_name, value)
+
     def save(self, **kwargs: Any) -> None:
         should_clean = kwargs.pop("clean", True)
         schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
+        if schedule_job:
+            self._refresh_run_state()
         if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super().save(**kwargs)
         if schedule_job:
             self._schedule()
-            super().save()
+            super().save(update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
+
+    def reschedule_if_needed(self) -> bool:
+        """Give the task a pending job if it has none, writing back only the scheduling fields.
+
+        Used by the scheduler loop, which works from instances read before the loop started: a full-row save there
+        would restore an old job name a completion callback has since replaced, adding a second recurring chain.
+
+        :returns: True if a job was scheduled, False otherwise.
+        """
+        scheduled = self._schedule()
+        self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
+        return scheduled
 
     def delete(self, **kwargs: Any) -> None:
         self.unschedule()

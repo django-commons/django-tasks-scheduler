@@ -24,10 +24,15 @@ class SchedulerStatus(str, Enum):
 
 
 def _reschedule_tasks() -> None:
-    enabled_tasks = list(Task.objects.filter(enabled=True))
-    for task in enabled_tasks:
+    # Read each task immediately before scheduling it rather than materializing them all up front: a completion
+    # callback can store a new job name for a task while this loop is running, and scheduling from the instance read
+    # earlier would add a second recurring chain next to the successor the callback just created.
+    for task_id in Task.objects.filter(enabled=True).values_list("id", flat=True):
+        task = Task.objects.filter(id=task_id, enabled=True).first()
+        if task is None:  # disabled or deleted since the ids were read
+            continue
         logger.debug(f"Rescheduling {task!s}")
-        task.save(schedule_job=True, clean=False)
+        task.reschedule_if_needed()
 
 
 class WorkerScheduler:
