@@ -148,3 +148,9 @@ LOGGING = {
         },
     },
 }
+
+# A second database exercises task IDs that overlap across database aliases.
+DATABASES["other"] = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": os.path.join(BASE_DIR, "other.sqlite3"),
+}

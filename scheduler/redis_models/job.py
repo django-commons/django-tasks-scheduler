@@ -17,6 +17,8 @@ from scheduler.types import ConnectionType, FunctionReferenceType, Self
 from ..helpers.utils import current_timestamp
 from .registry.base_registry import JobNamesRegistry
 
+MISSING_REGISTRY_KEY_PREFIX = ":scheduler:missing:"
+
 
 class TimeoutFormatError(Exception):
     pass

@@ -158,3 +158,55 @@ options:
   --skip-checks         Skip system checks.
 
 ```
+
+## `reconcile_scheduler` — Inspect or repair cron schedules
+
+```shell
+python manage.py reconcile_scheduler
+python manage.py reconcile_scheduler --queue default --apply
+python manage.py reconcile_scheduler --database default --apply
+```
+
+The default is a dry run that reports live recurring jobs for each cron task.
+`--apply` adopts an existing recurring owner, removes extra waiting copies, and
+creates a successor if an enabled cron has none. It uses the same task row lock
+as saves and callbacks. Manual runs and started jobs are preserved. A worker
+checks recurring ownership before calling the task, so an obsolete copy already
+removed from the queue cannot start a second chain.
+
+Use a database with row-level locks, such as PostgreSQL, for concurrent schedulers,
+workers and admin writes. SQLite supports sequential use; its `select_for_update`
+is a no-op and does not provide these concurrency guarantees. Database and broker
+updates are separate transactions: a later tick repairs an enqueue whose result
+was lost. This is not a guarantee that business side effects run exactly once.
+
+The automatic sweep queries only the database selected by
+`router.db_for_write(Task)`, normally `default`. Jobs and callbacks retain their
+task's database alias, but the sweep does not visit additional aliases. A cron
+on another alias can therefore lose its recurring chain after a callback broker
+failure. Repair it with `reconcile_scheduler --database other --apply`; automatic
+recovery across all configured databases is not provided by this version.
+
+A queued/started record briefly outside all registries remains the owner during
+worker handoff. If it stays missing, recovery waits its timeout plus 60 seconds
+from the first observation, then replaces it on the next tick. A broker read
+failure does not authorize either execution or another enqueue.
+
+Discovery scans the scheduled, queued and active registries for each cron, in
+batches of up to 1,000 entries. Work grows with both the number of cron tasks and
+the number of queue entries. Measure scheduler tick duration on large queues;
+a per-task membership index is a follow-up optimization for this draft.
+
+### Upgrading existing workers
+
+Old manual jobs have no marker distinguishing them from recurring jobs. Before
+starting this version, stop scheduling, drain queued and active work with the old
+workers, and stop those workers. Draining can execute existing duplicates. Then
+run the inspection command, apply reconciliation, and start the new workers.
+Do not mix old and new scheduler/worker versions during this transition: old
+callbacks can recreate duplicate chains. Scheduled duplicates left after the
+drain can be reconciled by the new version.
+
+Package names, callback import paths and database migrations are unchanged.
+Application-specific database reset and queue purge procedures remain the
+application's responsibility.

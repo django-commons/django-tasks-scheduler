@@ -106,4 +106,5 @@ nav:
   - Configuration: configuration.md
   - Usage: usage.md
   - Management commands: commands.md
+  - Testing cron races: testing.md
   - Change log: changelog.md

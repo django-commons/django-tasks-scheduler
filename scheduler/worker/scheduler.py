@@ -8,6 +8,7 @@ from logging import DEBUG, INFO
 from threading import Thread
 
 import django
+from django.db import router, transaction
 
 from scheduler.helpers.queues import Queue, get_queue
 from scheduler.helpers.queues.getters import get_queue_connection
@@ -27,12 +28,15 @@ def _reschedule_tasks() -> None:
     # Read each task immediately before scheduling it rather than materializing them all up front: a completion
     # callback can store a new job name for a task while this loop is running, and scheduling from the instance read
     # earlier would add a second recurring chain next to the successor the callback just created.
-    for task_id in Task.objects.filter(enabled=True).values_list("id", flat=True):
-        task = Task.objects.filter(id=task_id, enabled=True).first()
-        if task is None:  # disabled or deleted since the ids were read
-            continue
-        logger.debug(f"Rescheduling {task!s}")
-        task.reschedule_if_needed()
+    using = router.db_for_write(Task)
+    ids = list(Task.objects.using(using).filter(enabled=True).order_by("pk").values_list("pk", flat=True))
+    for task_id in ids:
+        with transaction.atomic(using=using):
+            task = Task.objects.using(using).select_for_update().filter(pk=task_id, enabled=True).first()
+            if task is None:  # disabled or deleted since the ids were read
+                continue
+            logger.debug(f"Rescheduling {task!s}")
+            task.reschedule_if_needed()
 
 
 class WorkerScheduler:

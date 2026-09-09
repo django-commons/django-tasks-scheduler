@@ -4,6 +4,7 @@ from typing import Any
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericStackedInline
+from django.db import router, transaction
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.utils import formats, timezone
@@ -51,6 +52,13 @@ class JobKwargInline(GenericStackedInline):
 def get_message_bit(rows_updated: int) -> str:
     message_bit = "1 task was" if rows_updated == 1 else f"{rows_updated} tasks were"
     return message_bit
+
+
+def _unreachable_broker_message(count: int) -> str:
+    return (
+        f"{get_message_bit(count)} saved, but the broker could not be reached to update the schedule. "
+        "The scheduler will repair it on its next sweep; check the scheduler log."
+    )
 
 
 class JobMethodsDatalistWidget(forms.TextInput):
@@ -206,10 +214,18 @@ class TaskAdmin(admin.ModelAdmin):
 
         return super().change_view(request, object_id, form_url, extra_context=extra)
 
+    def save_model(self, request: HttpRequest, obj: Task, form: Any, change: bool) -> None:
+        super().save_model(request, obj, form, change)
+        if not obj.schedule_updated:
+            self.message_user(request, _unreachable_broker_message(1), messages.WARNING)
+
     def delete_queryset(self, request: HttpRequest, queryset: QuerySet) -> None:
-        for job in queryset:
-            job.unschedule()
-        super().delete_queryset(request, queryset)
+        using = queryset._db or router.db_for_write(queryset.model)
+        queryset = queryset.using(using)
+        with transaction.atomic(using=using):
+            for job in queryset.select_for_update().order_by("pk"):
+                job.unschedule(using=using)
+            super().delete_queryset(request, queryset)
 
     def delete_model(self, request: HttpRequest, obj: Task) -> None:
         obj.unschedule()
@@ -219,8 +235,7 @@ class TaskAdmin(admin.ModelAdmin):
     def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
         for obj in queryset.filter(enabled=True).iterator():
-            obj.enabled = False
-            obj.unschedule()
+            obj.unschedule(enabled=False)
             rows_updated += 1
 
         level = messages.WARNING if not rows_updated else messages.INFO
@@ -231,13 +246,18 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
+        unreachable = 0
         for obj in queryset.filter(enabled=False).iterator():
             obj.enabled = True
             obj.save()
             rows_updated += 1
+            if not obj.schedule_updated:
+                unreachable += 1
 
         level = messages.WARNING if not rows_updated else messages.INFO
         self.message_user(request, f"{get_message_bit(rows_updated)} successfully enabled and scheduled.", level=level)
+        if unreachable:
+            self.message_user(request, _unreachable_broker_message(unreachable), messages.WARNING)
 
     @admin.action(description="Enqueue now", permissions=("change",))
     def enqueue_job_now(self, request: HttpRequest, queryset: QuerySet) -> None:

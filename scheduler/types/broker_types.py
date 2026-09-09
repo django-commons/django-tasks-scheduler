@@ -14,6 +14,7 @@ except ImportError:
 
 from .settings_types import Broker
 
+BrokerErrorTypes = (redis.exceptions.RedisError, getattr(valkey.exceptions, "ValkeyError", redis.exceptions.RedisError))
 ConnectionErrorTypes = (redis.ConnectionError, valkey.ConnectionError)
 ResponseErrorTypes = (redis.ResponseError, valkey.ResponseError)
 TimeoutErrorTypes = (redis.TimeoutError, valkey.TimeoutError)

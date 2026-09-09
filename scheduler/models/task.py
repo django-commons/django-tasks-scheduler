@@ -9,7 +9,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.core.mail import mail_admins
-from django.db import models
+from django.db import models, router, transaction
 from django.db.models import F
 from django.templatetags.tz import utc
 from django.urls import reverse
@@ -20,11 +20,14 @@ from django.utils.translation import gettext_lazy as _
 from scheduler import settings
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import Queue, get_queue
+from scheduler.helpers.queues.queue_logic import get_current_job
 from scheduler.redis_models import JobModel
 from scheduler.settings import get_queue_names, logger
 from scheduler.types import TASK_TYPES, ConnectionType
+from scheduler.types.broker_types import BrokerErrorTypes
 
 from ..helpers import utils
+from . import cron
 from .args import TaskArg, TaskKwarg
 
 # Fields that `_schedule()` may change. Everything that writes back a task it read before a run finished - the
@@ -38,60 +41,51 @@ _SCHEDULING_FIELDS = ("job_name", "scheduled_time", "repeat")
 _RUN_STATE_FIELDS = ("job_name", "successful_runs", "last_successful_run", "failed_runs", "last_failed_run")
 
 
-def _get_task_for_job(job: JobModel) -> Optional["Task"]:
-    if job.task_type is None or job.scheduled_task_id is None:
-        return None
-    task: Task = Task.objects.filter(id=job.scheduled_task_id).first()
-    return task
-
-
-def _complete_run(task: "Task", job: JobModel, failed: bool) -> None:
-    """Record the outcome of a finished job and, when that job owned the task's recurring chain, schedule its
-    successor.
-
-    :param task: The task the job belongs to, read from the database by the caller.
-    :param job: The job that just finished.
-    :param failed: Whether the job failed.
-    """
-    now = timezone.now()
-    if failed:
-        counters: dict[str, Any] = {"failed_runs": F("failed_runs") + 1, "last_failed_run": now}
-    else:
-        counters = {"successful_runs": F("successful_runs") + 1, "last_successful_run": now}
-    # Increment in the database rather than through this instance: another run of the same task may be finishing
-    # concurrently, and a read-modify-write here would drop its result.
-    Task.objects.filter(id=task.id).update(updated_at=now, **counters)
-
-    if task.job_name != job.name:
-        # This job is not the task's pending execution - it is a manual "Enqueue now" run, or a leftover duplicate.
-        # The scheduled job is still waiting, so scheduling a successor here would start a second recurring chain
-        # that then sustains itself forever.
-        logger.debug(f"Job {job.name} is not the scheduled run of task {task.name}, not scheduling a successor")
+def _complete_task(job: JobModel, *, failed: bool) -> None:
+    """Record the outcome of a finished job and, when that job owned the task's chain, schedule its successor."""
+    if job.scheduled_task_id is None or job.meta.get(cron._SKIPPED):
         return
-
-    if not task._schedule(exclude_job_name=job.name) and task.job_name == job.name:
-        task.job_name = None
-    task.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
+    using = job.meta.get("scheduler_task_database", "default")
+    with transaction.atomic(using=using):
+        task = Task.objects.using(using).select_for_update().filter(pk=job.scheduled_task_id).first()
+        if task is None or not cron.same_generation(task, job):
+            return
+        now = timezone.now()
+        if failed:
+            counters: dict[str, Any] = {"failed_runs": F("failed_runs") + 1, "last_failed_run": now}
+        else:
+            counters = {"successful_runs": F("successful_runs") + 1, "last_successful_run": now}
+        # Count in the database rather than through this instance. The row lock serializes completions
+        # where the database has one; on SQLite it does not, and another run of the same task finishing
+        # at the same time would otherwise drop this result.
+        Task.objects.using(using).filter(pk=task.pk).update(updated_at=now, **counters)
+        if task.job_name != job.name:
+            # Not the task's pending execution - a manual "Enqueue now" run, or a leftover duplicate. The
+            # scheduled job is still waiting, so scheduling a successor here would start a second chain.
+            logger.debug(f"Job {job.name} is not the scheduled run of task {task.name}, not scheduling a successor")
+        elif task.task_type == TaskType.CRON:
+            task.job_name = None
+            cron.reconcile(task, exclude=job.name)
+        elif job.task_type != str(TaskType.CRON):
+            # The finishing job is still in the active registry, so discount it rather than clearing the
+            # pointer: a failed reschedule must not leave the task looking unscheduled to a racing sweep.
+            if not task._schedule(exclude_job_name=job.name) and task.schedule_updated and task.job_name == job.name:
+                task.job_name = None
+            models.Model.save(task, using=using, update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
+    if failed:
+        try:
+            mail_admins(f"Task {task.pk}/{task.name} has failed", "See django-admin for logs")
+        except Exception:
+            # Reporting failure must not retry already committed completion bookkeeping.
+            logger.exception("Could not report failed task %s", task.name)
 
 
 def failure_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
-    task = _get_task_for_job(job)
-    if task is None:
-        logger.warning(f"Could not find task for job {job.name}")
-        return
-    mail_admins(
-        f"Task {task.id}/{task.name} has failed",
-        "See django-admin for logs",
-    )
-    _complete_run(task, job, failed=True)
+    _complete_task(job, failed=True)
 
 
 def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
-    task = _get_task_for_job(job)
-    if task is None:
-        logger.warning(f"Could not find task for job {job.name}")
-        return
-    _complete_run(task, job, failed=False)
+    _complete_task(job, failed=False)
 
 
 def get_queue_choices() -> list[tuple[str, str]]:
@@ -106,6 +100,11 @@ class TaskType(models.TextChoices):
 
 
 class Task(models.Model):
+    #: False when the last save reached the database but could not reach the broker to update
+    #: the schedule. The row is correct, the schedule is stale until the next scheduler sweep
+    #: repairs it. Not a database field - it only describes the save that just ran.
+    schedule_updated: bool = True
+
     class TimeUnits(models.TextChoices):
         SECONDS = "seconds", _("seconds")
         MINUTES = "minutes", _("minutes")
@@ -216,24 +215,28 @@ class Task(models.Model):
         return utils.callable_func(self.callable)
 
     @admin.display(boolean=True, description=_("is scheduled?"))  # type: ignore[misc]
-    def is_scheduled(self) -> bool:
-        """Check whether a next job for this task is queued/scheduled to be executed"""
-        if self.job_name is None:  # no job_id => is not scheduled
-            return False
-        # check whether job_id is in scheduled/queued/active jobs
-        with self.rqueue.connection.pipeline() as pipeline:
-            self.rqueue.scheduled_job_registry.exists(pipeline, self.job_name)
-            self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
-            self.rqueue.active_job_registry.exists(pipeline, self.job_name)
-            results = pipeline.execute()
-            res = any(item is not None for item in results)
+    def is_scheduled(self) -> bool | None:
+        """Check whether the job this task owns is queued/scheduled to be executed.
 
-        # If the job_name is not scheduled/queued/started,
-        # update the job_id to None. (The job_id belongs to a previous run which is completed)
-        if not res:
-            self.job_name = None
-            super().save(update_fields=["job_name", "updated_at"])
-        return res
+        This is a membership check on ``job_name`` for every task type: one pipelined read,
+        cheap enough to run once per row in the admin changelist. Reconciliation needs the
+        full registry sweep in ``cron.read_schedule`` instead, which is far more expensive.
+
+        Returns None when the broker cannot be read, which the admin shows as an unknown
+        state rather than a checkmark. Callers deciding whether to enqueue must treat None
+        as "possibly already scheduled", never as False.
+        """
+        if self.job_name is None:
+            return False
+        try:
+            with self.rqueue.connection.pipeline() as pipeline:
+                self.rqueue.scheduled_job_registry.exists(pipeline, self.job_name)
+                self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
+                self.rqueue.active_job_registry.exists(pipeline, self.job_name)
+                return any(item is not None for item in pipeline.execute())
+        except BrokerErrorTypes:
+            logger.exception("Could not inspect task %s", self.name)
+            return None
 
     @admin.display(description="Callable")  # type: ignore[misc]
     def function_string(self) -> str:
@@ -255,6 +258,8 @@ class Task(models.Model):
 
     def _next_job_id(self) -> str:
         addition = timezone.now().strftime("%Y%m%d%H%M%S%f")
+        if self._state.db and self._state.db != "default":
+            addition = f"{self._state.db}:{addition}"
         return f"{self.queue}:{self.id}:{addition}"
 
     def _enqueue_args(self) -> dict[str, Any]:
@@ -266,7 +271,7 @@ class Task(models.Model):
         - set job meta
         """
         res = {
-            "meta": {},
+            "meta": {"scheduler_task_database": self._state.db or "default"},
             "task_type": self.task_type,
             "scheduled_task_id": self.id,
             "on_success": Callback(success_callback),
@@ -291,19 +296,38 @@ class Task(models.Model):
 
     def enqueue_to_run(self) -> bool:
         """Enqueue task to run now as a different instance from the scheduled task."""
-        kwargs = self._enqueue_args()
-        self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=None, **kwargs)
+        using = self._state.db or router.db_for_write(Task, instance=self)
+        with transaction.atomic(using=using):
+            current = Task.objects.using(using).select_for_update().get(pk=self.pk)
+            kwargs = current._enqueue_args()
+            if current.task_type == TaskType.CRON:
+                kwargs["meta"][cron._MANUAL] = "1"
+            current.rqueue.create_and_enqueue_job(run_task, args=(current.task_type, current.pk), when=None, **kwargs)
         return True
 
-    def unschedule(self) -> bool:
-        """Remove a job from django-queue.
+    def unschedule(self, *, using: str | None = None, enabled: bool | None = None) -> bool:
+        """Remove waiting executions without deleting a running job or manual cron run.
 
-        If a job is queued to be executed or scheduled to be executed, it will remove it.
+        Only the schedule is written. Pass ``enabled`` to change that flag on the locked row
+        as well; leaving it unset keeps the stored value, so a caller holding a stale
+        instance cannot rewrite the flag as a side effect of dequeuing.
         """
-        if self.job_name is not None:
-            self.rqueue.delete_job(self.job_name)
-            self.job_name = None
-        self.save(schedule_job=False, clean=False)
+        using = using or self._state.db or router.db_for_write(Task, instance=self)
+        with transaction.atomic(using=using):
+            current = Task.objects.using(using).select_for_update().get(pk=self.pk)
+            if current.task_type == TaskType.CRON:
+                cron.retire_schedule(current)
+            elif current.job_name is not None:
+                current.rqueue.delete_job(current.job_name)
+            current.job_name = None
+            update_fields = ["job_name", "updated_at"]
+            if enabled is not None:
+                current.enabled = enabled
+                update_fields.append("enabled")
+            models.Model.save(current, using=using, update_fields=update_fields)
+            cron._copy_runtime(current, self)
+            if enabled is not None:
+                self.enabled = enabled
         return True
 
     def _schedule_time(self) -> datetime:
@@ -363,7 +387,16 @@ class Task(models.Model):
             this the task would look like it is already scheduled and never get a successor.
         :returns: True if a job was scheduled, False otherwise.
         """
-        if self.job_name != exclude_job_name and self.is_scheduled():
+        self.schedule_updated = True
+        if self.job_name == exclude_job_name:
+            scheduled = False
+        else:
+            scheduled = self.is_scheduled()
+        if scheduled is None:
+            self.schedule_updated = False
+            logger.warning(f"Could not read the schedule for task {self.name}; not enqueuing another job")
+            return False
+        if scheduled:
             logger.debug(f"Task {self.name} already scheduled")
             return False
         if not self.enabled:
@@ -374,49 +407,96 @@ class Task(models.Model):
             logger.debug(f"Task {self!s} scheduled time is in the past, not scheduling")
             return False
         kwargs = self._enqueue_args()
-        job = self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=schedule_time, **kwargs)
+        try:
+            job = self.rqueue.create_and_enqueue_job(
+                run_task, args=(self.task_type, self.id), when=schedule_time, **kwargs
+            )
+        except BrokerErrorTypes:
+            # A successor's broker failure must not roll back the completed run's counters.
+            self.schedule_updated = False
+            logger.exception("Could not schedule task %s; leaving its job reference unchanged", self.name)
+            return False
         self.job_name = job.name
         return True
 
-    def _refresh_run_state(self) -> None:
-        """Re-read the fields the run machinery owns, so saving a stale instance cannot undo a finished run."""
-        if self.pk is None:
+    def _refresh_run_state(self, current: Optional["Task"]) -> None:
+        """Take the fields the run machinery owns from the locked row, so saving a stale instance
+        cannot undo a run that finished while the caller held it.
+
+        Cron tasks get the wider ``cron._copy_runtime`` instead, which also carries the schedule.
+        """
+        if current is None:  # a new row, or one deleted underneath us
             return
-        current = Task.objects.filter(pk=self.pk).values(*_RUN_STATE_FIELDS).first()
-        if current is None:  # deleted underneath us
-            return
-        for field_name, value in current.items():
-            setattr(self, field_name, value)
+        for field_name in _RUN_STATE_FIELDS:
+            setattr(self, field_name, getattr(current, field_name))
 
     def save(self, **kwargs: Any) -> None:
+        using = kwargs.get("using") or router.db_for_write(Task, instance=self)
+        with transaction.atomic(using=using):
+            current = Task.objects.using(using).select_for_update().filter(pk=self.pk).first() if self.pk else None
+            self._save_locked(current, **kwargs)
+
+    def _save_locked(self, current: Optional["Task"], **kwargs: Any) -> None:
         should_clean = kwargs.pop("clean", True)
         schedule_job = kwargs.pop("schedule_job", True)
+        if kwargs.get("update_fields") is not None:
+            fields = set(kwargs["update_fields"])
+            if not fields:
+                return
+            kwargs["update_fields"] = fields | {"updated_at"}
+            if current is not None:
+                for field in self._meta.concrete_fields:
+                    if field.name not in fields and field.attname not in fields:
+                        setattr(self, field.attname, getattr(current, field.attname))
+        involves_cron = self.task_type == TaskType.CRON or (current is not None and current.task_type == TaskType.CRON)
+        identity_changed = current is not None and (current.queue, current.task_type) != (self.queue, self.task_type)
+        if involves_cron:
+            if current is not None:
+                requested_time = self.scheduled_time
+                cron._copy_runtime(current, self)
+                if identity_changed:
+                    self.scheduled_time = requested_time
+            elif not self._state.adding:
+                raise Task.DoesNotExist("Cannot save a task that was deleted")
         if should_clean:
             self.clean()
-        if schedule_job:
-            self._refresh_run_state()
-        if update_fields := kwargs.get("update_fields"):
-            kwargs["update_fields"] = set(update_fields).union({"updated_at"})
+        if schedule_job and not involves_cron:
+            self._refresh_run_state(current)
+        if involves_cron and identity_changed and current is not None:
+            cron.retire_schedule(current)
+            self.job_name = None
+            if kwargs.get("update_fields"):
+                kwargs["update_fields"] |= {"job_name"}
         super().save(**kwargs)
         if schedule_job:
-            self._schedule()
-            super().save(update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
+            if self.task_type == TaskType.CRON:
+                self.schedule_updated = cron.reconcile(self)
+            else:
+                self._schedule()
+                super().save(using=self._state.db, update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
 
     def reschedule_if_needed(self) -> bool:
         """Give the task a pending job if it has none, writing back only the scheduling fields.
 
-        Used by the scheduler loop, which works from instances read before the loop started: a full-row save there
-        would restore an old job name a completion callback has since replaced, adding a second recurring chain.
+        Used by the scheduler loop, which works from instances read before the loop started: a full-row
+        save there would restore an old job name a completion callback has since replaced, adding a
+        second recurring chain. Cron tasks reconcile instead, which also clears any duplicate.
 
-        :returns: True if a job was scheduled, False otherwise.
+        :returns: True if the call gave the task a job it did not have.
         """
+        if self.task_type == TaskType.CRON:
+            previous = self.job_name
+            self.schedule_updated = cron.reconcile(self)
+            return self.job_name is not None and self.job_name != previous
         scheduled = self._schedule()
         self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
         return scheduled
 
     def delete(self, **kwargs: Any) -> None:
-        self.unschedule()
-        super().delete(**kwargs)
+        using = kwargs.get("using") or router.db_for_write(Task, instance=self)
+        with transaction.atomic(using=using):
+            self.unschedule(using=using)
+            super().delete(**kwargs)
 
     def interval_seconds(self) -> float:
         kwargs = {
@@ -507,7 +587,9 @@ def get_scheduled_task(task_type_str: str, task_id: int) -> Task:
         task_type = TaskType(task_type_str)
     except ValueError:
         raise ValueError(f"Invalid task type {task_type_str}")
-    task = Task.objects.filter(task_type=task_type, id=task_id).first()
+    job = get_current_job()
+    using = job.meta.get("scheduler_task_database", "default") if job else "default"
+    task = Task.objects.using(using).filter(task_type=task_type, id=task_id).first()
     if task is None:
         raise ValueError(f"Job {task_type}:{task_id} does not exist")
     return task  # type: ignore[no-any-return]
@@ -517,6 +599,20 @@ def run_task(task_model: str, task_id: int) -> Any:
     """Run a scheduled job"""
     if isinstance(task_id, str):
         task_id = int(task_id)
+    job = get_current_job()
+    if job is not None and job.task_type == str(TaskType.CRON):
+        using = job.meta.get("scheduler_task_database", "default")
+        with transaction.atomic(using=using):
+            task = Task.objects.using(using).select_for_update().filter(pk=job.scheduled_task_id).first()
+            allowed = False
+            if task is not None and cron.same_generation(task, job):
+                if job.meta.get(cron._MANUAL):
+                    allowed = task.task_type == job.task_type
+                elif task.task_type == TaskType.CRON and task.queue == job.queue_name:
+                    allowed = cron.reconcile(task, create=False) and task.enabled and task.job_name == job.name
+            if not allowed:
+                job.meta[cron._SKIPPED] = "1"
+                return {"skipped": "obsolete recurring job"}
     scheduled_task = get_scheduled_task(task_model, task_id)
     logger.debug(f"Running task {scheduled_task!s}")
     args = scheduled_task.parse_args()

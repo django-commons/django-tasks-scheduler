@@ -17,7 +17,7 @@ Two things shape how these tests are written:
 import threading
 from unittest import mock
 
-from django.db import connections
+from django.db import DatabaseError, connections
 from django.test import TransactionTestCase
 
 from scheduler.helpers.callback import Callback
@@ -138,11 +138,12 @@ class TestMaintenanceThatRunsAFailureCallback(WorkerDbConnectionTestCase):
         task = task_factory(TaskType.ONCE)
         self._enqueue_an_abandoned_job_for(task)
         worker = self._worker("test-maintenance-db-raises")
+        connections["default"].close()
 
         with (
             self._watch_closes(),
-            mock.patch("scheduler.models.task.mail_admins", side_effect=ValueError("mail server down")),
-            self.assertRaises(ValueError),
+            mock.patch("django.db.models.query.QuerySet.update", side_effect=DatabaseError("completion update failed")),
+            self.assertRaisesRegex(DatabaseError, "completion update failed"),
         ):
             worker.run_maintenance_tasks()
 

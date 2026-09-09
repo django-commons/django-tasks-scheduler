@@ -77,3 +77,22 @@ Three task types are defined in `scheduler/types/`:
 ### Test Infrastructure
 
 Base test class `SchedulerBaseCase` (`scheduler/tests/testtools.py`) sets up queues and FakeRedis. Use `task_factory()` helpers to create Task instances in tests. The `testproject/` directory is a minimal Django project wired to the scheduler app.
+
+### Cron ownership regressions
+
+The default suite runs the cron lifecycle tests against SQLite; concurrency tests
+skip without row-level locking. To exercise PostgreSQL transactions with a real
+broker, start disposable PostgreSQL and Redis services and run from `testproject/`:
+
+```bash
+FAKEREDIS=False BROKER_PORT=6379 PGPORT=5432 uv run --with 'psycopg[binary]' python manage.py test \
+  --settings=testproject.postgres_settings \
+  scheduler.tests.test_task_types.test_cron_ownership \
+  scheduler.tests.test_task_types.test_cron_concurrency
+```
+
+The PostgreSQL test settings accept `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and
+`PGPASSWORD` (defaults: localhost, 5432, scheduler, scheduler, scheduler-test).
+The role must be able to create test databases. Use disposable broker instances:
+test setup flushes their databases. The `Cron ownership on PostgreSQL` workflow
+runs this combination on pull requests.

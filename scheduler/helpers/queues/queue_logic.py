@@ -22,6 +22,7 @@ from scheduler.redis_models import (
     ScheduledJobRegistry,
     SchedulerLock,
 )
+from scheduler.redis_models.job import MISSING_REGISTRY_KEY_PREFIX
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionType, FunctionReferenceType, PipelineType, Self
 
@@ -392,6 +393,7 @@ class Queue:
         while True:
             try:
                 self._remove_from_registries(job_name, connection=pipe)
+                pipe.delete(f"{MISSING_REGISTRY_KEY_PREFIX}{job_name}")
                 self.failed_job_registry.delete(connection=pipe, job_name=job_name)
                 if expire_job_model:
                     job_model = JobModel.get(job_name, connection=self.connection)

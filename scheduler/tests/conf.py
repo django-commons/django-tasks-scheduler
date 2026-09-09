@@ -96,6 +96,8 @@ settings.SCHEDULER_QUEUES = {
 # into several seconds of backoff and makes any view that probes every queue (e.g. _find_job) extremely slow.
 # Disable connection retries on the test queues so unreachable brokers fail fast.
 for _queue_settings in settings.SCHEDULER_QUEUES.values():
+    if _queue_settings.get("PORT") == 6379:
+        _queue_settings["PORT"] = int(os.getenv("BROKER_PORT", "6379"))
     _queue_settings.setdefault("CONNECTION_KWARGS", {}).setdefault("retry", None)
 
 conf_settings()
