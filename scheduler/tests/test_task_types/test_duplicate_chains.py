@@ -1,4 +1,8 @@
-"""Regression tests for #412: manual runs and stale saves must not start a second recurring chain."""
+"""Regression tests for #412 and #418: manual runs and stale saves must not start a second recurring chain."""
+
+from datetime import timedelta
+
+from django.utils import timezone
 
 from scheduler.helpers.queues import get_queue
 from scheduler.models import Task, TaskType
@@ -130,6 +134,38 @@ class TestNoDuplicateChains(SchedulerBaseCase):
         self.assertTrue(reloaded.reschedule_if_needed())
 
         self.assertEqual({reloaded.job_name}, self.scheduled_job_names())
+
+    def test_stale_reschedule_if_needed_does_not_add_a_chain(self):
+        """The scheduler loop read the task, then its job finished and the callback scheduled the successor."""
+        task = task_factory(TaskType.CRON)
+        stale = Task.objects.get(id=task.id)
+
+        self.enqueue_scheduled_job(stale.job_name)
+        _run_pending_jobs()
+        successor = Task.objects.get(id=task.id).job_name
+
+        self.assertFalse(stale.reschedule_if_needed())
+
+        self.assertEqual({successor}, self.scheduled_job_names())
+        self.assertEqual(successor, Task.objects.get(id=task.id).job_name)
+
+    def test_stale_reschedule_if_needed_does_not_roll_back_the_schedule(self):
+        task = task_factory(TaskType.REPEATABLE, repeat=5)
+        # Let the scheduled time pass, so the callback advances the schedule and spends a repeat.
+        Task.objects.filter(id=task.id).update(scheduled_time=timezone.now() - timedelta(minutes=1))
+        stale = Task.objects.get(id=task.id)
+
+        self.enqueue_scheduled_job(stale.job_name)
+        _run_pending_jobs()
+        advanced = Task.objects.get(id=task.id)
+        self.assertEqual(4, advanced.repeat)
+
+        self.assertFalse(stale.reschedule_if_needed())
+
+        reloaded = Task.objects.get(id=task.id)
+        self.assertEqual({advanced.job_name}, self.scheduled_job_names())
+        self.assertEqual(advanced.scheduled_time, reloaded.scheduled_time)
+        self.assertEqual(4, reloaded.repeat)
 
     def test_disabled_task_run_clears_the_job_name(self):
         task = task_factory(TaskType.CRON)
