@@ -108,7 +108,7 @@ class WorkerScheduler:
         self.log(DEBUG, f"Scheduler updating lock for queue {lock_keys}")
         with self.connection.pipeline() as pipeline:
             for lock in self._locks.values():
-                lock.expire(self.connection, expire=self.interval + 60)
+                lock.expire(pipeline, expire=self.interval + 60, val=self.pid)
             pipeline.execute()
 
     def stop(self) -> None:
@@ -120,7 +120,7 @@ class WorkerScheduler:
         """Release acquired locks"""
         with self.connection.pipeline() as pipeline:
             for lock in self._locks.values():
-                lock.release(self.connection)
+                lock.release(pipeline, val=self.pid)
             pipeline.execute()
 
     def work(self) -> None:
