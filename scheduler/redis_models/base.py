@@ -206,9 +206,9 @@ class HashModel(BaseModel):
 
     def delete(self, connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
-            pipeline.srem(self._list_key, self._key)
+            pipeline.srem(self._list_key, self.name)
             if self._parent_key is not None:
-                pipeline.srem(self._parent_key, 0, self._key)
+                pipeline.srem(self._parent_key, self.name)
             pipeline.delete(self._key)
             pipeline.execute()
             self._save_all = True

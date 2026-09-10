@@ -1,10 +1,11 @@
 from django import forms
 from django.urls import reverse
 
-from scheduler.admin.task_admin import JobMethodsDatalistWidget
+from scheduler.admin.task_admin import JobMethodsDatalistWidget, get_job_executions_for_task
 from scheduler.decorators import JOB_METHODS_LIST
+from scheduler.models import TaskType
 from scheduler.tests import conf  # noqa
-from scheduler.tests.testtools import SchedulerBaseCase
+from scheduler.tests.testtools import SchedulerBaseCase, task_factory
 
 _METHOD = "scheduler.tests.test_admin.sample_registered_job"
 
@@ -42,3 +43,17 @@ class TestTaskAdminCallableAutocomplete(SchedulerBaseCase):
         self.assertContains(res, 'list="id_callable_job_methods"')
         self.assertContains(res, '<datalist id="id_callable_job_methods">')
         self.assertContains(res, f'<option value="{_METHOD}">')
+
+
+class TestTaskAdminJobExecutions(SchedulerBaseCase):
+    def test_get_job_executions_for_task__returns_only_matching_jobs(self):
+        task1 = task_factory(TaskType.ONCE, queue="default")
+        task2 = task_factory(TaskType.ONCE, queue="default")
+
+        task1_jobs = get_job_executions_for_task(task1.queue, task1)
+        task2_jobs = get_job_executions_for_task(task2.queue, task2)
+
+        self.assertEqual(len(task1_jobs), 1)
+        self.assertEqual(task1_jobs[0].name, task1.job_name)
+        self.assertEqual(len(task2_jobs), 1)
+        self.assertEqual(task2_jobs[0].name, task2.job_name)

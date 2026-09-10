@@ -4,7 +4,7 @@ from scheduler import settings
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import get_queue
 from scheduler.helpers.utils import current_timestamp
-from scheduler.redis_models import JobNamesRegistry, KvLock, Result, ResultType, SchedulerLock
+from scheduler.redis_models import JobModel, JobNamesRegistry, KvLock, Result, ResultType, SchedulerLock
 from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_args_kwargs, test_job
 from scheduler.tests.testtools import SchedulerBaseCase
@@ -274,3 +274,23 @@ class TestKvLock(SchedulerBaseCase):
         lock.release(queue.connection)
         # assert
         self.assertIsNone(lock.value(queue.connection))
+
+
+class TestJobModelTaskIndexing(SchedulerBaseCase):
+    def test_job_model_indexes_task_jobs_on_save_and_cleans_on_delete(self):
+        queue = get_queue("default")
+        conn = queue.connection
+        task_id = 999
+        job = queue.create_and_enqueue_job(test_job, scheduled_task_id=task_id)
+
+        # Check that job is in task jobs set
+        task_jobs = JobModel.get_jobs_for_task(task_id, conn)
+        self.assertEqual(len(task_jobs), 1)
+        self.assertEqual(task_jobs[0].name, job.name)
+
+        # Act: delete job
+        job.delete(conn)
+
+        # Assert: task jobs set is now empty
+        task_jobs_after = JobModel.get_jobs_for_task(task_id, conn)
+        self.assertEqual(len(task_jobs_after), 0)

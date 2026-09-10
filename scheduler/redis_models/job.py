@@ -42,6 +42,7 @@ class JobModel(HashModel):
     _list_key: ClassVar[str] = ":jobs:ALL:"
     _children_key_template: ClassVar[str] = ":{}:jobs:"
     _element_key_template: ClassVar[str] = ":jobs:{}"
+    _task_key_template: ClassVar[str] = ":task:{}:jobs:"
     _non_serializable_fields: ClassVar[set[str]] = {"args", "kwargs"}
 
     args: list[Any]
@@ -119,6 +120,54 @@ class JobModel(HashModel):
         with connection.pipeline() as pipeline:
             pipeline.persist(self._key)
             pipeline.execute()
+
+    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
+        save_all = save_all or self._save_all
+        with connection.pipeline() as pipeline:
+            pipeline.sadd(self._list_key, self.name)
+            if self.scheduled_task_id is not None:
+                pipeline.sadd(self._task_key_template.format(self.scheduled_task_id), self.name)
+            if self._parent_key is not None:
+                pipeline.sadd(self._parent_key, self.name)
+            mapping = self.serialize(with_nones=True)
+            if not save_all:
+                mapping = {k: v for k, v in mapping.items() if k in self._dirty_fields}
+            none_values = {k for k, v in mapping.items() if v is None}
+            if none_values:
+                pipeline.hdel(self._key, *none_values)
+            mapping = {k: v for k, v in mapping.items() if v is not None}
+            if mapping:
+                pipeline.hset(self._key, mapping=mapping)
+            pipeline.execute()
+            self._dirty_fields = set()
+            self._save_all = False
+
+    def delete(self, connection: ConnectionType) -> None:
+        with connection.pipeline() as pipeline:
+            pipeline.srem(self._list_key, self.name)
+            if self.scheduled_task_id is not None:
+                pipeline.srem(self._task_key_template.format(self.scheduled_task_id), self.name)
+            if self._parent_key is not None:
+                pipeline.srem(self._parent_key, self.name)
+            pipeline.delete(self._key)
+            pipeline.execute()
+            self._save_all = True
+
+    @classmethod
+    def get_jobs_for_task(cls, task_id: int | str, connection: ConnectionType) -> list[Self]:
+        key = cls._task_key_template.format(task_id)
+        raw_members = connection.smembers(key)
+        if not raw_members:
+            return []
+        job_names = [as_str(m) for m in raw_members if m]
+        valid_job_names = [name for name in job_names if name]
+        if not valid_job_names:
+            return []
+        jobs = cls.get_many(valid_job_names, connection=connection)
+        expired_names = [name for name, job in zip(valid_job_names, jobs) if job is None]
+        if expired_names:
+            connection.srem(key, *expired_names)
+        return [job for job in jobs if job is not None]
 
     def prepare_for_execution(self, worker_name: str, registry: JobNamesRegistry, connection: ConnectionType) -> None:
         """Prepares the job for execution, setting the worker name, heartbeat information, status, and other metadata
