@@ -92,6 +92,27 @@ class ImportTest(TestCase):
         for attr in attrs:
             self.assertEqual(getattr(tasks[1], attr), getattr(task, attr))
 
+    def test_import__invalid_entry__changes_nothing(self):
+        existing = task_factory(TaskType.ONCE, enabled=True)
+        new = task_factory(TaskType.ONCE, enabled=True, instance_only=True).to_dict()
+        self.tmpfile.write(json.dumps([new, {**new, "name": "broken", "model": "NoSuchTask"}]))
+        self.tmpfile.flush()
+
+        with self.assertRaises(ValueError):
+            call_command("import", filename=self.tmpfile.name, reset=True)
+
+        self.assertEqual([existing.name], list(Task.objects.values_list("name", flat=True)))
+
+    def test_import__reset__unschedules_the_removed_tasks(self):
+        removed = task_factory(TaskType.ONCE, enabled=True)
+        self.tmpfile.write(json.dumps([]))
+        self.tmpfile.flush()
+
+        call_command("import", filename=self.tmpfile.name, reset=True)
+
+        queue = removed.rqueue
+        self.assertFalse(queue.scheduled_job_registry.exists(queue.connection, removed.job_name))
+
     def test_import__should_schedule_job_update_existing(self):
         tasks = []
         tasks.append(task_factory(TaskType.ONCE, enabled=True))

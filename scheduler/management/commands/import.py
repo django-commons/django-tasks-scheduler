@@ -6,6 +6,7 @@ import click
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandParser
+from django.db import transaction
 from django.utils import timezone
 
 from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
@@ -135,8 +136,14 @@ class Command(BaseCommand):
                 yaml.Dumper.ignore_aliases = lambda *x: True  # type: ignore[method-assign]
                 jobs = yaml.load(file, yaml.SafeLoader)
 
-        if options.get("reset"):
-            Task.objects.all().delete()
+        # All or nothing: a bad entry must not leave the tasks half reset or half imported. The broker is not part of the
+        # transaction, but a rollback heals itself - the scheduler loop reschedules restored tasks whose job was removed,
+        # and a job whose task was rolled back finds no task when it runs.
+        with transaction.atomic():
+            if options.get("reset"):
+                # One by one: `Task.delete()` also removes the task's job from the broker, which a bulk delete skips.
+                for task in Task.objects.all():
+                    task.delete()
 
-        for job in jobs:
-            create_task_from_dict(job, update=options.get("update"))  # type: ignore[arg-type]
+            for job in jobs:
+                create_task_from_dict(job, update=options.get("update"))  # type: ignore[arg-type]
