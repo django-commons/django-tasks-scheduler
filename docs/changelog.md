@@ -6,6 +6,8 @@
 
 - Fix **Requeue** on the job detail page failing with `Action requeue is not supported`; requeuing a failed job from
   the jobs list now also removes it from the failed jobs registry #415
+- Fix the scheduler loop scheduling a duplicate successor for a task whose job finished while the loop was handling
+  it, and rolling back a repeatable task's schedule #418
 
 ## v4.3.0 🌈
 
