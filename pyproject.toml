@@ -43,6 +43,7 @@ dependencies = [
   "click~=8.2",
   "croniter>=2",
   "django>=5",
+  "redis>=6",
   "typing-extensions>=4.15",
 ]
 optional-dependencies.sentry = ["sentry-sdk~=2.19"]
