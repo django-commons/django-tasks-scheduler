@@ -30,6 +30,7 @@ WORKER_ARGUMENTS = {
     "fork_job_execution",
     "with_scheduler",
     "burst",
+    "worker_ttl",
 }
 
 
@@ -107,8 +108,8 @@ class Command(BaseCommand):
             action="store",
             type=int,
             dest="worker_ttl",
-            default=420,
-            help="Default worker timeout to be used",
+            default=None,
+            help="Seconds a worker is considered alive without a heartbeat (default: DEFAULT_WORKER_TTL)",
         )
         parser.add_argument(
             "--fork-job-execution",
@@ -144,6 +145,8 @@ class Command(BaseCommand):
         logger.setLevel(log_level)
 
         init_options = {k: v for k, v in options.items() if k in WORKER_ARGUMENTS}
+        if init_options.get("worker_ttl") is None:  # not given: the worker uses SCHEDULER_CONFIG.DEFAULT_WORKER_TTL
+            init_options.pop("worker_ttl", None)
 
         try:
             # Instantiate a worker

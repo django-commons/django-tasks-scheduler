@@ -117,7 +117,9 @@ class Worker:
         with_scheduler: bool = True,
         burst: bool = False,
         model: WorkerModel | None = None,
+        worker_ttl: int = SCHEDULER_CONFIG.DEFAULT_WORKER_TTL,
     ) -> None:
+        self.worker_ttl = worker_ttl
         self.fork_job_execution = fork_job_execution
         self.job_monitoring_interval: int = job_monitoring_interval
         self.maintenance_interval = maintenance_interval
@@ -143,6 +145,7 @@ class Worker:
                 version=scheduler.__version__,
                 python_version=sys.version,
                 state=WorkerStatus.CREATED,
+                ttl=worker_ttl,
             )
         else:
             self._model = model
@@ -167,7 +170,7 @@ class Worker:
         connection = get_queue_connection(self.queues[0].name)
         user_connection_kwargs = get_queue_configuration(self.queues[0].name).CONNECTION_KWARGS or {}
         if "socket_timeout" not in user_connection_kwargs:
-            timeout_config = {"socket_timeout": SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 5}
+            timeout_config = {"socket_timeout": self.worker_ttl - 5}
             connection.connection_pool.connection_kwargs.update(timeout_config)
         return connection
 
@@ -232,7 +235,7 @@ class Worker:
                     self.log(INFO, "stopping on request")
                     break
 
-                timeout = None if self.burst else (SCHEDULER_CONFIG.DEFAULT_WORKER_TTL - 15)
+                timeout = None if self.burst else (self.worker_ttl - 15)
                 job, queue = self.dequeue_job_and_maintain_ttl(timeout, max_idle_time)
                 if job is None or queue is None:
                     if self.burst:

@@ -24,7 +24,7 @@ options:
   --pid PIDFILE         file to write the worker`s pid into
   --name NAME           Name of the worker
   --worker-ttl WORKER_TTL
-                        Default worker timeout to be used
+                        Seconds a worker is considered alive without a heartbeat (default: DEFAULT_WORKER_TTL)
   --fork-job-execution FORK_JOB_EXECUTION
                         Fork job execution to another process: true (default) or false
   --sentry-dsn SENTRY_DSN

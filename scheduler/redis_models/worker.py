@@ -45,6 +45,7 @@ class WorkerModel(HashModel):
     shutdown_requested_date: datetime | None = None
     has_scheduler: bool = False
     death: datetime | None = None
+    ttl: int = SCHEDULER_CONFIG.DEFAULT_WORKER_TTL  # seconds the record outlives the worker's last heartbeat, less 60
 
     _list_key: ClassVar[str] = ":workers:ALL:"
     _children_key_template: ClassVar[str] = ":queue-workers:{}:"
@@ -55,7 +56,7 @@ class WorkerModel(HashModel):
             super(WorkerModel, self).save(pipeline, save_all)
             for queue_name in self.queue_names:
                 pipeline.sadd(self._children_key_template.format(queue_name), self.name)
-            pipeline.expire(self._key, SCHEDULER_CONFIG.DEFAULT_WORKER_TTL + 60)
+            pipeline.expire(self._key, self.ttl + 60)
             pipeline.execute()
 
     def delete(self, connection: ConnectionType) -> None:
@@ -85,7 +86,7 @@ class WorkerModel(HashModel):
     def heartbeat(self, connection: ConnectionType, timeout: int | None = None) -> None:
         self.last_heartbeat = utcnow()
         self.save(connection, save_all=True)
-        timeout = timeout or SCHEDULER_CONFIG.DEFAULT_WORKER_TTL + 60
+        timeout = timeout or self.ttl + 60
         connection.expire(self._key, timeout)
         logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 

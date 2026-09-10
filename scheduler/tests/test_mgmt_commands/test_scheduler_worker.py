@@ -57,6 +57,13 @@ class SchedulerWorkerTestCase(TestCase):
             "default", name=None, fork_job_execution=False, burst=True, with_scheduler=True
         )
 
+    @mock.patch("scheduler.management.commands.scheduler_worker.create_worker")
+    def test_scheduler_worker__worker_ttl(self, mock_create_worker):
+        call_command("scheduler_worker", "default", "--burst", "--worker-ttl", "30")
+        mock_create_worker.assert_called_once_with(
+            "default", name=None, fork_job_execution=True, burst=True, with_scheduler=True, worker_ttl=30
+        )
+
     def test_scheduler_worker__fork_job_execution_not_a_boolean(self):
         with self.assertRaises(CommandError):
             call_command("scheduler_worker", "default", "--burst", "--fork-job-execution", "maybe")
