@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.3.1 🌈
+
+### 🐛 Bug Fixes
+
+- Fix **Requeue** on the job detail page failing with `Action requeue is not supported`; requeuing a failed job from
+  the jobs list now also removes it from the failed jobs registry #415
+
 ## v4.3.0 🌈
 
 ### 🐛 Bug Fixes

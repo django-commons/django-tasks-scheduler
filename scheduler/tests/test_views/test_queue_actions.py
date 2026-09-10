@@ -88,6 +88,7 @@ class QueueActionsViewsTest(BaseTestCase):
         for job_name in job_names:
             job = JobModel.get(job_name, connection=queue.connection)
             self.assertFalse(job.is_failed)
+            self.assertNotIn(job_name, queue.failed_job_registry.all(queue.connection))
 
     @override_settings(DATA_UPLOAD_MAX_NUMBER_FIELDS=10)
     def test_registry_action_empty__more_jobs_than_max_number_fields(self):

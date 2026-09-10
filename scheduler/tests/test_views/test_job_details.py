@@ -71,7 +71,8 @@ class TestViewJobDetails(BaseTestCase):
         self.assertEqual(res.context["total_jobs"], 2)
         # After requeue_all is called, jobs are enqueued
         res = self.client.post(reverse("queue_registry_action", args=[queue_name, "failed", "requeue"]))
-        self.assertEqual(len(queue), 4)
+        self.assertEqual(queue.queued_job_registry.count(queue.connection), 2)
+        self.assertEqual(queue.failed_job_registry.count(queue.connection), 0)
 
     def test_requeue_all_if_deleted_job(self):
         """

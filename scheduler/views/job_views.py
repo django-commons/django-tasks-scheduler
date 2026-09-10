@@ -18,6 +18,7 @@ from scheduler.worker.commands import StopJobCommand, send_command
 class JobDetailAction(str, Enum):
     DELETE = "delete"
     ENQUEUE = "enqueue"
+    REQUEUE = "requeue"
     CANCEL = "cancel"
 
 
@@ -74,7 +75,7 @@ def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse
             queue.delete_job(job.name)
             messages.info(request, f"You have successfully deleted {job.name}")
             return redirect("queue_registry_jobs", queue.name, "queued")
-        elif action == JobDetailAction.ENQUEUE:
+        elif action in (JobDetailAction.ENQUEUE, JobDetailAction.REQUEUE):
             queue.delete_job(job.name, expire_job_model=False)
             queue.enqueue_job(job)
             messages.info(request, f"You have successfully enqueued {job.name}")
