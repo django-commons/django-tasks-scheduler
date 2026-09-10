@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.urls import reverse
 
@@ -6,7 +6,15 @@ from scheduler import settings
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.queues import Queue, get_queue
 from scheduler.helpers.utils import current_timestamp
-from scheduler.redis_models import JobModel, JobNamesRegistry, KvLock, Result, ResultType, SchedulerLock
+from scheduler.redis_models import (
+    JobModel,
+    JobNamesRegistry,
+    KvLock,
+    QueuedJobRegistry,
+    Result,
+    ResultType,
+    SchedulerLock,
+)
 from scheduler.redis_models.lock import QueueLock
 from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_args_kwargs, test_job
@@ -353,3 +361,11 @@ class TestQueueBatchDelete(SchedulerBaseCase):
         self.assertFalse(JobModel.exists(job2.name, connection=queue.connection))
         self.assertNotIn(job1.name, queue.queued_job_registry.all(queue.connection))
         self.assertNotIn(job2.name, queue.queued_job_registry.all(queue.connection))
+
+
+class TestJobNamesRegistryGetFirst(SchedulerBaseCase):
+    def test_get_first__connection_returning_str__returns_the_name(self):
+        connection = MagicMock()
+        connection.zrange.return_value = ["job-1"]
+
+        self.assertEqual("job-1", QueuedJobRegistry("default").get_first(connection))

@@ -72,7 +72,7 @@ class JobNamesRegistry(ZSetModel):
         """Returns the first job in the registry."""
         self.cleanup(connection)
         first_job = connection.zrange(self._key, 0, 0)
-        return first_job[0].decode() if first_job else None
+        return as_str(first_job[0]) if first_job else None
 
     @property
     def key(self) -> str:
