@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -13,8 +14,10 @@ from scheduler.helpers import utils
 ARG_TYPE_TYPES_DICT: dict[str, type] = {
     "str": str,
     "int": int,
+    "float": float,
     "bool": bool,
     "datetime": datetime,
+    "json": object,  # any JSON value: dict, list, str, number, bool or None
     "callable": Callable,
 }
 
@@ -23,8 +26,10 @@ class BaseTaskArg(models.Model):
     class ArgType(models.TextChoices):
         STR = "str", _("string")
         INT = "int", _("int")
+        FLOAT = "float", _("float")
         BOOL = "bool", _("boolean")
         DATETIME = "datetime", _("datetime")
+        JSON = "json", _("JSON")
         CALLABLE = "callable", _("callable")
 
     arg_type = models.CharField(
@@ -33,7 +38,7 @@ class BaseTaskArg(models.Model):
         choices=ArgType.choices,
         default=ArgType.STR,
     )
-    val = models.CharField(_("Argument Value"), blank=True, max_length=255)
+    val = models.CharField(_("Argument Value"), blank=True, max_length=2048)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
@@ -52,6 +57,10 @@ class BaseTaskArg(models.Model):
                     raise ValidationError
             elif self.arg_type == "int":
                 int(self.val)
+            elif self.arg_type == "float":
+                float(self.val)
+            elif self.arg_type == "json":
+                json.loads(self.val)
         except Exception:
             msg = _("Could not parse %s as %s") % (self.val, self.arg_type)
             raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
@@ -73,6 +82,8 @@ class BaseTaskArg(models.Model):
             return datetime.fromisoformat(self.val)
         if self.arg_type == "bool":
             return self.val.lower() == "true"
+        if self.arg_type == "json":
+            return json.loads(self.val)
         return ARG_TYPE_TYPES_DICT[self.arg_type](self.val)
 
     class Meta:

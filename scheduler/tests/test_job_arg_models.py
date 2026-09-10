@@ -142,6 +142,25 @@ class TestTaskArg(TestCase):
         self.assertEqual(1, arg.value())
         self.assertEqual(2, arg.value())
 
+    def test_value__float(self):
+        arg = taskarg_factory(self.TaskArgClass, arg_type="float", val="1.5")
+
+        self.assertIsNone(arg.clean())
+        self.assertEqual(1.5, arg.value())
+
+    def test_value__json(self):
+        arg = taskarg_factory(self.TaskArgClass, arg_type="json", val='{"ids": [1, 2], "dry_run": null}')
+
+        self.assertIsNone(arg.clean())
+        self.assertEqual({"ids": [1, 2], "dry_run": None}, arg.value())
+        self.assertEqual("{'ids': [1, 2], 'dry_run': None}", arg.display_value())
+
+    def test_clean__invalid_float_or_json(self):
+        for arg_type, val in (("float", "one"), ("json", "{not json")):
+            arg = taskarg_factory(self.TaskArgClass, arg_type=arg_type, val=val)
+            with self.subTest(arg_type=arg_type), self.assertRaises(ValidationError):
+                arg.clean()
+
 
 class TestTaskKwarg(TestAllTaskArg):
     TaskArgClass = TaskKwarg
