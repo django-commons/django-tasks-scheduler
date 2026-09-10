@@ -421,6 +421,7 @@ class Queue:
         job_model.status = JobStatus.QUEUED
         job_model.enqueued_at = utcnow()
         job_model.save(connection=pipe)
+        self.failed_job_registry.delete(connection=pipe, job_name=job_model.name)
 
         if self._is_async:
             if at_front:
