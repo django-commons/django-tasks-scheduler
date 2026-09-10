@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 from scheduler.helpers.utils import utcnow
 from scheduler.redis_models.base import MAX_KEYS, HashModel
 from scheduler.settings import SCHEDULER_CONFIG, logger
-from scheduler.types import ConnectionType, Self
+from scheduler.types import ConnectionType
 
 
 class WorkerStatus(str, Enum):
@@ -70,9 +70,9 @@ class WorkerModel(HashModel):
             pipeline.srem(self._children_key_template.format(queue_name), self.name)
         pipeline.execute()
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise TypeError("Cannot compare workers to other types (of workers)")
+            return NotImplemented
         return self._key == other._key
 
     def __hash__(self):

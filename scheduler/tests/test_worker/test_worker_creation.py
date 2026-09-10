@@ -67,6 +67,13 @@ class TestWorker(SchedulerBaseCase):
             socket_timeout = worker.connection.connection_pool.connection_kwargs.get("socket_timeout")
         self.assertEqual(42, socket_timeout)
 
+    def test_worker_model__compares_unequal_to_other_types(self):
+        worker = create_worker("default", name="test")
+
+        self.assertNotEqual(worker._model, None)
+        self.assertNotIn(worker._model, [None, "test"])
+        self.assertEqual(worker._model, WorkerModel.get(worker.name, worker.connection))
+
     def test_create_worker__cleanup(self):
         worker = create_worker("default", name="test", burst=True, with_scheduler=False)
         worker.bootstrap()
