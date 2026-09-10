@@ -1,5 +1,6 @@
 import zoneinfo
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import time_machine
 from django.contrib.messages import get_messages
@@ -301,6 +302,15 @@ class BaseTestCases:
                 task.save(clean=False)
 
             self.assertEqual([other.job_name], task.rqueue.scheduled_job_registry.all(task.rqueue.connection))
+
+        def test_function_string__callable_arg__does_not_call_it(self):
+            task = task_factory(self.task_type)
+            taskarg_factory(TaskArg, arg_type="callable", val="scheduler.tests.jobs.arg_callable", content_object=task)
+
+            with patch("scheduler.tests.jobs.arg_callable") as arg_callable:
+                self.assertEqual(f"{task.callable}(scheduler.tests.jobs.arg_callable())", task.function_string())
+
+            arg_callable.assert_not_called()
 
         def test_admin_list_view_delete_model(self):
             # arrange

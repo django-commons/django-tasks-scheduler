@@ -57,15 +57,23 @@ class BaseTaskArg(models.Model):
             raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
 
     def value(self) -> Any:
+        """The argument to pass to the task. For a callable argument this calls the callable."""
         if self.arg_type == "callable":
-            res = utils.callable_func(self.val)()
-        elif self.arg_type == "datetime":
-            res = datetime.fromisoformat(self.val)
-        elif self.arg_type == "bool":
-            res = self.val.lower() == "true"
-        else:
-            res = ARG_TYPE_TYPES_DICT[self.arg_type](self.val)
-        return res
+            return utils.callable_func(self.val)()
+        return self._parsed_val()
+
+    def display_value(self) -> str:
+        """A representation of the argument for display. Unlike `value()`, it never calls a callable argument."""
+        if self.arg_type == "callable":
+            return f"{self.val}()"
+        return repr(self._parsed_val())
+
+    def _parsed_val(self) -> Any:
+        if self.arg_type == "datetime":
+            return datetime.fromisoformat(self.val)
+        if self.arg_type == "bool":
+            return self.val.lower() == "true"
+        return ARG_TYPE_TYPES_DICT[self.arg_type](self.val)
 
     class Meta:
         abstract = True
@@ -74,15 +82,15 @@ class BaseTaskArg(models.Model):
 
 class TaskArg(BaseTaskArg):
     def __str__(self) -> str:
-        return f"TaskArg[arg_type={self.arg_type},value={self.value()}]"
+        # `val`, not `value()`: logging or inspecting an argument must not call a callable argument.
+        return f"TaskArg[arg_type={self.arg_type},value={self.val}]"
 
 
 class TaskKwarg(BaseTaskArg):
     key = models.CharField(max_length=255)
 
     def __str__(self) -> str:
-        key, _value = self.value()
-        return f"TaskKwarg[key={key},arg_type={self.arg_type},value={self.val}]"
+        return f"TaskKwarg[key={self.key},arg_type={self.arg_type},value={self.val}]"
 
     def value(self) -> tuple[str, Any]:
         return self.key, super().value()

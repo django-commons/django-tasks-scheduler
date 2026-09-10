@@ -75,6 +75,16 @@ class TestAllTaskArg(TestCase):
             arg.delete()
             mock_save.assert_not_called()
 
+    def test_str__callable_arg__does_not_call_it(self):
+        kwargs = {"key": "k1"} if self.TaskArgClass == TaskKwarg else {}
+        arg = taskarg_factory(self.TaskArgClass, arg_type="callable", val="scheduler.tests.jobs.arg_callable", **kwargs)
+
+        with patch("scheduler.tests.jobs.arg_callable") as arg_callable:
+            str(arg)
+            self.assertEqual("scheduler.tests.jobs.arg_callable()", arg.display_value())
+
+        arg_callable.assert_not_called()
+
 
 class TestTaskArg(TestCase):
     TaskArgClass = TaskArg

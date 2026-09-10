@@ -226,10 +226,10 @@ class Task(models.Model):
 
     @admin.display(description="Callable")  # type: ignore[misc]
     def function_string(self) -> str:
-        args = self.parse_args()
-        args_list = [repr(arg) for arg in args]
-        kwargs = self.parse_kwargs()
-        kwargs_list = [k + "=" + repr(v) for (k, v) in kwargs.items()]
+        # Built from `display_value()` rather than the parsed args: rendering or logging a task must not call its
+        # callable arguments.
+        args_list = [arg.display_value() for arg in self.callable_args.all()]
+        kwargs_list = [f"{kwarg.key}={kwarg.display_value()}" for kwarg in self.callable_kwargs.all()]
         return self.callable + f"({', '.join(args_list + kwargs_list)})"
 
     def parse_args(self) -> list[Any]:
