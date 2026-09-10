@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.test import override_settings
@@ -142,6 +142,20 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         task = task_factory(TaskType.REPEATABLE)
         entry = _get_task_scheduled_job_from_registry(task)
         self.assertEqual(entry.meta["interval"], 3600)
+
+    def test_to_dict__past_scheduled_time__does_not_change_the_task(self):
+        task = task_factory(self.task_type, repeat=5)
+        Task.objects.filter(id=task.id).update(scheduled_time=timezone.now() - timedelta(minutes=1))
+        task.refresh_from_db()
+        scheduled_time = task.scheduled_time
+
+        exported = task.to_dict()
+
+        self.assertEqual((scheduled_time, 5), (task.scheduled_time, task.repeat))
+        # The export moves the schedule past now and spends the repeats that takes, consistently.
+        self.assertGreater(datetime.fromisoformat(exported["scheduled_time"]), timezone.now())
+        self.assertLess(exported["repeat"], 5)
+        self.assertEqual(exported, task.to_dict())
 
     def test_repeat(self):
         task = task_factory(TaskType.REPEATABLE, repeat=10)

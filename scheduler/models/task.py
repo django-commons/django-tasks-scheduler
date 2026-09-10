@@ -295,22 +295,28 @@ class Task(models.Model):
         self.save(schedule_job=False, clean=False)
         return True
 
-    def _schedule_time(self) -> datetime:
+    def _next_schedule(self) -> tuple[datetime | None, int | None]:
+        """Returns when the task runs next and how many repeats it has left then, without changing the task.
+
+        A repeatable task whose scheduled time has passed moves forward by whole intervals, spending a repeat on each.
+        """
         if self.task_type == TaskType.CRON:
-            self.scheduled_time = get_next_cron_time(self.cron_string)
-        elif self.task_type == TaskType.REPEATABLE:
-            _now = timezone.now()
-            if self.scheduled_time >= _now:
-                return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
-            gap = math.ceil((_now.timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
+            return get_next_cron_time(self.cron_string), self.repeat
+        now = timezone.now()
+        if self.task_type == TaskType.REPEATABLE and self.scheduled_time < now:
+            gap = math.ceil((now.timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
             if self.repeat is None or self.repeat >= gap:
-                self.scheduled_time += timedelta(seconds=self.interval_seconds() * gap)
-                self.repeat = (self.repeat - gap) if self.repeat is not None else None
-        return utc(self.scheduled_time) if django_settings.USE_TZ else self.scheduled_time
+                repeat = (self.repeat - gap) if self.repeat is not None else None
+                return self.scheduled_time + timedelta(seconds=self.interval_seconds() * gap), repeat
+        return self.scheduled_time, self.repeat
+
+    def _schedule_time(self) -> datetime:
+        return _as_schedule_time(self._next_schedule()[0])
 
     def to_dict(self) -> dict[str, Any]:
         """Export model to dictionary, so it can be saved as external file backup"""
         interval_unit = str(self.interval_unit) if self.interval_unit else None
+        scheduled_time, repeat = self._next_schedule()
         res = {
             "model": str(self.task_type),
             "name": self.name,
@@ -321,12 +327,12 @@ class Task(models.Model):
             ],
             "enabled": self.enabled,
             "queue": self.queue,
-            "repeat": getattr(self, "repeat", None),
+            "repeat": repeat,
             "at_front": self.at_front,
             "timeout": self.timeout,
             "result_ttl": self.result_ttl,
             "cron_string": getattr(self, "cron_string", None),
-            "scheduled_time": self._schedule_time().isoformat(),
+            "scheduled_time": _as_schedule_time(scheduled_time).isoformat(),
             "interval": getattr(self, "interval", None),
             "interval_unit": interval_unit,
             "successful_runs": getattr(self, "successful_runs", None),
@@ -358,10 +364,12 @@ class Task(models.Model):
         if not self.enabled:
             logger.debug(f"Task {self!s} disabled, enable task before scheduling")
             return False
-        schedule_time = self._schedule_time()
+        scheduled_time, repeat = self._next_schedule()
+        schedule_time = _as_schedule_time(scheduled_time)
         if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and schedule_time < timezone.now():
             logger.debug(f"Task {self!s} scheduled time is in the past, not scheduling")
             return False
+        self.scheduled_time, self.repeat = scheduled_time, repeat
         kwargs = self._enqueue_args()
         job = self.rqueue.create_and_enqueue_job(run_task, args=(self.task_type, self.id), when=schedule_time, **kwargs)
         self.job_name = job.name
@@ -486,6 +494,10 @@ class Task(models.Model):
             raise ValidationError(
                 {"scheduled_time": ValidationError(_("Scheduled time must be in the future"), code="invalid")}
             )
+
+
+def _as_schedule_time(value: datetime) -> datetime:
+    return utc(value) if django_settings.USE_TZ else value
 
 
 def get_next_cron_time(cron_string: str | None) -> datetime | None:
