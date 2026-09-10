@@ -23,14 +23,12 @@ class SchedulerStatus(str, Enum):
     STOPPED = "stopped"
 
 
-def _reschedule_tasks() -> None:
-    # Read each task immediately before scheduling it rather than materializing them all up front: a completion
-    # callback can store a new job name for a task while this loop is running, and scheduling from the instance read
-    # earlier would add a second recurring chain next to the successor the callback just created.
-    for task_id in Task.objects.filter(enabled=True).values_list("id", flat=True):
-        task = Task.objects.filter(id=task_id, enabled=True).first()
-        if task is None:  # disabled or deleted since the ids were read
-            continue
+def _reschedule_tasks(queue_names: Sequence[str] | None = None) -> None:
+    # Read tasks for monitored queues and reschedule if needed
+    qs = Task.objects.filter(enabled=True)
+    if queue_names is not None:
+        qs = qs.filter(queue__in=queue_names)
+    for task in qs.iterator():
         logger.debug(f"Rescheduling {task!s}")
         task.reschedule_if_needed()
 
@@ -143,7 +141,8 @@ class WorkerScheduler:
     def enqueue_scheduled_jobs(self) -> None:
         """Enqueue jobs whose timestamp is in the past"""
         self.status = SchedulerStatus.WORKING
-        _reschedule_tasks()
+        queue_names = list(self._locks.keys()) if self._locks else [q.name for q in self._queues]
+        _reschedule_tasks(queue_names=queue_names)
 
         for registry in self._scheduled_job_registries:
             timestamp = current_timestamp()

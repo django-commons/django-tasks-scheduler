@@ -68,3 +68,29 @@ class TestWorkerScheduler(SchedulerBaseCase):
         self.assertIsNotNone(task.job_name)
         self.assertNotEqual(job_name, task.job_name)
         self.assertTrue(registry.exists(connection, task.job_name))
+
+    def test_scheduler_only_reschedules_tasks_for_its_queues(self):
+        # arrange: task1 on "default", task2 on "low"
+        task_default = task_factory(TaskType.CRON, queue="default")
+        task_low = task_factory(TaskType.CRON, queue="low")
+
+        job_default = task_default.job_name
+        job_low = task_low.job_name
+        conn = task_default.rqueue.connection
+        conn.delete(JobModel.key_for(job_default))
+        conn.delete(JobModel.key_for(job_low))
+        task_default.rqueue.scheduled_job_registry.delete(conn, job_default)
+        task_low.rqueue.scheduled_job_registry.delete(conn, job_low)
+
+        # Create scheduler only for "default"
+        scheduler = WorkerScheduler([task_default.rqueue], worker_name="default-worker")
+        scheduler._acquire_locks()
+
+        # act
+        scheduler.enqueue_scheduled_jobs()
+
+        # assert: task_default was rescheduled, but task_low was not touched by this scheduler
+        task_default.refresh_from_db()
+        task_low.refresh_from_db()
+        self.assertNotEqual(task_default.job_name, job_default)
+        self.assertEqual(task_low.job_name, job_low)
