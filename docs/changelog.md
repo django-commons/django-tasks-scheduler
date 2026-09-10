@@ -14,8 +14,18 @@
 - Fix `delete_failed_executions --func` deleting every failed job instead of the matching ones
 - Keep the `get_current_job().meta` changes an async job makes; `get_current_job()` is now isolated per thread and
   async context
+- Stop exporting a task changing it in memory, and exporting a repeatable task's advanced schedule next to its old
+  repeat count
+- Stop displaying or logging a task, or one of its arguments, calling its callable arguments
+- Stop `TimerDeathPenalty` rewriting the message of every `JobTimeoutException` in the process
+- Compare a `WorkerModel` unequal to other types instead of raising `TypeError`
+- Fix `--fork-job-execution false` (or `0`) on `scheduler_worker` still forking
+- Honor `scheduler_worker --worker-ttl`, which was ignored; without it workers use `DEFAULT_WORKER_TTL`
+- Make `import` all or nothing, and unschedule the tasks `import --reset` removes
 
 ### 🚀 Features
+
+- Add `float` and `json` task argument types, and allow argument values up to 2048 characters
 
 - The scheduler loop checks only the tasks of the queues it holds, with one query and one broker round trip per queue
   when all tasks are scheduled
