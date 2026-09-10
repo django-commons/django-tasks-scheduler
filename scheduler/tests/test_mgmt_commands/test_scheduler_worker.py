@@ -1,6 +1,6 @@
 from unittest import mock
 
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 
 from scheduler.helpers.queues import get_queue
@@ -49,6 +49,17 @@ class SchedulerWorkerTestCase(TestCase):
         mock_create_worker.assert_called_once_with(
             "default", name=None, fork_job_execution=True, burst=True, with_scheduler=True
         )
+
+    @mock.patch("scheduler.management.commands.scheduler_worker.create_worker")
+    def test_scheduler_worker__fork_job_execution_false(self, mock_create_worker):
+        call_command("scheduler_worker", "default", "--burst", "--fork-job-execution", "false")
+        mock_create_worker.assert_called_once_with(
+            "default", name=None, fork_job_execution=False, burst=True, with_scheduler=True
+        )
+
+    def test_scheduler_worker__fork_job_execution_not_a_boolean(self):
+        with self.assertRaises(CommandError):
+            call_command("scheduler_worker", "default", "--burst", "--fork-job-execution", "maybe")
 
     def test_scheduler_worker__run_jobs(self):
         SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1

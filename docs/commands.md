@@ -26,7 +26,7 @@ options:
   --worker-ttl WORKER_TTL
                         Default worker timeout to be used
   --fork-job-execution FORK_JOB_EXECUTION
-                        Fork job execution to another process
+                        Fork job execution to another process: true (default) or false
   --sentry-dsn SENTRY_DSN
                         Sentry DSN to use
   --sentry-debug        Enable Sentry debug mode

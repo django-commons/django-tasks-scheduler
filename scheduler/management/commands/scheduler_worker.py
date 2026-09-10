@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from typing import Any
 
 import click
@@ -31,6 +31,15 @@ WORKER_ARGUMENTS = {
     "with_scheduler",
     "burst",
 }
+
+
+def _parse_bool(value: str) -> bool:
+    """Parses a boolean option. `type=bool` would read every non-empty string - "false" and "0" included - as True."""
+    if value.lower() in {"true", "1", "yes", "on"}:
+        return True
+    if value.lower() in {"false", "0", "no", "off"}:
+        return False
+    raise ArgumentTypeError(f"expected true or false, got {value!r}")
 
 
 def register_sentry(sentry_dsn: str, **opts: Any) -> None:
@@ -106,8 +115,8 @@ class Command(BaseCommand):
             action="store",
             default=True,
             dest="fork_job_execution",
-            type=bool,
-            help="Fork job execution to another process",
+            type=_parse_bool,
+            help="Fork job execution to another process: true (default) or false",
         )
         parser.add_argument(
             "queues",
