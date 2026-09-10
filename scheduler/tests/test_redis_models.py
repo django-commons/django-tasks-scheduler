@@ -1,13 +1,17 @@
+from unittest.mock import patch
+
 from django.urls import reverse
 
 from scheduler import settings
 from scheduler.helpers.callback import Callback
-from scheduler.helpers.queues import get_queue
+from scheduler.helpers.queues import Queue, get_queue
 from scheduler.helpers.utils import current_timestamp
 from scheduler.redis_models import JobModel, JobNamesRegistry, KvLock, Result, ResultType, SchedulerLock
+from scheduler.redis_models.lock import QueueLock
 from scheduler.tests import conf  # noqa
 from scheduler.tests.jobs import failing_job, test_args_kwargs, test_job
 from scheduler.tests.testtools import SchedulerBaseCase
+from scheduler.worker import create_worker
 
 
 class TestWorkerAdmin(SchedulerBaseCase):
@@ -275,8 +279,46 @@ class TestKvLock(SchedulerBaseCase):
         # assert
         self.assertIsNone(lock.value(queue.connection))
 
+    def test_lock_release__never_acquired__does_not_release_lock(self):
+        queue = get_queue("default")
+        KvLock("test-queue").acquire(val="worker-1", connection=queue.connection, expire=60)
+
+        self.assertFalse(KvLock("test-queue").release(queue.connection))
+
+        self.assertEqual(b"worker-1", KvLock("test-queue").value(queue.connection))
+
+
+class TestWorkerCleanRegistriesLock(SchedulerBaseCase):
+    def test_clean_registries__releases_the_queue_lock(self):
+        queue = get_queue("default")
+
+        create_worker("default", burst=True).clean_registries()
+
+        self.assertIsNone(QueueLock("default").value(queue.connection))
+
+    def test_clean_registries__lock_held_by_another_worker__skips_the_queue_and_leaves_the_lock(self):
+        queue = get_queue("default")
+        QueueLock("default").acquire(val="other-worker", connection=queue.connection, expire=60)
+
+        with patch.object(Queue, "clean_registries") as clean:
+            create_worker("default", burst=True).clean_registries()
+
+        clean.assert_not_called()
+        self.assertEqual(b"other-worker", QueueLock("default").value(queue.connection))
+
 
 class TestJobModelTaskIndexing(SchedulerBaseCase):
+    def test_prune_task_index__drops_only_expired_jobs(self):
+        queue = get_queue("default")
+        conn = queue.connection
+        expired = queue.create_and_enqueue_job(test_job, scheduled_task_id=999)
+        alive = queue.create_and_enqueue_job(test_job, scheduled_task_id=999)
+        conn.delete(JobModel.key_for(expired.name))  # the job's hash expired
+
+        JobModel.prune_task_index(999, conn)
+
+        self.assertEqual({alive.name.encode()}, conn.smembers(JobModel._task_key_template.format(999)))
+
     def test_job_model_indexes_task_jobs_on_save_and_cleans_on_delete(self):
         queue = get_queue("default")
         conn = queue.connection

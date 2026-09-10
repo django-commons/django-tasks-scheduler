@@ -1,11 +1,19 @@
+from datetime import timedelta
+from unittest.mock import patch
+
 from django import forms
+from django.db import connection
+from django.http import HttpResponse
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import timezone
 
 from scheduler.admin.task_admin import JobMethodsDatalistWidget, get_job_executions_for_task
 from scheduler.decorators import JOB_METHODS_LIST
-from scheduler.models import TaskType
+from scheduler.helpers.queues import Queue
+from scheduler.models import Task, TaskArg, TaskType
 from scheduler.tests import conf  # noqa
-from scheduler.tests.testtools import SchedulerBaseCase, task_factory
+from scheduler.tests.testtools import SchedulerBaseCase, task_factory, taskarg_factory
 
 _METHOD = "scheduler.tests.test_admin.sample_registered_job"
 
@@ -59,15 +67,57 @@ class TestTaskAdminJobExecutions(SchedulerBaseCase):
         self.assertEqual(task2_jobs[0].name, task2.job_name)
 
 
-class TestTaskAdminQuerySetAndIsScheduled(SchedulerBaseCase):
-    def test_task_admin_changelist_prefetches_args(self):
+class TestTaskAdminChangelist(SchedulerBaseCase):
+    def setUp(self) -> None:
+        super().setUp()
         self.client.login(username="admin", password="admin")
-        task_factory(TaskType.ONCE, queue="default")
-        task_factory(TaskType.ONCE, queue="default")
+        self.url = reverse("admin:scheduler_task_changelist")
 
-        res = self.client.get(reverse("admin:scheduler_task_changelist"))
-        self.assertEqual(res.status_code, 200)
+    def _get_changelist(self) -> tuple[HttpResponse, list[dict[str, str]]]:
+        with CaptureQueriesContext(connection) as queries:
+            res = self.client.get(self.url)
+        self.assertEqual(200, res.status_code)
+        return res, queries.captured_queries
 
+    def _task_with_arg(self) -> Task:
+        task = task_factory(TaskType.ONCE)
+        taskarg_factory(TaskArg, val="one", content_object=task)
+        return task
+
+    def test_query_count_does_not_grow_with_rows(self):
+        self._task_with_arg()
+        _, one_row = self._get_changelist()
+        for _ in range(3):
+            self._task_with_arg()
+
+        _, four_rows = self._get_changelist()
+
+        self.assertEqual(len(one_row), len(four_rows))
+
+    def test_checks_whether_tasks_are_scheduled_in_one_broker_round_trip(self):
+        self._task_with_arg()
+        unscheduled = self._task_with_arg()
+        unscheduled.rqueue.delete_job(unscheduled.job_name)
+
+        with (
+            patch.object(Task, "is_scheduled", side_effect=AssertionError("checked the broker once per row")),
+            patch.object(Queue, "pending_job_names", autospec=True, side_effect=Queue.pending_job_names) as pending,
+        ):
+            res, _ = self._get_changelist()
+
+        pending.assert_called_once()
+        self.assertContains(res, 'alt="False"', count=1)  # the only False boolean on the page is `unscheduled`
+
+    def test_task_past_its_scheduled_time__rendering_does_not_write(self):
+        task = task_factory(TaskType.CRON)
+        Task.objects.filter(id=task.id).update(scheduled_time=timezone.now() - timedelta(minutes=5))
+
+        _, queries = self._get_changelist()
+
+        self.assertEqual([], [q["sql"] for q in queries if q["sql"].startswith(("INSERT", "UPDATE", "DELETE"))])
+
+
+class TestTaskIsScheduled(SchedulerBaseCase):
     def test_is_scheduled_is_read_only_and_does_not_mutate_db(self):
         task = task_factory(TaskType.ONCE, queue="default")
         task.rqueue.connection.flushall()

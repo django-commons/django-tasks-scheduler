@@ -1,8 +1,11 @@
+from collections import defaultdict
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.views.main import ChangeList
 from django.contrib.contenttypes.admin import GenericStackedInline
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
@@ -33,6 +36,22 @@ def get_job_executions_for_task(queue_name: str, scheduled_task: Task) -> list[J
         filter(lambda j: job_execution_of(j, scheduled_task), job_list), key=lambda j: j.created_at, reverse=True
     )
     return res
+
+
+def _check_scheduled(tasks: Iterable[Task]) -> None:
+    """Sets `_is_scheduled` on each task, checking the tasks against the broker in one round trip per queue rather
+    than one per task."""
+    tasks_by_queue: dict[str, list[Task]] = defaultdict(list)
+    for task in tasks:
+        tasks_by_queue[task.queue].append(task)
+    for queue_name, queue_tasks in tasks_by_queue.items():
+        try:
+            pending = get_queue(queue_name).pending_job_names(task.job_name for task in queue_tasks if task.job_name)
+        except ConnectionErrorTypes as e:
+            logger.warning(f"Could not check whether tasks on queue {queue_name} are scheduled: {e}")
+            pending = set()
+        for task in queue_tasks:
+            task._is_scheduled = task.job_name in pending
 
 
 class JobArgInline(GenericStackedInline):
@@ -170,16 +189,22 @@ class TaskAdmin(admin.ModelAdmin):
                 return ""
             return f"Repeatable: {o.interval} {o.get_interval_unit_display()}"
 
+    def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
+        changelist = super().get_changelist_instance(request)
+        _check_scheduled(changelist.result_list)
+        return changelist
+
+    @admin.display(boolean=True, description=_("is scheduled?"))
+    def is_scheduled(self, o: Task) -> bool:
+        scheduled = getattr(o, "_is_scheduled", None)
+        return o.is_scheduled() if scheduled is None else scheduled
+
     @admin.display(description="Next run")
     def next_run(self, o: Task) -> str | datetime:
+        # Display only: rendering the list must not write. The scheduler loop keeps `scheduled_time` current.
         res = o.scheduled_time
         if res is None:
             return _("Not scheduled")
-        if res < timezone.now():
-            o.save(clean=False)
-            res = o.scheduled_time
-            if res is None:
-                return _("Not scheduled")
         if is_naive(res):
             res = timezone.make_aware(res, timezone.get_current_timezone())
         return res

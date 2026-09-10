@@ -45,12 +45,13 @@ def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     return task
 
 
-def _complete_run(task: "Task", job: JobModel, failed: bool) -> None:
+def _complete_run(task: "Task", job: JobModel, connection: ConnectionType, failed: bool) -> None:
     """Record the outcome of a finished job and, when that job owned the task's recurring chain, schedule its
     successor.
 
     :param task: The task the job belongs to, read from the database by the caller.
     :param job: The job that just finished.
+    :param connection: Broker connection of the job's queue.
     :param failed: Whether the job failed.
     """
     now = timezone.now()
@@ -61,6 +62,7 @@ def _complete_run(task: "Task", job: JobModel, failed: bool) -> None:
     # Increment in the database rather than through this instance: another run of the same task may be finishing
     # concurrently, and a read-modify-write here would drop its result.
     Task.objects.filter(id=task.id).update(updated_at=now, **counters)
+    JobModel.prune_task_index(task.id, connection)
 
     if task.job_name != job.name:
         # This job is not the task's pending execution - it is a manual "Enqueue now" run, or a leftover duplicate.
@@ -83,7 +85,7 @@ def failure_callback(job: JobModel, connection: ConnectionType, result: Any, *ar
         f"Task {task.id}/{task.name} has failed",
         "See django-admin for logs",
     )
-    _complete_run(task, job, failed=True)
+    _complete_run(task, job, connection, failed=True)
 
 
 def success_callback(job: JobModel, connection: ConnectionType, result: Any, *args: Any, **kwargs: Any) -> None:
@@ -91,7 +93,7 @@ def success_callback(job: JobModel, connection: ConnectionType, result: Any, *ar
     if task is None:
         logger.warning(f"Could not find task for job {job.name}")
         return
-    _complete_run(task, job, failed=False)
+    _complete_run(task, job, connection, failed=False)
 
 
 def get_queue_choices() -> list[tuple[str, str]]:
@@ -220,13 +222,7 @@ class Task(models.Model):
         """Check whether a next job for this task is queued/scheduled to be executed"""
         if self.job_name is None:  # no job_id => is not scheduled
             return False
-        # check whether job_id is in scheduled/queued/active jobs
-        with self.rqueue.connection.pipeline() as pipeline:
-            self.rqueue.scheduled_job_registry.exists(pipeline, self.job_name)
-            self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
-            self.rqueue.active_job_registry.exists(pipeline, self.job_name)
-            results = pipeline.execute()
-            return any(item is not None for item in results)
+        return self.job_name in self.rqueue.pending_job_names([self.job_name])
 
     @admin.display(description="Callable")  # type: ignore[misc]
     def function_string(self) -> str:
@@ -371,30 +367,34 @@ class Task(models.Model):
         self.job_name = job.name
         return True
 
-    def _refresh_run_state(self) -> None:
-        """Re-read the fields the run machinery owns, so saving a stale instance cannot undo a finished run."""
+    def _refresh_run_state(self) -> bool:
+        """Re-read the fields the run machinery owns, so saving a stale instance cannot undo a finished run.
+
+        :returns: False if the task has no database row - it is unsaved, or was deleted underneath us.
+        """
         if self.pk is None:
-            return
+            return False
         current = Task.objects.filter(pk=self.pk).values(*_RUN_STATE_FIELDS).first()
-        if current is None:  # deleted underneath us
-            return
+        if current is None:
+            return False
         for field_name, value in current.items():
             setattr(self, field_name, value)
+        return True
 
     def save(self, **kwargs: Any) -> None:
         should_clean = kwargs.pop("clean", True)
         schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
-        is_new = self.pk is None
         if schedule_job:
             self._refresh_run_state()
-            if not is_new:
-                self._schedule()
         if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super().save(**kwargs)
-        if schedule_job and is_new and self._schedule():
+        # Schedule only once the row is written: a new task needs its id for the job, and a write that fails must not
+        # leave a job behind. The scheduling fields get their own write, since `update_fields` may not include them;
+        # a task that is already scheduled - the usual case - needs no second write.
+        if schedule_job and self._schedule():
             super().save(update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
 
     def reschedule_if_needed(self) -> bool:
@@ -405,7 +405,8 @@ class Task(models.Model):
 
         :returns: True if a job was scheduled, False otherwise.
         """
-        self._refresh_run_state()
+        if not self._refresh_run_state():  # deleted since it was read
+            return False
         scheduled = self._schedule()
         if scheduled:
             self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)

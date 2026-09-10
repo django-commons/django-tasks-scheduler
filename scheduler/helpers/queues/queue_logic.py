@@ -2,11 +2,9 @@ import asyncio
 import contextvars
 import sys
 import traceback
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from typing import Any, ClassVar
-
-from redis import WatchError
 
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.utils import current_timestamp, utcnow
@@ -41,9 +39,7 @@ class NoSuchRegistryError(Exception):
     pass
 
 
-_job_stack_var: contextvars.ContextVar[tuple[JobModel, ...]] = contextvars.ContextVar(
-    "_job_stack_var", default=()
-)
+_job_stack_var: contextvars.ContextVar[tuple[JobModel, ...]] = contextvars.ContextVar("_job_stack_var", default=())
 
 
 def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:
@@ -57,14 +53,10 @@ def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:
 
     try:
         result = job_model.func(*job_model.args, **job_model.kwargs)
-        job_model.save(connection=connection, save_all=True)
         if asyncio.iscoroutine(result):
-            loop = asyncio.new_event_loop()
-            try:
-                coro_result = loop.run_until_complete(result)
-                result = coro_result
-            finally:
-                loop.close()
+            result = asyncio.run(result)
+        # Save once the job's code has run - for a coroutine that is only now - so `meta` changes it made are kept.
+        job_model.save(connection=connection, save_all=True)
         job_model.call_success_callback(job_model, connection, result)
         return result
     except Exception as e:
@@ -124,8 +116,11 @@ class Queue:
     @property
     def scheduler_pid(self) -> int | None:
         lock = SchedulerLock(self.name)
-        pid = lock.value(self.connection)
-        return int(as_str(pid)) if pid is not None else None
+        token = as_str(lock.value(self.connection))
+        if token is None:
+            return None
+        # The token is `<pid>:<random>`; older versions stored the bare pid.
+        return int(token.split(":", 1)[0])
 
     def clean_registries(self, timestamp: float | None = None) -> None:
         """Remove abandoned jobs from registry and add them to FailedJobRegistry.
@@ -196,6 +191,23 @@ class Queue:
         all_job_names.extend(self.canceled_job_registry.all(self.connection))
         res = list(filter(lambda job_name: JobModel.exists(job_name, self.connection), all_job_names))
         return res
+
+    def pending_job_names(self, job_names: Iterable[str]) -> set[str]:
+        """Returns those of `job_names` that are scheduled, queued or running, checking them all in one round trip."""
+        job_names = list(job_names)
+        if not job_names:
+            return set()
+        registries = (self.scheduled_job_registry, self.queued_job_registry, self.active_job_registry)
+        with self.connection.pipeline() as pipeline:
+            for job_name in job_names:
+                for registry in registries:
+                    registry.exists(pipeline, job_name)
+            ranks = pipeline.execute()
+        # One rank per (job, registry) pair, in order: a job is pending if it has a rank in any of the registries.
+        n = len(registries)
+        return {
+            name for i, name in enumerate(job_names) if any(rank is not None for rank in ranks[i * n : (i + 1) * n])
+        }
 
     def get_all_jobs(self) -> list[JobModel]:
         job_names = self.get_all_job_names()
@@ -396,25 +408,18 @@ class Queue:
         pipe.execute()
 
     def delete_jobs(self, job_names: Sequence[str], expire_job_model: bool = True) -> None:
-        """Deletes multiple jobs from the queue and all its registries in a pipelined batch."""
+        """Deletes the given jobs from the queue and all its registries in one pipeline."""
         if not job_names:
             return
-        pipe = self.connection.pipeline()
-
-        while True:
-            try:
-                for job_name in job_names:
-                    self._remove_from_registries(job_name, connection=pipe)
-                    self.failed_job_registry.delete(connection=pipe, job_name=job_name)
-                if expire_job_model:
-                    job_models = JobModel.get_many(list(job_names), connection=self.connection)
-                    for job_model in job_models:
-                        if job_model is not None:
-                            job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
-                pipe.execute()
-                break
-            except WatchError:
-                pass
+        job_models = JobModel.get_many(job_names, connection=self.connection) if expire_job_model else []
+        with self.connection.pipeline() as pipe:
+            for job_name in job_names:
+                self._remove_from_registries(job_name, connection=pipe)
+                self.failed_job_registry.delete(connection=pipe, job_name=job_name)
+            for job_model in job_models:
+                if job_model is not None:
+                    job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
+            pipe.execute()
 
     def delete_job(self, job_name: str, expire_job_model: bool = True) -> None:
         """Deletes the given job from the queue and all its registries"""

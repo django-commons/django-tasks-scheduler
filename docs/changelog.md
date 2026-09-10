@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased 🌈
+
+### 🐛 Bug Fixes
+
+- Release and extend a scheduler lock only while the scheduler still holds it, and stop scheduling a queue whose lock
+  another scheduler took over, so two schedulers can no longer schedule the same queue. The lock token is now unique
+  per scheduler instead of the pid, which containers commonly share
+- Let only one worker at a time clean a queue's registries; the lock was taken per worker instead of per queue
+- Fix `Task.save(update_fields=...)` scheduling a job without saving its name, and a failed save leaving a job behind
+- Stop the scheduler loop scheduling a task disabled or deleted while it ran, and one broken task stopping the
+  scheduler thread
+- Fix `delete_failed_executions --func` deleting every failed job instead of the matching ones
+- Keep the `get_current_job().meta` changes an async job makes; `get_current_job()` is now isolated per thread and
+  async context
+
+### 🚀 Features
+
+- The scheduler loop checks only the tasks of the queues it holds, with one query and one broker round trip per queue
+  when all tasks are scheduled
+- The task page reads a task's executions from a per-task index instead of scanning the whole queue. Executions created
+  before upgrading are not indexed, so they no longer show on the task page
+- The task list checks whether tasks are scheduled in one broker round trip, no longer queries arguments per row, and
+  no longer saves tasks while rendering
+- Delete the selected jobs of a queue in one pipeline
+
 ## v4.3.1 🌈
 
 ### 🐛 Bug Fixes

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import time_machine
 from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -274,12 +275,32 @@ class BaseTestCases:
             # assert
             self.assertEqual(200, res.status_code)
 
-        def test_task_save_existing_executes_single_update_query(self):
+        def test_task_save_existing_scheduled_task__writes_once(self):
             task = task_factory(self.task_type)
             task.name = "updated-task-name"
             # 1 SELECT to refresh run state, 1 UPDATE to save
             with self.assertNumQueries(2):
                 task.save()
+
+        def test_task_save_with_update_fields__persists_the_new_job(self):
+            task = task_factory(self.task_type)
+            task.rqueue.delete_job(task.job_name)
+
+            task.save(update_fields=["enabled"])
+
+            self.assertTrue(task.is_scheduled())
+            self.assertEqual(task.job_name, Task.objects.get(id=task.id).job_name)
+
+        def test_task_save_failing__leaves_no_job_behind(self):
+            other = task_factory(self.task_type)
+            task = task_factory(self.task_type)
+            task.rqueue.delete_job(task.job_name)
+            task.name = other.name
+
+            with self.assertRaises(IntegrityError), transaction.atomic():
+                task.save(clean=False)
+
+            self.assertEqual([other.job_name], task.rqueue.scheduled_job_registry.all(task.rqueue.connection))
 
         def test_admin_list_view_delete_model(self):
             # arrange

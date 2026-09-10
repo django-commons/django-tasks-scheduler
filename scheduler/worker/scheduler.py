@@ -1,10 +1,12 @@
 import os
 import time
 import traceback
-from collections.abc import Sequence
+import uuid
+from collections import defaultdict
+from collections.abc import Collection, Sequence
 from datetime import datetime
 from enum import Enum
-from logging import DEBUG, INFO
+from logging import DEBUG, INFO, WARNING
 from threading import Thread
 
 import django
@@ -23,14 +25,33 @@ class SchedulerStatus(str, Enum):
     STOPPED = "stopped"
 
 
-def _reschedule_tasks(queue_names: Sequence[str] | None = None) -> None:
-    # Read tasks for monitored queues and reschedule if needed
-    qs = Task.objects.filter(enabled=True)
-    if queue_names is not None:
-        qs = qs.filter(queue__in=queue_names)
-    for task in qs.iterator():
-        logger.debug(f"Rescheduling {task!s}")
-        task.reschedule_if_needed()
+def _reschedule_tasks(queue_names: Collection[str]) -> None:
+    """Give every enabled task on `queue_names` a pending job, if it has none.
+
+    The tasks' job names are checked against the broker in one pipeline per queue, and a task is read in full only when
+    it needs a new job - so a pass over tasks that are all scheduled costs a single query.
+    """
+    job_names_by_queue: dict[str, dict[int, str | None]] = defaultdict(dict)
+    tasks = Task.objects.filter(enabled=True, queue__in=queue_names).values_list("id", "queue", "job_name")
+    for task_id, queue_name, job_name in tasks:
+        job_names_by_queue[queue_name][task_id] = job_name
+
+    for queue_name, job_names in job_names_by_queue.items():
+        pending = get_queue(queue_name).pending_job_names(name for name in job_names.values() if name)
+        for task_id, job_name in job_names.items():
+            if job_name in pending:
+                continue
+            # Read the task immediately before scheduling it: since the ids were read, a completion callback may have
+            # given it a new job, or it may have been disabled or deleted.
+            task = Task.objects.filter(id=task_id, enabled=True).first()
+            if task is None:
+                continue
+            logger.debug(f"Rescheduling task {task.name}")
+            try:
+                task.reschedule_if_needed()
+            except Exception:
+                # One broken task must not stop the scheduler thread, which would leave every other task unscheduled.
+                logger.exception(f"Failed to reschedule task {task.name}")
 
 
 class WorkerScheduler:
@@ -47,6 +68,7 @@ class WorkerScheduler:
         self.status = SchedulerStatus.STOPPED
         self._thread: Thread | None = None
         self._pid: int | None = None
+        self._lock_token: str | None = None
         self.worker_name = worker_name
 
     @property
@@ -68,22 +90,24 @@ class WorkerScheduler:
         successful_locks = set()
         if self.pid is None:
             self._pid = os.getpid()
+            # The pid alone is not unique across hosts and containers, so the lock token adds a random part. The pid
+            # prefix is what `Queue.scheduler_pid` reports.
+            self._lock_token = f"{self._pid}:{uuid.uuid4().hex}"
         queue_names = [queue.name for queue in self._queues]
         self.log(DEBUG, f"""Trying to acquire locks for {", ".join(queue_names)}""")
         for queue in self._queues:
             lock = SchedulerLock(queue.name)
-            if lock.acquire(self.pid, connection=self.connection, expire=self.interval + 60):
+            if lock.acquire(self._lock_token, connection=self.connection, expire=self.interval + 60):
                 self._locks[queue.name] = lock
                 successful_locks.add(queue.name)
 
-        # Always reset _scheduled_job_registries when acquiring locks
         self.lock_acquisition_time = utcnow()
-        self._scheduled_job_registries = []
-        for queue_name in self._locks:
-            queue = get_queue(queue_name)
-            self._scheduled_job_registries.append(queue.scheduled_job_registry)
+        self._refresh_scheduled_job_registries()
         self.log(DEBUG, f"Locks acquired for {', '.join(self._locks.keys())}")
         return successful_locks
+
+    def _refresh_scheduled_job_registries(self) -> None:
+        self._scheduled_job_registries = [get_queue(queue_name).scheduled_job_registry for queue_name in self._locks]
 
     def start(self) -> None:
         locks = self._acquire_locks()
@@ -101,13 +125,20 @@ class WorkerScheduler:
             self._thread.join()
 
     def heartbeat(self) -> None:
-        """Updates the TTL on scheduler keys and the locks"""
+        """Extends the locks this scheduler still holds, and stops scheduling the queues whose lock it lost."""
         lock_keys = ", ".join(self._locks.keys())
         self.log(DEBUG, f"Scheduler updating lock for queue {lock_keys}")
-        with self.connection.pipeline() as pipeline:
-            for lock in self._locks.values():
-                lock.expire(pipeline, expire=self.interval + 60, val=self.pid)
-            pipeline.execute()
+        lost = [
+            queue_name
+            for queue_name, lock in self._locks.items()
+            if not lock.expire(self.connection, expire=self.interval + 60)
+        ]
+        for queue_name in lost:
+            # The lock expired and another scheduler took it over: carrying on would schedule this queue twice.
+            self.log(WARNING, f"Lost the scheduler lock for queue {queue_name}, no longer scheduling it")
+            del self._locks[queue_name]
+        if lost:
+            self._refresh_scheduled_job_registries()
 
     def stop(self) -> None:
         self.log(INFO, f"Stopping scheduler, releasing locks for {', '.join(self._locks.keys())}...")
@@ -116,10 +147,8 @@ class WorkerScheduler:
 
     def release_locks(self) -> None:
         """Release acquired locks"""
-        with self.connection.pipeline() as pipeline:
-            for lock in self._locks.values():
-                lock.release(pipeline, val=self.pid)
-            pipeline.execute()
+        for lock in self._locks.values():
+            lock.release(self.connection)
 
     def work(self) -> None:
         queue_names = [queue.name for queue in self._queues]
@@ -141,8 +170,8 @@ class WorkerScheduler:
     def enqueue_scheduled_jobs(self) -> None:
         """Enqueue jobs whose timestamp is in the past"""
         self.status = SchedulerStatus.WORKING
-        queue_names = list(self._locks.keys()) if self._locks else [q.name for q in self._queues]
-        _reschedule_tasks(queue_names=queue_names)
+        # Only the queues this scheduler holds the lock for: another scheduler owns the rest.
+        _reschedule_tasks(queue_names=list(self._locks))
 
         for registry in self._scheduled_job_registries:
             timestamp = current_timestamp()

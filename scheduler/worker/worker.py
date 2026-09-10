@@ -184,13 +184,15 @@ class Worker:
         """Runs maintenance jobs on each Queue's registries."""
         for queue in self.queues:
             # If there are multiple workers running, we only want 1 worker
-            # to run clean_registries().
-            queue_lock = QueueLock(self.name)
-            if queue_lock.acquire(1, expire=899, connection=self.connection):
-                self.log(DEBUG, f"Cleaning registries for queue: {queue.name}")
-                queue.clean_registries()
-                WorkerModel.cleanup(self.connection, queue.name)
-                queue_lock.release(self.connection)
+            # to run clean_registries(). The lock is per queue, and the worker's (unique) name is its owner token.
+            queue_lock = QueueLock(queue.name)
+            if queue_lock.acquire(self.name, expire=899, connection=self.connection):
+                try:
+                    self.log(DEBUG, f"Cleaning registries for queue: {queue.name}")
+                    queue.clean_registries()
+                    WorkerModel.cleanup(self.connection, queue.name)
+                finally:
+                    queue_lock.release(self.connection)
         self._model.last_cleaned_at = utcnow()
 
     def _install_signal_handlers(self) -> None:

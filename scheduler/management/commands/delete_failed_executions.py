@@ -17,13 +17,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         queue = get_queue(options.get("queue", "default"))
         job_names = queue.failed_job_registry.all(queue.connection)
-        jobs = JobModel.get_many(job_names, connection=queue.connection)
+        jobs = [job for job in JobModel.get_many(job_names, connection=queue.connection) if job is not None]
         if func_name := options.get("func"):
             jobs = [job for job in jobs if job.func_name == func_name]
         dry_run = options.get("dry_run", False)
         click.echo(f"Found {len(jobs)} failed jobs")
-        for job in job_names:
-            click.echo(f"Deleting {job}")
-            if not dry_run:
-                queue.delete_job(job)
+        for job in jobs:
+            click.echo(f"Deleting {job.name}")
+        if not dry_run:
+            queue.delete_jobs([job.name for job in jobs])
         click.echo(f"Deleted {len(jobs)} failed jobs")

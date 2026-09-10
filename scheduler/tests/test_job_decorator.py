@@ -77,6 +77,10 @@ def concurrent_job_recording(job_id: str, duration: float):
     _recorded_concurrent_jobs[job_id] = job.name if job else None
 
 
+async def async_job_recording_meta():
+    get_current_job().meta["async"] = "done"
+
+
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
@@ -126,6 +130,14 @@ class JobDecoratorTest(TestCase):
 
         self.assertEqual(_recorded_concurrent_jobs.get("job-1"), "job-1")
         self.assertEqual(_recorded_concurrent_jobs.get("job-2"), "job-2")
+
+    def test_get_current_job__async_job__meta_changes_are_saved(self):
+        queue = get_queue("default")
+        job = queue.create_and_enqueue_job(async_job_recording_meta)
+
+        create_worker("default", burst=True, fork_job_execution=False).work()
+
+        self.assertEqual({"async": "done"}, JobModel.get(job.name, connection=queue.connection).meta)
 
     def test_job_decorator_no_params(self):
         test_job.delay()

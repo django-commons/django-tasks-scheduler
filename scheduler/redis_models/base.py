@@ -185,12 +185,18 @@ class HashModel(BaseModel):
             values = pipeline.execute()
             return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
 
+    def _index_keys(self) -> list[str]:
+        """Keys of the sets listing this model's name, kept up to date by `save` and `delete`."""
+        keys = [self._list_key]
+        if self._parent_key is not None:
+            keys.append(self._parent_key)
+        return keys
+
     def save(self, connection: ConnectionType, save_all: bool = False) -> None:
         save_all = save_all or self._save_all
         with connection.pipeline() as pipeline:
-            pipeline.sadd(self._list_key, self.name)
-            if self._parent_key is not None:
-                pipeline.sadd(self._parent_key, self.name)
+            for key in self._index_keys():
+                pipeline.sadd(key, self.name)
             mapping = self.serialize(with_nones=True)
             if not save_all:
                 mapping = {k: v for k, v in mapping.items() if k in self._dirty_fields}
@@ -206,9 +212,8 @@ class HashModel(BaseModel):
 
     def delete(self, connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
-            pipeline.srem(self._list_key, self.name)
-            if self._parent_key is not None:
-                pipeline.srem(self._parent_key, self.name)
+            for key in self._index_keys():
+                pipeline.srem(key, self.name)
             pipeline.delete(self._key)
             pipeline.execute()
             self._save_all = True
