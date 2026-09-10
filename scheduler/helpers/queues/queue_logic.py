@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import sys
 import traceback
 from datetime import datetime
@@ -21,6 +22,7 @@ from scheduler.redis_models import (
     ResultType,
     ScheduledJobRegistry,
     SchedulerLock,
+    as_str,
 )
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionType, FunctionReferenceType, PipelineType, Self
@@ -38,21 +40,30 @@ class NoSuchRegistryError(Exception):
     pass
 
 
+_job_stack_var: contextvars.ContextVar[tuple[JobModel, ...]] = contextvars.ContextVar(
+    "_job_stack_var", default=()
+)
+
+
 def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:
     """The main execution method. Invokes the job function with the job arguments.
 
     :returns: The job's return value
     """
     job_model.persist(connection=connection)
-    _job_stack.append(job_model)
+    current_stack = _job_stack_var.get()
+    token = _job_stack_var.set((*current_stack, job_model))
 
     try:
         result = job_model.func(*job_model.args, **job_model.kwargs)
         job_model.save(connection=connection, save_all=True)
         if asyncio.iscoroutine(result):
             loop = asyncio.new_event_loop()
-            coro_result = loop.run_until_complete(result)
-            result = coro_result
+            try:
+                coro_result = loop.run_until_complete(result)
+                result = coro_result
+            finally:
+                loop.close()
         job_model.call_success_callback(job_model, connection, result)
         return result
     except Exception as e:
@@ -60,10 +71,7 @@ def queue_perform_job(job_model: JobModel, connection: ConnectionType) -> Any:
         job_model.call_failure_callback(job_model, connection, *sys.exc_info())
         raise
     finally:
-        assert job_model is _job_stack.pop()
-
-
-_job_stack: list[JobModel] = []
+        _job_stack_var.reset(token)
 
 
 def get_current_job() -> JobModel | None:
@@ -78,7 +86,8 @@ def get_current_job() -> JobModel | None:
             job = get_current_job()
             job.meta["progress"] = 0.5
     """
-    return _job_stack[-1] if _job_stack else None
+    stack = _job_stack_var.get()
+    return stack[-1] if stack else None
 
 
 class Queue:
@@ -115,7 +124,7 @@ class Queue:
     def scheduler_pid(self) -> int | None:
         lock = SchedulerLock(self.name)
         pid = lock.value(self.connection)
-        return int(pid.decode()) if pid is not None else None
+        return int(as_str(pid)) if pid is not None else None
 
     def clean_registries(self, timestamp: float | None = None) -> None:
         """Remove abandoned jobs from registry and add them to FailedJobRegistry.

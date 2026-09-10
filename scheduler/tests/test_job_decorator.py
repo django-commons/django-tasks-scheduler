@@ -68,6 +68,15 @@ def job_asserting_no_current_job():
     assert get_current_job() is None
 
 
+_recorded_concurrent_jobs: dict[str, str | None] = {}
+
+
+def concurrent_job_recording(job_id: str, duration: float):
+    time.sleep(duration)
+    job = get_current_job()
+    _recorded_concurrent_jobs[job_id] = job.name if job else None
+
+
 class JobDecoratorTest(TestCase):
     def setUp(self) -> None:
         get_queue("default").connection.flushall()
@@ -91,6 +100,32 @@ class JobDecoratorTest(TestCase):
     def test_get_current_job__direct_call_returns_none(self):
         # Calling the decorated function directly (no worker) runs outside a job context.
         job_asserting_no_current_job()
+
+    def test_get_current_job__concurrent_threads_isolation(self):
+        from scheduler.helpers.queues.queue_logic import queue_perform_job
+
+        _recorded_concurrent_jobs.clear()
+
+        def thread_task(job_id: str, duration: float):
+            queue = get_queue("default")
+            job_obj = JobModel.create(
+                queue_name="default",
+                func=concurrent_job_recording,
+                name=job_id,
+                args=(job_id, duration),
+                connection=queue.connection,
+            )
+            queue_perform_job(job_obj, queue.connection)
+
+        t1 = threading.Thread(target=thread_task, args=("job-1", 0.05))
+        t2 = threading.Thread(target=thread_task, args=("job-2", 0.02))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        self.assertEqual(_recorded_concurrent_jobs.get("job-1"), "job-1")
+        self.assertEqual(_recorded_concurrent_jobs.get("job-2"), "job-2")
 
     def test_job_decorator_no_params(self):
         test_job.delay()
