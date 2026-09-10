@@ -56,14 +56,6 @@ class BaseTaskArg(models.Model):
             msg = _("Could not parse %s as %s") % (self.val, self.arg_type)
             raise ValidationError({"arg_type": ValidationError(msg, code="invalid")})
 
-    def save(self, **kwargs: Any) -> None:
-        super().save(**kwargs)
-        self.content_object.save()
-
-    def delete(self, **kwargs: Any) -> None:
-        super().delete(**kwargs)
-        self.content_object.save()
-
     def value(self) -> Any:
         if self.arg_type == "callable":
             res = utils.callable_func(self.val)()

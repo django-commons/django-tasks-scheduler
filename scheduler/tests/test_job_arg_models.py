@@ -1,11 +1,13 @@
+from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from scheduler.models import TaskArg, TaskKwarg
+from scheduler.models import TaskArg, TaskKwarg, TaskType
+from scheduler.tests.testtools import task_factory, taskarg_factory
 
 from .jobs import arg_callable
-from .testtools import taskarg_factory
 
 
 class TestAllTaskArg(TestCase):
@@ -60,6 +62,18 @@ class TestAllTaskArg(TestCase):
     def test_str_clean(self):
         arg = taskarg_factory(self.TaskArgClass, val="something")
         self.assertIsNone(arg.clean())
+
+    def test_save_and_delete_do_not_cascade_to_content_object(self):
+        task = task_factory(TaskType.ONCE)
+        kwargs = {"key": "k1"} if self.TaskArgClass == TaskKwarg else {}
+        with patch.object(task, "save") as mock_save:
+            arg = taskarg_factory(self.TaskArgClass, content_object=task, val="val1", **kwargs)
+            mock_save.assert_not_called()
+            arg.val = "val2"
+            arg.save()
+            mock_save.assert_not_called()
+            arg.delete()
+            mock_save.assert_not_called()
 
 
 class TestTaskArg(TestCase):

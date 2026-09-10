@@ -393,13 +393,15 @@ class Task(models.Model):
         schedule_job = kwargs.pop("schedule_job", True)
         if should_clean:
             self.clean()
+        is_new = self.pk is None
         if schedule_job:
             self._refresh_run_state()
+            if not is_new:
+                self._schedule()
         if update_fields := kwargs.get("update_fields"):
             kwargs["update_fields"] = set(update_fields).union({"updated_at"})
         super().save(**kwargs)
-        if schedule_job:
-            self._schedule()
+        if schedule_job and is_new and self._schedule():
             super().save(update_fields=(*_SCHEDULING_FIELDS, "updated_at"))
 
     def reschedule_if_needed(self) -> bool:

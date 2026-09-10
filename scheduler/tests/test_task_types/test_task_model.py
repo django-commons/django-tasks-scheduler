@@ -274,6 +274,12 @@ class BaseTestCases:
             # assert
             self.assertEqual(200, res.status_code)
 
+        def test_task_save_existing_executes_single_update_query(self):
+            task = task_factory(self.task_type)
+            task.name = "updated-task-name"
+            with self.assertNumQueries(1):
+                task.save()
+
         def test_admin_list_view_delete_model(self):
             # arrange
             self.client.login(username="admin", password="admin")
