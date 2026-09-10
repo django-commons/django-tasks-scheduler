@@ -36,11 +36,7 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
         return redirect(next_url)
     job_names = request.POST.getlist("job_names")
     if action == QueueJobAction.DELETE.value:
-        jobs = JobModel.get_many(job_names, connection=queue.connection)
-        for job in jobs:
-            if job is None:
-                continue
-            queue.delete_job(job.name)
+        queue.delete_jobs(job_names)
         messages.info(request, f"You have successfully deleted {len(job_names)} jobs!")
     elif action == QueueJobAction.REQUEUE.value:
         requeued_jobs_count = _enqueue_multiple_jobs(queue, job_names)
@@ -77,7 +73,7 @@ def queue_confirm_job_action(request: HttpRequest, queue_name: str) -> HttpRespo
     context_data = {
         **admin.site.each_context(request),
         "action": action,
-        "jobs": [JobModel.get(job_name, connection=queue.connection) for job_name in job_names],
+        "jobs": [job for job in JobModel.get_many(job_names, connection=queue.connection) if job is not None],
         "total_jobs": len(job_names),
         "queue": queue,
         "next_url": next_url,

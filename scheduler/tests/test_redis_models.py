@@ -294,3 +294,20 @@ class TestJobModelTaskIndexing(SchedulerBaseCase):
         # Assert: task jobs set is now empty
         task_jobs_after = JobModel.get_jobs_for_task(task_id, conn)
         self.assertEqual(len(task_jobs_after), 0)
+
+
+class TestQueueBatchDelete(SchedulerBaseCase):
+    def test_queue_delete_jobs__batch_deletes_jobs(self):
+        queue = get_queue("default")
+        job1 = queue.create_and_enqueue_job(test_job, job_info_ttl=0)
+        job2 = queue.create_and_enqueue_job(test_job, job_info_ttl=0)
+
+        self.assertTrue(JobModel.exists(job1.name, connection=queue.connection))
+        self.assertTrue(JobModel.exists(job2.name, connection=queue.connection))
+
+        queue.delete_jobs([job1.name, job2.name])
+
+        self.assertFalse(JobModel.exists(job1.name, connection=queue.connection))
+        self.assertFalse(JobModel.exists(job2.name, connection=queue.connection))
+        self.assertNotIn(job1.name, queue.queued_job_registry.all(queue.connection))
+        self.assertNotIn(job2.name, queue.queued_job_registry.all(queue.connection))

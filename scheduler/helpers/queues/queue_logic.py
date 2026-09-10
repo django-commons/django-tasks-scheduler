@@ -2,6 +2,7 @@ import asyncio
 import contextvars
 import sys
 import traceback
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, ClassVar
 
@@ -394,22 +395,30 @@ class Queue:
             self.finished_job_registry.add(pipe, job_name, current_timestamp() + SCHEDULER_CONFIG.DEFAULT_FAILURE_TTL)
         pipe.execute()
 
-    def delete_job(self, job_name: str, expire_job_model: bool = True) -> None:
-        """Deletes the given job from the queue and all its registries"""
+    def delete_jobs(self, job_names: Sequence[str], expire_job_model: bool = True) -> None:
+        """Deletes multiple jobs from the queue and all its registries in a pipelined batch."""
+        if not job_names:
+            return
         pipe = self.connection.pipeline()
 
         while True:
             try:
-                self._remove_from_registries(job_name, connection=pipe)
-                self.failed_job_registry.delete(connection=pipe, job_name=job_name)
+                for job_name in job_names:
+                    self._remove_from_registries(job_name, connection=pipe)
+                    self.failed_job_registry.delete(connection=pipe, job_name=job_name)
                 if expire_job_model:
-                    job_model = JobModel.get(job_name, connection=self.connection)
-                    if job_model is not None:
-                        job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
+                    job_models = JobModel.get_many(list(job_names), connection=self.connection)
+                    for job_model in job_models:
+                        if job_model is not None:
+                            job_model.expire(ttl=job_model.job_info_ttl, connection=pipe)
                 pipe.execute()
                 break
             except WatchError:
                 pass
+
+    def delete_job(self, job_name: str, expire_job_model: bool = True) -> None:
+        """Deletes the given job from the queue and all its registries"""
+        self.delete_jobs([job_name], expire_job_model=expire_job_model)
 
     def enqueue_job(
         self, job_model: JobModel, pipeline: PipelineType | None = None, at_front: bool = False
