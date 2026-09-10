@@ -57,3 +57,20 @@ class TestTaskAdminJobExecutions(SchedulerBaseCase):
         self.assertEqual(task1_jobs[0].name, task1.job_name)
         self.assertEqual(len(task2_jobs), 1)
         self.assertEqual(task2_jobs[0].name, task2.job_name)
+
+
+class TestTaskAdminQuerySetAndIsScheduled(SchedulerBaseCase):
+    def test_task_admin_changelist_prefetches_args(self):
+        self.client.login(username="admin", password="admin")
+        task_factory(TaskType.ONCE, queue="default")
+        task_factory(TaskType.ONCE, queue="default")
+
+        res = self.client.get(reverse("admin:scheduler_task_changelist"))
+        self.assertEqual(res.status_code, 200)
+
+    def test_is_scheduled_is_read_only_and_does_not_mutate_db(self):
+        task = task_factory(TaskType.ONCE, queue="default")
+        task.rqueue.connection.flushall()
+        # With redis flushed, is_scheduled returns False
+        with self.assertNumQueries(0):
+            self.assertFalse(task.is_scheduled())

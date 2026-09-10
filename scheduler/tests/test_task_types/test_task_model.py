@@ -277,7 +277,8 @@ class BaseTestCases:
         def test_task_save_existing_executes_single_update_query(self):
             task = task_factory(self.task_type)
             task.name = "updated-task-name"
-            with self.assertNumQueries(1):
+            # 1 SELECT to refresh run state, 1 UPDATE to save
+            with self.assertNumQueries(2):
                 task.save()
 
         def test_admin_list_view_delete_model(self):

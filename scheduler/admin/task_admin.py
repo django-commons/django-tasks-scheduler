@@ -76,6 +76,9 @@ class JobMethodsDatalistWidget(forms.TextInput):
 class TaskAdmin(admin.ModelAdmin):
     """TaskAdmin admin view for all task models."""
 
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Task]:
+        return super().get_queryset(request).prefetch_related("callable_args", "callable_kwargs")
+
     def formfield_for_dbfield(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
         # Offer autocomplete suggestions for the `callable` field from the @job-registered callables (issue #252).
         if db_field.name == "callable":
@@ -217,7 +220,7 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
     def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
-        for obj in queryset.filter(enabled=True).iterator():
+        for obj in queryset.filter(enabled=True).iterator(chunk_size=2000):
             obj.enabled = False
             obj.unschedule()
             rows_updated += 1
@@ -230,7 +233,7 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
     def enable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
         rows_updated = 0
-        for obj in queryset.filter(enabled=False).iterator():
+        for obj in queryset.filter(enabled=False).iterator(chunk_size=2000):
             obj.enabled = True
             obj.save()
             rows_updated += 1

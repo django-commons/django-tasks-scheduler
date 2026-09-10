@@ -226,14 +226,7 @@ class Task(models.Model):
             self.rqueue.queued_job_registry.exists(pipeline, self.job_name)
             self.rqueue.active_job_registry.exists(pipeline, self.job_name)
             results = pipeline.execute()
-            res = any(item is not None for item in results)
-
-        # If the job_name is not scheduled/queued/started,
-        # update the job_id to None. (The job_id belongs to a previous run which is completed)
-        if not res:
-            self.job_name = None
-            super().save(update_fields=["job_name", "updated_at"])
-        return res
+            return any(item is not None for item in results)
 
     @admin.display(description="Callable")  # type: ignore[misc]
     def function_string(self) -> str:
