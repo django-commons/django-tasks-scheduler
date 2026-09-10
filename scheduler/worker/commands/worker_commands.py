@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from scheduler.settings import logger
-from scheduler.types import ConnectionType, Self
+from scheduler.types import ConnectionType
 
 _PUBSUB_CHANNEL_TEMPLATE: str = ":workers:pubsub:{}"
 _WORKER_COMMANDS_REGISTRY: dict[str, type["WorkerCommand"]] = {}
@@ -49,7 +49,7 @@ class WorkerCommand(ABC):
         _WORKER_COMMANDS_REGISTRY[cls.command_name] = cls
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> type[Self]:
+    def from_payload(cls, payload: dict[str, Any]) -> "WorkerCommand":
         command_name = payload.get("command")
         if command_name is None:
             raise WorkerCommandError("Payload must contain 'command' key")
@@ -90,8 +90,8 @@ class WorkerCommandsChannelListener:
             self.pubsub.unsubscribe()
             self.pubsub.close()
 
-    def handle_payload(self, payload: str) -> None:
-        """Handle commands"""
+    def handle_payload(self, payload: dict[str, Any]) -> None:
+        """Handle commands. `payload` is the pubsub message; its `data` holds the JSON-encoded command."""
         command = WorkerCommand.from_payload(json.loads(payload["data"]))
         logger.debug(f"Received command: {command}")
         command.process_command(self.connection)
