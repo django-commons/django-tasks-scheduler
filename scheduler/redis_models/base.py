@@ -160,6 +160,16 @@ class HashModel(BaseModel):
         return connection.exists(cls._element_key_template.format(name)) > 0
 
     @classmethod
+    def exists_many(cls, names: Sequence[str], connection: ConnectionType) -> list[bool]:
+        """Returns whether each of `names` exists, checking them all in one round trip."""
+        if not names:
+            return []
+        with connection.pipeline() as pipeline:
+            for name in names:
+                pipeline.exists(cls._element_key_template.format(name))
+            return [bool(found) for found in pipeline.execute()]
+
+    @classmethod
     def delete_many(cls, names: list[str], connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
             for name in names:

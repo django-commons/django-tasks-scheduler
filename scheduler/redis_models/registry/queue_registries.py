@@ -19,11 +19,12 @@ class QueuedJobRegistry(JobNamesRegistry):
         pass
 
     def compact(self, connection: ConnectionType) -> None:
-        """Removes all "dead" jobs from the queue by cycling through it, while guaranteeing FIFO semantics."""
-        jobs_with_ts = self.all_with_timestamps(connection)
-        for job_name, timestamp in jobs_with_ts:
-            if not JobModel.exists(job_name, connection):
-                self.delete(connection=connection, job_name=job_name)
+        """Removes the names of jobs that no longer exist, in three round trips however long the queue is."""
+        job_names = self.all(connection)
+        found = JobModel.exists_many(job_names, connection)
+        missing_names = [name for name, exists in zip(job_names, found) if not exists]
+        if missing_names:
+            connection.zrem(self._key, *missing_names)
 
     def empty(self, connection: ConnectionType) -> None:
         while True:

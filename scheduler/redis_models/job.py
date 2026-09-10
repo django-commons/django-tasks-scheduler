@@ -147,12 +147,7 @@ class JobModel(HashModel):
         """
         key = cls._task_key_template.format(task_id)
         job_names = cls._task_job_names(key, connection)
-        if not job_names:
-            return
-        with connection.pipeline() as pipeline:
-            for job_name in job_names:
-                pipeline.exists(cls.key_for(job_name))
-            found = pipeline.execute()
+        found = cls.exists_many(job_names, connection)
         expired_names = [name for name, exists in zip(job_names, found) if not exists]
         if expired_names:
             connection.srem(key, *expired_names)

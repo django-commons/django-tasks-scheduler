@@ -363,6 +363,30 @@ class TestQueueBatchDelete(SchedulerBaseCase):
         self.assertNotIn(job2.name, queue.queued_job_registry.all(queue.connection))
 
 
+class TestQueuedJobRegistryCompact(SchedulerBaseCase):
+    def test_compact__removes_only_missing_jobs(self):
+        queue = get_queue("default")
+        gone = queue.create_and_enqueue_job(test_job)
+        kept = queue.create_and_enqueue_job(test_job)
+        queue.connection.delete(JobModel.key_for(gone.name))
+
+        queue.queued_job_registry.compact(queue.connection)
+
+        self.assertEqual([kept.name], queue.queued_job_registry.all(queue.connection))
+
+    def test_dequeue_any__skips_missing_jobs_without_compacting(self):
+        queue = get_queue("default")
+        gone = queue.create_and_enqueue_job(test_job)
+        kept = queue.create_and_enqueue_job(test_job)
+        queue.connection.delete(JobModel.key_for(gone.name))
+
+        with patch.object(QueuedJobRegistry, "compact", side_effect=AssertionError("compacted on dequeue")):
+            job, dequeued_from = Queue.dequeue_any([queue], None, queue.connection)
+
+        self.assertEqual(kept.name, job.name)
+        self.assertEqual(queue.name, dequeued_from.name)
+
+
 class TestJobNamesRegistryGetFirst(SchedulerBaseCase):
     def test_get_first__connection_returning_str__returns_the_name(self):
         connection = MagicMock()

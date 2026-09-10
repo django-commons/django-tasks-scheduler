@@ -344,11 +344,10 @@ class Queue:
         :returns: Tuple of Job, Queue
         """
 
+        registries = [q.queued_job_registry for q in queues]
         while True:
-            registries = [q.queued_job_registry for q in queues]
-            for registry in registries:
-                registry.compact(connection)
-
+            # No compacting first: that checked every queued job on every dequeue. A popped job whose data has expired
+            # is skipped below instead, and maintenance compacts the queues periodically.
             registry_key, job_name = QueuedJobRegistry.pop(connection, registries, timeout)
             if job_name is None:
                 return None, None
