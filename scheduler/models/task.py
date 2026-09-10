@@ -410,8 +410,10 @@ class Task(models.Model):
 
         :returns: True if a job was scheduled, False otherwise.
         """
+        self._refresh_run_state()
         scheduled = self._schedule()
-        self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
+        if scheduled:
+            self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
         return scheduled
 
     def delete(self, **kwargs: Any) -> None:
