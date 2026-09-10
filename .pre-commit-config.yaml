@@ -26,6 +26,12 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  - repo: https://github.com/adamchainz/django-upgrade
+    rev: 1.32.0
+    hooks:
+      - id: django-upgrade
+        args: [--target-version, "5.0"]
+
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: v2.25.3
     hooks:

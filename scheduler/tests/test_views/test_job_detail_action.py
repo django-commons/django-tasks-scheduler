@@ -60,6 +60,23 @@ class SingleJobActionViewsTest(BaseTestCase):
         self.assertEqual(200, res.status_code)
         assert_message_in_response(res, f"Could not perform action: Cannot cancel already canceled job: {job.name}")
 
+    def test_single_job_action_requeue_failed_job(self):
+        queue = get_queue("django_tasks_scheduler_test")
+        job = queue.create_and_enqueue_job(failing_job)
+        worker = create_worker("django_tasks_scheduler_test", burst=True)
+        worker.work()
+        job = JobModel.get(job.name, connection=queue.connection)
+        self.assertTrue(job.is_failed)
+        self.assertIn(job.name, queue.failed_job_registry.all(queue.connection))
+
+        res = self.client.post(reverse("job_detail_action", args=[job.name, "requeue"]), follow=True)
+
+        self.assertEqual(200, res.status_code)
+        job = JobModel.get(job.name, connection=queue.connection)
+        self.assertTrue(job.is_queued)
+        self.assertNotIn(job.name, queue.failed_job_registry.all(queue.connection))
+        self.assertIn(job.name, queue.queued_job_registry.all(queue.connection))
+
     def test_single_job_action_enqueue_job(self):
         queue = get_queue("django_tasks_scheduler_test")
         job_list = []

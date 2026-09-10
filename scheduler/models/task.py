@@ -116,7 +116,7 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     name = models.CharField(_("name"), max_length=128, unique=True, help_text=_("Name of the job"))
-    task_type = models.CharField(_("Task type"), max_length=32, choices=TaskType.choices, default=TaskType.ONCE)
+    task_type = models.CharField(_("Task type"), max_length=32, choices=TaskType, default=TaskType.ONCE)
     callable = models.CharField(_("callable"), max_length=2048)
     callable_args = GenericRelation(TaskArg, related_query_name="args")
     callable_kwargs = GenericRelation(TaskKwarg, related_query_name="kwargs")
