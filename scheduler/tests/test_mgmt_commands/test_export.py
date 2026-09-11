@@ -5,7 +5,9 @@ from unittest import mock
 
 import yaml
 from django.core.management import call_command
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 
 from scheduler.models import TaskType
 from scheduler.tests import conf  # noqa
@@ -36,6 +38,18 @@ class ExportTest(TestCase):
         self.assertEqual(len(tasks), len(result))
         self.assertEqual(result[0], tasks[0].to_dict())
         self.assertEqual(result[1], tasks[1].to_dict())
+
+    def test_export__query_count_does_not_grow_with_tasks(self):
+        task_factory(TaskType.ONCE, enabled=True)
+        with CaptureQueriesContext(connection) as one_task:
+            call_command("export", filename=self.tmpfile.name)
+        for _ in range(3):
+            task_factory(TaskType.ONCE, enabled=True)
+
+        with CaptureQueriesContext(connection) as four_tasks:
+            call_command("export", filename=self.tmpfile.name)
+
+        self.assertEqual(len(one_task), len(four_tasks))
 
     def test_export__should_export_enabled_jobs_only(self):
         tasks = []

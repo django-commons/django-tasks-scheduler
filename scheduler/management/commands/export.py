@@ -44,7 +44,7 @@ class Command(BaseCommand):
             filename = options.get("filename")
             file = stack.enter_context(open(filename, "w")) if filename else sys.stdout
 
-            tasks = Task.objects.all()
+            tasks = Task.objects.prefetch_related("callable_args", "callable_kwargs")
             if options.get("enabled"):
                 tasks = tasks.filter(enabled=True)
             res = [task.to_dict() for task in tasks]

@@ -7,9 +7,9 @@ import yaml
 from django.core.management import call_command
 from django.test import TestCase
 
-from scheduler.models import Task, TaskType
+from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
 from scheduler.tests import conf  # noqa
-from scheduler.tests.testtools import task_factory
+from scheduler.tests.testtools import task_factory, taskarg_factory
 
 
 class ImportTest(TestCase):
@@ -91,6 +91,22 @@ class ImportTest(TestCase):
         attrs = ["name", "queue", "callable", "enabled", "timeout"]
         for attr in attrs:
             self.assertEqual(getattr(tasks[1], attr), getattr(task, attr))
+
+    def test_import__creates_the_arguments(self):
+        task = task_factory(TaskType.ONCE, enabled=True)
+        taskarg_factory(TaskArg, val="one", content_object=task)
+        taskarg_factory(TaskArg, arg_type="int", val="2", content_object=task)
+        taskarg_factory(TaskKwarg, key="k", val="three", content_object=task)
+        exported = task.to_dict()
+        task.delete()
+        self.tmpfile.write(json.dumps([exported]))
+        self.tmpfile.flush()
+
+        call_command("import", filename=self.tmpfile.name)
+
+        imported = Task.objects.get(name=exported["name"]).to_dict()
+        self.assertEqual(exported["callable_args"], imported["callable_args"])
+        self.assertEqual(exported["callable_kwargs"], imported["callable_kwargs"])
 
     def test_import__invalid_entry__changes_nothing(self):
         existing = task_factory(TaskType.ONCE, enabled=True)

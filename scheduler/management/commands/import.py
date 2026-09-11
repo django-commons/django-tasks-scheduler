@@ -61,18 +61,12 @@ def create_task_from_dict(task_dict: dict[str, Any], update: bool) -> Task | Non
     click.echo(f"Created task {task}")
     content_type = ContentType.objects.get_for_model(task)
 
-    for arg in task_dict["callable_args"]:
-        TaskArg.objects.create(
-            content_type=content_type,
-            object_id=task.id,
-            **arg,
-        )
-    for arg in task_dict["callable_kwargs"]:
-        TaskKwarg.objects.create(
-            content_type=content_type,
-            object_id=task.id,
-            **arg,
-        )
+    TaskArg.objects.bulk_create(
+        [TaskArg(content_type=content_type, object_id=task.id, **arg) for arg in task_dict["callable_args"]]
+    )
+    TaskKwarg.objects.bulk_create(
+        [TaskKwarg(content_type=content_type, object_id=task.id, **arg) for arg in task_dict["callable_kwargs"]]
+    )
     return task
 
 
