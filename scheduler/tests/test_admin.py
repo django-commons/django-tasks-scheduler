@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 from unittest.mock import patch
 
 from django import forms
@@ -117,6 +118,59 @@ class TestTaskAdminChangelist(SchedulerBaseCase):
         _, queries = self._get_changelist()
 
         self.assertEqual([], [q["sql"] for q in queries if q["sql"].startswith(("INSERT", "UPDATE", "DELETE"))])
+
+
+class TestTaskAdminBulkActions(SchedulerBaseCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.client.login(username="admin", password="admin")
+        self.url = reverse("admin:scheduler_task_changelist")
+
+    def _post(self, url: str, data: dict[str, Any]) -> list[str]:
+        with CaptureQueriesContext(connection) as queries:
+            res = self.client.post(url, data=data)
+        self.assertEqual(302, res.status_code)
+        return [q["sql"] for q in queries.captured_queries]
+
+    def _assert_nothing_scheduled(self) -> None:
+        queue = Task(queue="default").rqueue
+        self.assertEqual([], queue.scheduled_job_registry.all(queue.connection))
+
+    def test_disable_selected__query_count_does_not_grow_with_tasks(self):
+        one = self._post(self.url, {"action": "disable_selected", "_selected_action": [task_factory(TaskType.CRON).id]})
+        ids = [task_factory(TaskType.CRON).id for _ in range(3)]
+
+        three = self._post(self.url, {"action": "disable_selected", "_selected_action": ids})
+
+        self.assertEqual(len(one), len(three))
+
+    def test_disable_selected__unschedules_in_one_broker_call_per_queue(self):
+        tasks = [task_factory(TaskType.CRON) for _ in range(3)]
+
+        with patch.object(Queue, "delete_job", side_effect=AssertionError("one broker call per task")):
+            self._post(self.url, {"action": "disable_selected", "_selected_action": [task.id for task in tasks]})
+
+        self.assertEqual({(False, None)}, set(Task.objects.values_list("enabled", "job_name")))
+        self._assert_nothing_scheduled()
+
+    def test_delete_selected__unschedules_in_one_broker_call_per_queue(self):
+        tasks = [task_factory(TaskType.CRON) for _ in range(3)]
+        data = {"action": "delete_selected", "_selected_action": [task.id for task in tasks], "post": "yes"}
+
+        with patch.object(Queue, "delete_job", side_effect=AssertionError("one broker call per task")):
+            self._post(self.url, data)
+
+        self.assertFalse(Task.objects.exists())
+        self._assert_nothing_scheduled()
+
+    def test_delete_model__does_not_update_the_row_first(self):
+        task = task_factory(TaskType.CRON)
+
+        sql = self._post(reverse("admin:scheduler_task_delete", args=[task.id]), {"post": "yes"})
+
+        self.assertEqual([], [statement for statement in sql if statement.startswith('UPDATE "scheduler_task"')])
+        self.assertFalse(Task.objects.exists())
+        self._assert_nothing_scheduled()
 
 
 class TestTaskAdminChangeView(SchedulerBaseCase):

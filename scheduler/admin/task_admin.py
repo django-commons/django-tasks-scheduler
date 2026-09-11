@@ -54,6 +54,21 @@ def _check_scheduled(tasks: Iterable[Task]) -> None:
             task._is_scheduled = task.job_name in pending
 
 
+def _delete_pending_jobs(queryset: QuerySet[Task]) -> list[Task]:
+    """Deletes the pending jobs of the queryset's tasks, with one broker call per queue rather than one per task.
+
+    :returns: The tasks, read with only the fields needed here.
+    """
+    tasks = list(queryset.prefetch_related(None).only("id", "queue", "job_name"))
+    job_names_by_queue: dict[str, list[str]] = defaultdict(list)
+    for task in tasks:
+        if task.job_name is not None:
+            job_names_by_queue[task.queue].append(task.job_name)
+    for queue_name, job_names in job_names_by_queue.items():
+        get_queue(queue_name).delete_jobs(job_names)
+    return tasks
+
+
 class JobArgInline(GenericStackedInline):
     model = TaskArg
     extra = 0
@@ -240,21 +255,15 @@ class TaskAdmin(admin.ModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context=extra)
 
     def delete_queryset(self, request: HttpRequest, queryset: QuerySet) -> None:
-        for job in queryset:
-            job.unschedule()
+        _delete_pending_jobs(queryset)
         super().delete_queryset(request, queryset)
-
-    def delete_model(self, request: HttpRequest, obj: Task) -> None:
-        obj.unschedule()
-        super().delete_model(request, obj)
 
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
     def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
-        rows_updated = 0
-        for obj in queryset.filter(enabled=True).iterator(chunk_size=2000):
-            obj.enabled = False
-            obj.unschedule()
-            rows_updated += 1
+        tasks = _delete_pending_jobs(queryset.filter(enabled=True))
+        rows_updated = Task.objects.filter(id__in=[task.id for task in tasks]).update(
+            enabled=False, job_name=None, updated_at=timezone.now()
+        )
 
         level = messages.WARNING if not rows_updated else messages.INFO
         self.message_user(

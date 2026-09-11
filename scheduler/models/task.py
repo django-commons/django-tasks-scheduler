@@ -421,7 +421,9 @@ class Task(models.Model):
         return scheduled
 
     def delete(self, **kwargs: Any) -> None:
-        self.unschedule()
+        # Not `unschedule()`, which would first save the row this is about to delete.
+        if self.job_name is not None:
+            self.rqueue.delete_job(self.job_name)
         super().delete(**kwargs)
 
     def interval_seconds(self) -> float:
