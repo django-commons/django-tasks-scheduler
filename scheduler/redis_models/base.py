@@ -1,6 +1,6 @@
 import dataclasses
 import json
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, ClassVar
@@ -232,11 +232,23 @@ class HashModel(BaseModel):
 
     def delete(self, connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:
-            for key in self._index_keys():
-                pipeline.srem(key, self.name)
-            pipeline.delete(self._key)
+            self._delete_in(pipeline)
             pipeline.execute()
-            self._save_all = True
+
+    @classmethod
+    def delete_all(cls, models: Iterable[Self], connection: ConnectionType) -> None:
+        """Deletes `models` - their records and their entries in the index sets - in one round trip."""
+        with connection.pipeline() as pipeline:
+            for model in models:
+                model._delete_in(pipeline)
+            pipeline.execute()
+
+    def _delete_in(self, pipeline: PipelineType) -> None:
+        """Queues the commands deleting the model on `pipeline`, for the caller to execute along with its own."""
+        for key in self._index_keys():
+            pipeline.srem(key, self.name)
+        pipeline.delete(self._key)
+        self._save_all = True
 
     @classmethod
     def count(cls, connection: ConnectionType, parent: str | None = None) -> int:

@@ -25,11 +25,9 @@ class QueueRegistryActions(Enum):
 def _clear_registry(request: HttpRequest, queue: Queue, registry_name: str, registry: JobNamesRegistry) -> None:
     try:
         job_names = registry.all(queue.connection)
-        for job_name in job_names:
-            registry.delete(queue.connection, job_name)
-            job_model = JobModel.get(job_name, connection=queue.connection)
-            if job_model is not None:
-                job_model.delete(connection=queue.connection)
+        jobs = JobModel.get_many(job_names, connection=queue.connection)
+        registry.delete_many(queue.connection, job_names)
+        JobModel.delete_all([job for job in jobs if job is not None], connection=queue.connection)
         messages.info(request, f"You have successfully cleared the {registry_name} jobs in queue {queue.name}")
     except ResponseErrorTypes as e:
         messages.error(request, f"error: {e}")

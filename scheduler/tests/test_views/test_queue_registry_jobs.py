@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+from unittest.mock import patch
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -7,6 +8,7 @@ from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
 from scheduler.models import Task, TaskArg, TaskType
+from scheduler.redis_models import JobModel
 from scheduler.tests.jobs import test_job
 from scheduler.tests.test_views.base import BaseTestCase
 from scheduler.tests.testtools import task_factory, taskarg_factory
@@ -96,6 +98,21 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         scheduled_time = res.context["scheduled_times"][job.name]
         self.assertAlmostEqual(task.scheduled_time.timestamp(), scheduled_time.timestamp(), delta=1)
         self.assertNotContains(res, "<b>x</b>")
+
+    def test_empty_registry__deletes_the_jobs_in_a_few_round_trips(self):
+        queue_name = "django_tasks_scheduler_test"
+        queue = get_queue(queue_name)
+        job_names = [queue.create_and_enqueue_job(test_job).name for _ in range(3)]
+        for job_name in job_names:
+            queue.failed_job_registry.add(queue.connection, job_name, time.time() + 100)
+
+        with patch.object(JobModel, "get", side_effect=AssertionError("one round trip per job")):
+            res = self.client.post(reverse("queue_registry_action", args=[queue_name, "failed", "empty"]))
+
+        self.assertEqual(302, res.status_code)
+        self.assertEqual(0, queue.failed_job_registry.count(queue.connection))
+        self.assertEqual([False] * 3, JobModel.exists_many(job_names, queue.connection))
+        self.assertEqual(set(), set(JobModel.all_names(queue.connection)) & set(job_names))
 
     def test_scheduled_jobs_registry_removal(self):
         """Ensure that non-existing job is being deleted from registry by view"""
