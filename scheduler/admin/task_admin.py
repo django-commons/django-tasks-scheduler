@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from scheduler.decorators import JOB_METHODS_LIST
 from scheduler.helpers.queues import get_queue
 from scheduler.models import Task, TaskArg, TaskKwarg, TaskType
-from scheduler.redis_models import JobModel
+from scheduler.redis_models import JobModel, Result
 from scheduler.settings import SCHEDULER_CONFIG, logger
 from scheduler.types import ConnectionErrorTypes
 
@@ -221,11 +221,17 @@ class TaskAdmin(admin.ModelAdmin):
         page_number = request.GET.get("p", 1)
         page_obj = paginator.get_page(page_number)
         page_range = paginator.get_elided_page_range(page_obj.number)
+        try:
+            latest_results = Result.fetch_latest_many(get_queue(obj.queue).connection, [job.name for job in page_obj])
+        except ConnectionErrorTypes as e:
+            logger.warning(f"Could not get job results: {e}")
+            latest_results = {}
 
         extra.update(
             {
                 "pagination_required": paginator.count > SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE,
                 "executions": page_obj,
+                "latest_results": latest_results,
                 "page_range": page_range,
                 "page_var": "p",
             }

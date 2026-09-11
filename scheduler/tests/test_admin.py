@@ -12,8 +12,10 @@ from scheduler.admin.task_admin import JobMethodsDatalistWidget, get_job_executi
 from scheduler.decorators import JOB_METHODS_LIST
 from scheduler.helpers.queues import Queue
 from scheduler.models import Task, TaskArg, TaskType
+from scheduler.redis_models import Result
 from scheduler.tests import conf  # noqa
 from scheduler.tests.testtools import SchedulerBaseCase, task_factory, taskarg_factory
+from scheduler.worker import create_worker
 
 _METHOD = "scheduler.tests.test_admin.sample_registered_job"
 
@@ -115,6 +117,21 @@ class TestTaskAdminChangelist(SchedulerBaseCase):
         _, queries = self._get_changelist()
 
         self.assertEqual([], [q["sql"] for q in queries if q["sql"].startswith(("INSERT", "UPDATE", "DELETE"))])
+
+
+class TestTaskAdminChangeView(SchedulerBaseCase):
+    def test_execution_results_are_fetched_in_one_round_trip(self):
+        self.client.login(username="admin", password="admin")
+        task = task_factory(TaskType.ONCE)
+        for _ in range(3):
+            task.enqueue_to_run()
+        create_worker(task.queue, burst=True, fork_job_execution=False).work()
+
+        with patch.object(Result, "fetch_latest", side_effect=AssertionError("fetched a result per row")):
+            res = self.client.get(reverse("admin:scheduler_task_change", args=[task.id]))
+
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(3, len(res.context["latest_results"]))
 
 
 class TestTaskIsScheduled(SchedulerBaseCase):

@@ -1,4 +1,5 @@
 import dataclasses
+from collections.abc import Sequence
 from datetime import datetime
 from enum import Enum
 from typing import Any, ClassVar, Optional
@@ -67,9 +68,20 @@ class Result(StreamModel):
         :param job_name: Job name.
         :return: Result instance or None if no result is available.
         """
-        response: list[Any] = connection.xrevrange(cls._children_key_template.format(job_name), "+", "-", count=1)
-        if not response:
-            return None
-        _result_id, payload = response[0]
-        res = cls.deserialize(decode_dict(payload, set()))
-        return res
+        return cls.fetch_latest_many(connection, [job_name]).get(job_name)
+
+    @classmethod
+    def fetch_latest_many(cls, connection: ConnectionType, job_names: Sequence[str]) -> dict[str, "Result"]:
+        """Returns the latest result of each of `job_names` that has one, fetching them all in one round trip."""
+        if not job_names:
+            return {}
+        with connection.pipeline() as pipeline:
+            for job_name in job_names:
+                pipeline.xrevrange(cls._children_key_template.format(job_name), "+", "-", count=1)
+            responses: list[Any] = pipeline.execute()
+        # Each response is a list of (entry id, payload) pairs - at most one here.
+        return {
+            job_name: cls.deserialize(decode_dict(response[0][1], set()))
+            for job_name, response in zip(job_names, responses)
+            if response
+        }

@@ -27,7 +27,7 @@
                         <td>
                             {% if exec.scheduled_task_id %}
                                 <a href="{% url 'admin:scheduler_task_change' exec.scheduled_task_id %}">
-                                    {{ exec|job_scheduled_task }}
+                                    {{ task_names|get_item:exec.scheduled_task_id }}
                                 </a>
                             {% endif %}
                         </td>
@@ -37,7 +37,7 @@
                         <td>{{ exec.started_at|date:"Y-m-d, H:i:s"|default:"-" }}</td>
                         <td>{{ exec|job_runtime }}</td>
                         <td>{{ exec.worker_name|default:"-" }}</td>
-                        {% with result=exec|latest_result %}
+                        {% with result=latest_results|get_item:exec.name %}
                             <td>{{ result.type.value|capfirst|default:"-" }}</td>
                             <td>{{ result.return_value|default:"-"|truncatechars:100 }}</td>
                         {% endwith %}

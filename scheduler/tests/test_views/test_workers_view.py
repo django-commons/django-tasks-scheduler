@@ -1,9 +1,11 @@
+from unittest.mock import patch
+
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import JobModel
+from scheduler.redis_models import JobModel, Result
 from scheduler.templatetags.scheduler_tags import job_result, latest_result
 from scheduler.tests import conf  # noqa
 from scheduler.tests.test_views.base import BaseTestCase
@@ -40,13 +42,27 @@ class TestViewWorkers(BaseTestCase):
         worker.work()
         executed = JobModel.get(name=job.name, connection=queue.connection)
         page = Paginator([executed], 20).get_page(1)
+        latest_results = Result.fetch_latest_many(queue.connection, [executed.name])
 
         for template_name in _JOBS_LIST_PARTIALS:
             with self.subTest(template=template_name):
-                html = render_to_string(template_name, {"executions": page})
+                html = render_to_string(template_name, {"executions": page, "latest_results": latest_results})
                 self.assertIn("Return value", html)  # new column header
                 self.assertIn("Successful", html)  # result type column
                 self.assertIn("distinctive-return-value-42", html)  # the callable's return value
+
+    def test_worker_details__fetches_the_results_in_one_round_trip(self):
+        queue = get_queue(_QUEUE)
+        for _ in range(3):
+            queue.create_and_enqueue_job(job_with_distinctive_return_value)
+        create_worker(_QUEUE, name="details-worker", burst=True).work()
+        create_worker(_QUEUE, name="details-worker").worker_start()
+
+        with patch.object(Result, "fetch_latest", side_effect=AssertionError("fetched a result per row")):
+            res = self.client.get(reverse("worker_details", args=["details-worker"]))
+
+        self.assertEqual(3, len(res.context["latest_results"]))
+        self.assertContains(res, "distinctive-return-value-42", count=3)
 
 
 class TestJobResultFilters(BaseTestCase):
