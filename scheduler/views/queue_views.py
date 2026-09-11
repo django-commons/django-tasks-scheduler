@@ -157,17 +157,18 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
             connection_kwargs.pop("parser_class", None)
             connection_kwargs.pop("connection_pool", None)
 
+            counts = queue.registry_counts()
             queue_data = QueueData(
                 name=queue.name,
-                queued_jobs=queue.queued_job_registry.count(queue.connection),
+                queued_jobs=counts["queued"],
                 oldest_job_timestamp=oldest_job_timestamp,
                 scheduler_pid=queue.scheduler_pid,
                 workers=queue_workers_count[queue.name],
-                finished_jobs=queue.finished_job_registry.count(queue.connection),
-                started_jobs=queue.active_job_registry.count(queue.connection),
-                failed_jobs=queue.failed_job_registry.count(queue.connection),
-                scheduled_jobs=queue.scheduled_job_registry.count(queue.connection),
-                canceled_jobs=queue.canceled_job_registry.count(queue.connection),
+                finished_jobs=counts["finished"],
+                started_jobs=counts["active"],
+                failed_jobs=counts["failed"],
+                scheduled_jobs=counts["scheduled"],
+                canceled_jobs=counts["canceled"],
             )
             queues.append(queue_data)
         except ConnectionErrorTypes as e:

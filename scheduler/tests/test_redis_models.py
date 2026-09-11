@@ -398,6 +398,21 @@ class TestQueueGetAllJobNames(SchedulerBaseCase):
             self.assertEqual([kept.name], queue.get_all_job_names())
 
 
+class TestQueueRegistryCounts(SchedulerBaseCase):
+    def test_registry_counts__cleans_up_and_counts_in_one_round_trip(self):
+        queue = get_queue("default")
+        queue.create_and_enqueue_job(test_job)
+        queue.failed_job_registry.add(queue.connection, "failed-job", current_timestamp() + 100)
+        queue.finished_job_registry.add(queue.connection, "expired-job", current_timestamp() - 1)
+
+        with patch.object(queue.connection, "pipeline", wraps=queue.connection.pipeline) as pipeline:
+            counts = queue.registry_counts()
+
+        pipeline.assert_called_once()
+        self.assertEqual({"queued": 1, "failed": 1, "finished": 0, "active": 0, "scheduled": 0, "canceled": 0}, counts)
+        self.assertEqual(2, queue.count)
+
+
 class TestJobNamesRegistryGetFirst(SchedulerBaseCase):
     def test_get_first__connection_returning_str__returns_the_name(self):
         connection = MagicMock()

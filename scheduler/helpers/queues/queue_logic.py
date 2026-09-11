@@ -170,10 +170,19 @@ class Queue:
     @property
     def count(self) -> int:
         """Returns a count of all messages in the queue."""
-        res = 0
-        for registry in self.REGISTRIES.values():
-            res += getattr(self, registry).count(connection=self.connection)
-        return res
+        return sum(self.registry_counts().values())
+
+    def registry_counts(self) -> dict[str, int]:
+        """Returns the number of jobs in each registry, by registry name, cleaning them up first - in one round trip."""
+        registries: list[JobNamesRegistry] = [getattr(self, attr) for attr in self.REGISTRIES.values()]
+        timestamp = current_timestamp()
+        with self.connection.pipeline() as pipeline:
+            for registry in registries:
+                registry.cleanup(pipeline, timestamp)  # some registries queue no command here
+            for registry in registries:
+                pipeline.zcard(registry.key)
+            counts = pipeline.execute()[-len(registries) :]
+        return dict(zip(self.REGISTRIES, counts))
 
     def get_registry(self, name: str) -> JobNamesRegistry:
         name = name.lower()
