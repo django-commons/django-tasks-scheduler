@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, ClassVar
 
 from scheduler.settings import logger
-from scheduler.types import ConnectionType, Self
+from scheduler.types import ConnectionType, PipelineType, Self
 
 MAX_KEYS = 1000
 
@@ -203,22 +203,29 @@ class HashModel(BaseModel):
         return keys
 
     def save(self, connection: ConnectionType, save_all: bool = False) -> None:
-        save_all = save_all or self._save_all
         with connection.pipeline() as pipeline:
-            for key in self._index_keys():
-                pipeline.sadd(key, self.name)
-            mapping = self.serialize(with_nones=True)
-            if not save_all:
-                mapping = {k: v for k, v in mapping.items() if k in self._dirty_fields}
-            none_values = {k for k, v in mapping.items() if v is None}
-            if none_values:
-                pipeline.hdel(self._key, *none_values)
-            mapping = {k: v for k, v in mapping.items() if v is not None}
-            if mapping:
-                pipeline.hset(self._key, mapping=mapping)
+            self._save_in(pipeline, save_all)
             pipeline.execute()
-            self._dirty_fields = set()
-            self._save_all = False
+
+    def _save_in(self, pipeline: PipelineType, save_all: bool = False) -> None:
+        """Queues the commands saving the model on `pipeline`, for the caller to execute along with its own.
+
+        (Calling `save()` with a pipeline would not do: `pipeline.pipeline()` opens a separate one.)
+        """
+        save_all = save_all or self._save_all
+        for key in self._index_keys():
+            pipeline.sadd(key, self.name)
+        mapping = self.serialize(with_nones=True)
+        if not save_all:
+            mapping = {k: v for k, v in mapping.items() if k in self._dirty_fields}
+        none_values = {k for k, v in mapping.items() if v is None}
+        if none_values:
+            pipeline.hdel(self._key, *none_values)
+        mapping = {k: v for k, v in mapping.items() if v is not None}
+        if mapping:
+            pipeline.hset(self._key, mapping=mapping)
+        self._dirty_fields = set()
+        self._save_all = False
 
     def delete(self, connection: ConnectionType) -> None:
         with connection.pipeline() as pipeline:

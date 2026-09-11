@@ -251,7 +251,6 @@ class Worker:
                 self.refresh()
 
                 self._model.heartbeat(self.connection)
-                self._model.save(self.connection)
                 if max_jobs is not None and self._model.completed_jobs >= max_jobs:
                     self.log(INFO, f"finished executing {self._model.completed_jobs} jobs, quitting")
                     break
@@ -726,9 +725,8 @@ class Worker:
         self._model.current_job_working_time = 0
         self._model.job_execution_process_pid = current_pid
         heartbeat_ttl = self.get_heartbeat_ttl(job)
-        self._model.heartbeat(connection, heartbeat_ttl)
+        self._model.heartbeat(connection, heartbeat_ttl)  # saves the fields set above
         self._set_procline(f"Processing {job.func_name} from {job.queue_name} since {time.time()}")
-        self._model.save(connection=connection)
 
     def handle_job_success(self, job: JobModel, return_value: Any, queue: Queue) -> None:
         """Handles the successful execution of certain job.

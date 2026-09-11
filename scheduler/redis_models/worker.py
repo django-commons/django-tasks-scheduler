@@ -51,12 +51,13 @@ class WorkerModel(HashModel):
     _children_key_template: ClassVar[str] = ":queue-workers:{}:"
     _element_key_template: ClassVar[str] = ":workers:{}"
 
-    def save(self, connection: ConnectionType, save_all: bool = False) -> None:
+    def save(self, connection: ConnectionType, save_all: bool = False, ttl: int | None = None) -> None:
+        """Saves the worker in one round trip, keeping its record for `ttl` seconds (default: its ttl plus 60)."""
         with connection.pipeline() as pipeline:
-            super(WorkerModel, self).save(pipeline, save_all)
+            self._save_in(pipeline, save_all)
             for queue_name in self.queue_names:
                 pipeline.sadd(self._children_key_template.format(queue_name), self.name)
-            pipeline.expire(self._key, self.ttl + 60)
+            pipeline.expire(self._key, ttl or self.ttl + 60)
             pipeline.execute()
 
     def delete(self, connection: ConnectionType) -> None:
@@ -85,9 +86,8 @@ class WorkerModel(HashModel):
 
     def heartbeat(self, connection: ConnectionType, timeout: int | None = None) -> None:
         self.last_heartbeat = utcnow()
-        self.save(connection, save_all=True)
         timeout = timeout or self.ttl + 60
-        connection.expire(self._key, timeout)
+        self.save(connection, save_all=True, ttl=timeout)
         logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
     @classmethod

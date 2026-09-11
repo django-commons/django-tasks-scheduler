@@ -74,6 +74,19 @@ class TestWorker(SchedulerBaseCase):
         self.assertLessEqual(worker.connection.ttl(WorkerModel.key_for(worker.name)), 90)
         self.assertEqual(25, worker.connection.connection_pool.connection_kwargs.get("socket_timeout"))
 
+    def test_worker_model_heartbeat__one_round_trip(self):
+        worker = create_worker("default", name="test")
+        connection = worker.connection
+
+        with (
+            mock.patch.object(connection, "pipeline", wraps=connection.pipeline) as pipeline,
+            mock.patch.object(connection, "expire", side_effect=AssertionError("expired in a separate call")),
+        ):
+            worker._model.heartbeat(connection, 120)
+
+        pipeline.assert_called_once()
+        self.assertGreater(connection.ttl(WorkerModel.key_for(worker.name)), 100)
+
     def test_worker_model__compares_unequal_to_other_types(self):
         worker = create_worker("default", name="test")
 
