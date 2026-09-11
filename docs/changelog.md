@@ -4,36 +4,29 @@
 
 ### 🐛 Bug Fixes
 
-- Release and extend a scheduler lock only while the scheduler still holds it, and stop scheduling a queue whose lock
-  another scheduler took over, so two schedulers can no longer schedule the same queue. The lock token is now unique
-  per scheduler instead of the pid, which containers commonly share
-- Let only one worker at a time clean a queue's registries; the lock was taken per worker instead of per queue
-- Fix `Task.save(update_fields=...)` scheduling a job without saving its name, and a failed save leaving a job behind
-- Stop the scheduler loop scheduling a task disabled or deleted while it ran, and one broken task stopping the
-  scheduler thread
-- Fix `delete_failed_executions --func` deleting every failed job instead of the matching ones
-- Keep the `get_current_job().meta` changes an async job makes; `get_current_job()` is now isolated per thread and
-  async context
-- Stop exporting a task changing it in memory, and exporting a repeatable task's advanced schedule next to its old
-  repeat count
-- Stop displaying or logging a task, or one of its arguments, calling its callable arguments
-- Stop `TimerDeathPenalty` rewriting the message of every `JobTimeoutException` in the process
-- Compare a `WorkerModel` unequal to other types instead of raising `TypeError`
-- Fix `--fork-job-execution false` (or `0`) on `scheduler_worker` still forking
-- Honor `scheduler_worker --worker-ttl`, which was ignored; without it workers use `DEFAULT_WORKER_TTL`
-- Make `import` all or nothing, and unschedule the tasks `import --reset` removes
+- Only a scheduler lock's holder can extend or release it, and a scheduler that loses its lock stops scheduling the
+  queue (the fakeredis broker now needs `fakeredis[lua]`)
+- Lock registry cleanup per queue, not per worker
+- The scheduler loop skips tasks disabled or deleted mid-loop, and survives a broken task
+- `Task.save(update_fields=...)` persists the new job, and a failed save leaves no job behind
+- Exporting a task no longer changes it, and displaying a task or argument no longer calls callable arguments
+- `import` is all or nothing, and `import --reset` unschedules the tasks it removes
+- `delete_failed_executions --func` deletes only the matching jobs
+- `scheduler_worker --fork-job-execution false` and `--worker-ttl` work
+- `get_current_job()` is isolated per thread and async context, and keeps an async job's `meta` changes
+- `TimerDeathPenalty` no longer rewrites every `JobTimeoutException` message; comparing a `WorkerModel` to another type
+  no longer raises
 
 ### 🚀 Features
 
-- Add `float` and `json` task argument types, and allow argument values up to 2048 characters
-
-- The scheduler loop checks only the tasks of the queues it holds, with one query and one broker round trip per queue
-  when all tasks are scheduled
-- The task page reads a task's executions from a per-task index instead of scanning the whole queue. Executions created
-  before upgrading are not indexed, so they no longer show on the task page
-- The task list checks whether tasks are scheduled in one broker round trip, no longer queries arguments per row, and
-  no longer saves tasks while rendering
-- Delete the selected jobs of a queue in one pipeline
+- `float` and `json` task argument types, and argument values up to 2048 characters
+- Workers no longer check every queued job before each dequeue, and save their record in one round trip
+- The scheduler loop checks only its own queues' tasks, in one query and one broker round trip per queue
+- Admin pages - task list, task and worker executions, registry job lists, stats, workers - no longer query per row,
+  and bulk task actions no longer work task by task
+- A task's executions are read from a per-task index instead of a queue scan; those created before upgrading no longer
+  show
+- Batch export, import and job deletion
 
 ## v4.3.1 🌈
 
