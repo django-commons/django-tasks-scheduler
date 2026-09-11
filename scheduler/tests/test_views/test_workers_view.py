@@ -4,8 +4,10 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-from scheduler.helpers.queues import get_queue
-from scheduler.redis_models import JobModel, Result
+from scheduler.helpers.queues import get_all_workers, get_queue
+from scheduler.helpers.queues.getters import _queue_names_by_broker
+from scheduler.redis_models import JobModel, Result, WorkerModel
+from scheduler.settings import get_queue_names
 from scheduler.templatetags.scheduler_tags import job_result, latest_result
 from scheduler.tests import conf  # noqa
 from scheduler.tests.test_views.base import BaseTestCase
@@ -85,6 +87,24 @@ class TestViewWorkers(BaseTestCase):
 
         self.assertEqual(3, len(res.context["latest_results"]))
         self.assertContains(res, "distinctive-return-value-42", count=3)
+
+
+class TestWorkerListing(BaseTestCase):
+    def test_worker_model_all__one_round_trip(self):
+        for name in ("listed-1", "listed-2"):
+            create_worker(_QUEUE, name=name).worker_start()
+
+        with patch.object(WorkerModel, "get", side_effect=AssertionError("one round trip per worker")):
+            workers = WorkerModel.all(get_queue(_QUEUE).connection)
+
+        self.assertEqual({"listed-1", "listed-2"}, {worker.name for worker in workers})
+
+    def test_get_all_workers__lists_each_broker_once(self):
+        with patch.object(WorkerModel, "all", wraps=WorkerModel.all) as list_workers:
+            get_all_workers()
+
+        self.assertEqual(len(_queue_names_by_broker()), list_workers.call_count)
+        self.assertLess(list_workers.call_count, len(get_queue_names()))
 
 
 class TestJobResultFilters(BaseTestCase):

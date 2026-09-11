@@ -120,10 +120,9 @@ def get_worker(name: str) -> WorkerModel | None:
 
 
 def get_all_workers() -> set[WorkerModel]:
-    queue_names = get_queue_names()
-
     workers_set: set[WorkerModel] = set()
-    for queue_name in queue_names:
+    # Workers are listed per broker, so queues sharing one would each list the same workers again.
+    for queue_name in _queue_names_by_broker():
         connection = _get_connection(get_queue_configuration(queue_name), fail_fast=True)
         try:
             curr_workers: set[WorkerModel] = set(WorkerModel.all(connection=connection))

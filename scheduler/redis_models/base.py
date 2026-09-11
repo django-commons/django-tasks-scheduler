@@ -149,9 +149,8 @@ class HashModel(BaseModel):
 
     @classmethod
     def all(cls, connection: ConnectionType, parent: str | None = None) -> list[Self]:
-        keys = cls.all_names(connection, parent)
-        items = [cls.get(k, connection) for k in keys]
-        return [w for w in items if w is not None]
+        items = cls.get_many(list(cls.all_names(connection, parent)), connection)
+        return [item for item in items if item is not None]
 
     @classmethod
     def exists(cls, name: str, connection: ConnectionType) -> bool:
@@ -178,14 +177,7 @@ class HashModel(BaseModel):
 
     @classmethod
     def get(cls, name: str, connection: ConnectionType) -> Self | None:
-        res = connection.hgetall(cls._element_key_template.format(name))
-        if not res:
-            return None
-        try:
-            return cls.deserialize(decode_dict(res, set()))
-        except Exception as e:
-            logger.warning(f"Failed to deserialize {name}: {e}", exc_info=True)
-            return None
+        return cls._deserialize_or_none(name, connection.hgetall(cls._element_key_template.format(name)))
 
     @classmethod
     def get_many(cls, names: Sequence[str], connection: ConnectionType) -> list[Self | None]:
@@ -193,7 +185,18 @@ class HashModel(BaseModel):
             for name in names:
                 pipeline.hgetall(cls._element_key_template.format(name))
             values = pipeline.execute()
-            return [(cls.deserialize(decode_dict(v, set())) if v else None) for v in values]
+        return [cls._deserialize_or_none(name, value) for name, value in zip(names, values)]
+
+    @classmethod
+    def _deserialize_or_none(cls, name: str, value: dict[bytes, bytes]) -> Self | None:
+        """Deserializes a record read from the broker; None if it is missing, or unreadable - which is logged."""
+        if not value:
+            return None
+        try:
+            return cls.deserialize(decode_dict(value, set()))
+        except Exception as e:
+            logger.warning(f"Failed to deserialize {name}: {e}", exc_info=True)
+            return None
 
     def _index_keys(self) -> list[str]:
         """Keys of the sets listing this model's name, kept up to date by `save` and `delete`."""
