@@ -7,13 +7,18 @@
 ### 🚀 Features
 
 - `float` and `json` task argument types, and argument values up to 2048 characters
+- Batch export, import and job deletion
+
+### Improvements
+
 - Workers no longer check every queued job before each dequeue, and save their record in one round trip
 - The scheduler loop checks only its own queues' tasks, in one query and one broker round trip per queue
 - Admin pages - task list, task and worker executions, registry job lists, stats, workers - no longer query per row,
   and bulk task actions no longer work task by task
 - A task's executions are read from a per-task index instead of a queue scan; those created before upgrading no longer
   show
-- Batch export, import and job deletion
+- Build `KvLock` (the scheduler and queue locks) on redis-py's `Lock`; its `expire()` and `release()` no longer take a
+  connection
 
 ### 🐛 Bug Fixes
 

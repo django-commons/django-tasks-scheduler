@@ -195,7 +195,7 @@ class Worker:
                     queue.clean_registries()
                     WorkerModel.cleanup(self.connection, queue.name)
                 finally:
-                    queue_lock.release(self.connection)
+                    queue_lock.release()
         self._model.last_cleaned_at = utcnow()
 
     def _install_signal_handlers(self) -> None:

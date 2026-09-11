@@ -1,64 +1,61 @@
 from typing import Any
 
+from redis.exceptions import LockError
+from redis.lock import Lock
+
 from scheduler.types import ConnectionType
-
-# Both scripts act only while the lock still holds the caller's token: a holder whose lock expired and was taken over
-# by another process must neither release nor extend the new holder's lock.
-_RELEASE_SCRIPT = """
-if redis.call('get', KEYS[1]) == ARGV[1] then
-    return redis.call('del', KEYS[1])
-end
-return 0
-"""
-
-_EXPIRE_SCRIPT = """
-if redis.call('get', KEYS[1]) == ARGV[1] then
-    return redis.call('expire', KEYS[1], ARGV[2])
-end
-return 0
-"""
 
 
 class KvLock:
+    """A lock on a broker key, built on redis-py's `Lock`: only the holder of its token can extend or release it, so a
+    holder whose lock expired and was taken over cannot extend or release the new holder's lock."""
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.acquired = False
-        self.val: str | None = None
+        self._lock: Lock | None = None
 
     @property
     def _locking_key(self) -> str:
         return f"_lock:{self.name}"
 
     def acquire(self, val: Any, connection: ConnectionType, expire: int | None = None) -> bool:
-        """Take the lock if it is free, storing `val` as the owner token.
+        """Takes the lock if it is free, without waiting, storing `val` as the owner token.
 
-        Only a holder presenting the same token can later extend or release the lock, so `val` must be unique to the
-        process taking it.
+        `val` must be unique to the taker, and is what `value()` returns while the lock is held.
         """
-        self.val = str(val)
-        self.acquired = bool(connection.set(self._locking_key, self.val, nx=True, ex=expire))
+        # Not thread-local: the scheduler takes its locks in the worker's thread and extends and releases them from its
+        # own thread.
+        self._lock = Lock(connection, self._locking_key, timeout=expire, thread_local=False)
+        self.acquired = self._lock.acquire(blocking=False, token=str(val))
         return self.acquired
 
-    def expire(self, connection: ConnectionType, expire: int, val: Any = None) -> bool:
-        """Extend the lock's TTL if it is still held with `val` (defaults to the token it was acquired with).
+    def expire(self, expire: int) -> bool:
+        """Resets the lock's TTL to `expire` seconds if this instance still holds it. The lock must have been acquired
+        with an expiry.
 
         :returns: Whether the lock is still held and was extended.
         """
-        token = str(val) if val is not None else self.val
-        if token is None:
+        if self._lock is None:
             return False
-        return bool(connection.eval(_EXPIRE_SCRIPT, 1, self._locking_key, token, expire))
+        try:
+            return self._lock.extend(expire, replace_ttl=True)
+        except LockError:  # never acquired, or another holder has the lock now
+            return False
 
-    def release(self, connection: ConnectionType, val: Any = None) -> bool:
-        """Release the lock if it is still held with `val` (defaults to the token it was acquired with).
+    def release(self) -> bool:
+        """Releases the lock if this instance still holds it.
 
         :returns: Whether the lock was held and has been released.
         """
-        token = str(val) if val is not None else self.val
-        if token is None:
-            return False
         self.acquired = False
-        return bool(connection.eval(_RELEASE_SCRIPT, 1, self._locking_key, token))
+        if self._lock is None:
+            return False
+        try:
+            self._lock.release()
+        except LockError:  # never acquired, or another holder has the lock now
+            return False
+        return True
 
     def value(self, connection: ConnectionType) -> Any:
         return connection.get(self._locking_key)

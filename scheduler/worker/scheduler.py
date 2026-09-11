@@ -128,11 +128,7 @@ class WorkerScheduler:
         """Extends the locks this scheduler still holds, and stops scheduling the queues whose lock it lost."""
         lock_keys = ", ".join(self._locks.keys())
         self.log(DEBUG, f"Scheduler updating lock for queue {lock_keys}")
-        lost = [
-            queue_name
-            for queue_name, lock in self._locks.items()
-            if not lock.expire(self.connection, expire=self.interval + 60)
-        ]
+        lost = [queue_name for queue_name, lock in self._locks.items() if not lock.expire(self.interval + 60)]
         for queue_name in lost:
             # The lock expired and another scheduler took it over: carrying on would schedule this queue twice.
             self.log(WARNING, f"Lost the scheduler lock for queue {queue_name}, no longer scheduling it")
@@ -148,7 +144,7 @@ class WorkerScheduler:
     def release_locks(self) -> None:
         """Release acquired locks"""
         for lock in self._locks.values():
-            lock.release(self.connection)
+            lock.release()
 
     def work(self) -> None:
         queue_names = [queue.name for queue in self._queues]

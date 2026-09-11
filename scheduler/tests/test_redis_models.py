@@ -1,3 +1,4 @@
+import threading
 from unittest.mock import MagicMock, patch
 
 from django.urls import reverse
@@ -230,70 +231,74 @@ class TestQueueAdmin(SchedulerBaseCase):
 
 
 class TestKvLock(SchedulerBaseCase):
-    def test_lock_acquire_and_release__matching_val__releases_lock(self):
-        # arrange
-        queue = get_queue("default")
-        lock = KvLock("test-queue")
-        acquired = lock.acquire(val="worker-1", connection=queue.connection, expire=60)
-        self.assertTrue(acquired)
-        # act
-        lock.release(queue.connection)
-        # assert
-        self.assertIsNone(lock.value(queue.connection))
+    def setUp(self) -> None:
+        super().setUp()
+        self.connection = get_queue("default").connection
+        self.holder = KvLock("test-queue")
+        self.assertTrue(self.holder.acquire(val="worker-1", connection=self.connection, expire=60))
 
-    def test_lock_release__mismatched_val__does_not_release_lock(self):
-        # arrange
-        queue = get_queue("default")
-        lock1 = KvLock("test-queue")
-        lock1.acquire(val="worker-1", connection=queue.connection, expire=60)
-        lock2 = KvLock("test-queue")
-        lock2.val = "worker-2"
-        # act
-        lock2.release(queue.connection)
-        # assert
-        self.assertIsNotNone(lock1.value(queue.connection))
+    def test_acquire__lock_held__fails_without_waiting(self):
+        self.assertFalse(KvLock("test-queue").acquire(val="worker-2", connection=self.connection, expire=60))
 
-    def test_lock_expire__matching_val__renews_ttl(self):
-        # arrange
-        queue = get_queue("default")
-        lock = KvLock("test-queue")
-        lock.acquire(val="worker-1", connection=queue.connection, expire=60)
-        # act
-        res = lock.expire(queue.connection, expire=120)
-        # assert
-        self.assertTrue(res)
-        self.assertGreater(queue.connection.ttl(lock._locking_key), 60)
+        self.assertEqual(b"worker-1", self.holder.value(self.connection))
 
-    def test_lock_expire__mismatched_val__does_not_renew_ttl(self):
-        # arrange
-        queue = get_queue("default")
-        lock1 = KvLock("test-queue")
-        lock1.acquire(val="worker-1", connection=queue.connection, expire=60)
-        lock2 = KvLock("test-queue")
-        lock2.val = "worker-2"
-        # act
-        res = lock2.expire(queue.connection, expire=120)
-        # assert
-        self.assertFalse(res)
+    def test_release__held__releases_it(self):
+        self.assertTrue(self.holder.release())
 
-    def test_scheduler_lock__acquire_and_release(self):
-        # arrange
-        queue = get_queue("default")
+        self.assertIsNone(self.holder.value(self.connection))
+        self.assertFalse(self.holder.acquired)
+
+    def test_release__from_another_thread__releases_it(self):
+        # The scheduler takes its locks in the worker's thread and releases them from its own.
+        released = []
+        thread = threading.Thread(target=lambda: released.append(self.holder.release()))
+        thread.start()
+        thread.join()
+
+        self.assertEqual([True], released)
+        self.assertIsNone(self.holder.value(self.connection))
+
+    def test_release__held_by_another__leaves_it(self):
+        other = KvLock("test-queue")
+        other.acquire(val="worker-2", connection=self.connection, expire=60)
+
+        self.assertFalse(other.release())
+
+        self.assertEqual(b"worker-1", self.holder.value(self.connection))
+
+    def test_release__never_acquired__returns_false(self):
+        self.assertFalse(KvLock("test-queue").release())
+
+        self.assertEqual(b"worker-1", self.holder.value(self.connection))
+
+    def test_release__taken_over_after_expiring__leaves_the_new_holders_lock(self):
+        self.connection.delete(self.holder._locking_key)  # the lock expired
+        self.assertTrue(KvLock("test-queue").acquire(val="worker-2", connection=self.connection, expire=60))
+
+        self.assertFalse(self.holder.release())
+
+        self.assertEqual(b"worker-2", self.holder.value(self.connection))
+
+    def test_expire__held__resets_the_ttl(self):
+        self.assertTrue(self.holder.expire(120))
+
+        self.assertGreater(self.connection.ttl(self.holder._locking_key), 60)
+
+    def test_expire__held_by_another__leaves_the_ttl(self):
+        other = KvLock("test-queue")
+        other.acquire(val="worker-2", connection=self.connection, expire=60)
+
+        self.assertFalse(other.expire(120))
+
+        self.assertLessEqual(self.connection.ttl(self.holder._locking_key), 60)
+
+    def test_scheduler_lock__value_is_the_token(self):
         lock = SchedulerLock("default")
-        self.assertTrue(lock.acquire(val=12345, connection=queue.connection, expire=60))
-        self.assertEqual(lock.value(queue.connection), b"12345")
-        # act
-        lock.release(queue.connection)
-        # assert
-        self.assertIsNone(lock.value(queue.connection))
+        self.assertTrue(lock.acquire(val=12345, connection=self.connection, expire=60))
 
-    def test_lock_release__never_acquired__does_not_release_lock(self):
-        queue = get_queue("default")
-        KvLock("test-queue").acquire(val="worker-1", connection=queue.connection, expire=60)
-
-        self.assertFalse(KvLock("test-queue").release(queue.connection))
-
-        self.assertEqual(b"worker-1", KvLock("test-queue").value(queue.connection))
+        self.assertEqual(b"12345", lock.value(self.connection))
+        self.assertTrue(lock.release())
+        self.assertIsNone(lock.value(self.connection))
 
 
 class TestWorkerCleanRegistriesLock(SchedulerBaseCase):
