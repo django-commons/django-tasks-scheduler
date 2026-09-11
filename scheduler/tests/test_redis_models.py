@@ -387,6 +387,17 @@ class TestQueuedJobRegistryCompact(SchedulerBaseCase):
         self.assertEqual(queue.name, dequeued_from.name)
 
 
+class TestQueueGetAllJobNames(SchedulerBaseCase):
+    def test_get_all_job_names__checks_existence_in_one_round_trip(self):
+        queue = get_queue("default")
+        gone = queue.create_and_enqueue_job(test_job)
+        kept = queue.create_and_enqueue_job(test_job)
+        queue.connection.delete(JobModel.key_for(gone.name))
+
+        with patch.object(JobModel, "exists", side_effect=AssertionError("one round trip per job")):
+            self.assertEqual([kept.name], queue.get_all_job_names())
+
+
 class TestJobNamesRegistryGetFirst(SchedulerBaseCase):
     def test_get_first__connection_returning_str__returns_the_name(self):
         connection = MagicMock()

@@ -189,8 +189,8 @@ class Queue:
         all_job_names.extend(self.failed_job_registry.all(self.connection))
         all_job_names.extend(self.scheduled_job_registry.all(self.connection))
         all_job_names.extend(self.canceled_job_registry.all(self.connection))
-        res = list(filter(lambda job_name: JobModel.exists(job_name, self.connection), all_job_names))
-        return res
+        found = JobModel.exists_many(all_job_names, self.connection)
+        return [job_name for job_name, exists in zip(all_job_names, found) if exists]
 
     def pending_job_names(self, job_names: Iterable[str]) -> set[str]:
         """Returns those of `job_names` that are scheduled, queued or running, checking them all in one round trip."""

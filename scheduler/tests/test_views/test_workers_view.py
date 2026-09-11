@@ -51,6 +51,28 @@ class TestViewWorkers(BaseTestCase):
                 self.assertIn("Successful", html)  # result type column
                 self.assertIn("distinctive-return-value-42", html)  # the callable's return value
 
+    def test_worker_details__fetches_only_the_workers_own_jobs(self):
+        queue = get_queue(_QUEUE)
+        other_job = queue.create_and_enqueue_job(job_with_distinctive_return_value)
+        create_worker(_QUEUE, name="other-worker", burst=True).work()
+        own_job = queue.create_and_enqueue_job(job_with_distinctive_return_value)
+        create_worker(_QUEUE, name="own-worker", burst=True).work()
+        create_worker(_QUEUE, name="own-worker").worker_start()
+
+        with patch.object(JobModel, "get_many", wraps=JobModel.get_many) as get_many:
+            res = self.client.get(reverse("worker_details", args=["own-worker"]))
+
+        self.assertEqual([own_job.name], [job.name for job in res.context["executions"]])
+        fetched = {job_name for call in get_many.call_args_list for job_name in call.args[0]}
+        self.assertNotIn(other_job.name, fetched)
+
+    def test_worker_details__stopped_worker__404(self):
+        create_worker(_QUEUE, name="stopped-worker", burst=True).work()
+
+        res = self.client.get(reverse("worker_details", args=["stopped-worker"]))
+
+        self.assertEqual(404, res.status_code)
+
     def test_worker_details__fetches_the_results_in_one_round_trip(self):
         queue = get_queue(_QUEUE)
         for _ in range(3):

@@ -92,6 +92,33 @@ def get_queue(name: str = "default", fail_fast: bool = False) -> Queue:
     return Queue(name=name, connection=connection, is_async=is_async)
 
 
+def _queue_names_by_broker() -> list[str]:
+    """Returns the name of one queue on each distinct broker database the queues use."""
+    seen: set[str] = set()
+    queue_names = []
+    for queue_name in get_queue_names():
+        config = get_queue_configuration(queue_name)
+        broker = repr([getattr(config, field, None) for field in sorted(config.__CONNECTION_FIELDS__ | {"DB"})])
+        if broker not in seen:
+            seen.add(broker)
+            queue_names.append(queue_name)
+    return queue_names
+
+
+def get_worker(name: str) -> WorkerModel | None:
+    """Returns the live worker named `name`, looking it up directly on each broker instead of listing all workers."""
+    for queue_name in _queue_names_by_broker():
+        connection = _get_connection(get_queue_configuration(queue_name), fail_fast=True)
+        try:
+            worker = WorkerModel.get(name, connection=connection)
+        except ConnectionErrorTypes as e:
+            logger.error(f"Could not connect for queue {queue_name}: {e}")
+            continue
+        if worker is not None and worker.death is None:  # a stopped worker's record lingers briefly
+            return worker
+    return None
+
+
 def get_all_workers() -> set[WorkerModel]:
     queue_names = get_queue_names()
 
