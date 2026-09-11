@@ -1,4 +1,5 @@
 import dataclasses
+from datetime import datetime, timezone
 from math import ceil
 from typing import Any
 
@@ -11,31 +12,33 @@ from django.views.decorators.cache import never_cache
 from scheduler import settings
 from scheduler.helpers.queues import Queue, get_all_workers
 from scheduler.helpers.queues.queue_logic import NoSuchRegistryError
-from scheduler.redis_models import JobModel, JobNamesRegistry, WorkerModel
+from scheduler.redis_models import JobModel, JobNamesRegistry, ScheduledJobRegistry, WorkerModel
 from scheduler.settings import get_queue_names, logger
 from scheduler.types import ConnectionErrorTypes
-from scheduler.views.helpers import get_queue
+from scheduler.views.helpers import _call_strings, get_queue
 
 
-def _get_registry_job_list(queue: Queue, registry: JobNamesRegistry, page: int) -> tuple[list[JobModel], int, range]:
+def _get_registry_job_list(
+    queue: Queue, registry: JobNamesRegistry, page: int
+) -> tuple[list[JobModel], int, range, dict[str, float]]:
+    """Returns the page's jobs, the registry's size, the page range, and the page's registry scores by job name."""
     items_per_page = settings.SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE
     num_jobs = registry.count(queue.connection)
     job_list: list[JobModel] = []
 
     if num_jobs == 0:
-        return job_list, num_jobs, range(1, 1)
+        return job_list, num_jobs, range(1, 1), {}
 
     last_page = ceil(num_jobs / items_per_page)
     page_range = range(1, last_page + 1)
     offset = items_per_page * (page - 1)
-    job_names = registry.all(queue.connection, offset, offset + items_per_page - 1)
+    scores = dict(registry.all_with_timestamps(queue.connection, offset, offset + items_per_page - 1))
+    job_names = list(scores)
     job_list = JobModel.get_many(job_names, connection=queue.connection)
-    remove_job_names = [job_name for i, job_name in enumerate(job_names) if job_list[i] is None]
+    registry.delete_many(queue.connection, [name for name, job in zip(job_names, job_list) if job is None])
     valid_jobs = [job for job in job_list if job is not None]
-    for job_name in remove_job_names:
-        registry.delete(queue.connection, job_name)
 
-    return valid_jobs, num_jobs, page_range
+    return valid_jobs, num_jobs, page_range, scores
 
 
 @never_cache  # type: ignore
@@ -48,7 +51,13 @@ def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str
         return HttpResponseNotFound()
     title = registry_name.capitalize()
     page = int(request.GET.get("page", 1))
-    job_list, num_jobs, page_range = _get_registry_job_list(queue, registry, page)
+    job_list, num_jobs, page_range, scores = _get_registry_job_list(queue, registry, page)
+    # A scheduled job's score is the time it is due; the other registries score by other things.
+    scheduled_times = (
+        {name: datetime.fromtimestamp(score, tz=timezone.utc) for name, score in scores.items()}
+        if isinstance(registry, ScheduledJobRegistry)
+        else {}
+    )
 
     context_data = {
         **admin.site.each_context(request),
@@ -56,6 +65,8 @@ def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str
         "registry_name": registry_name,
         "registry": registry,
         "jobs": job_list,
+        "call_strings": _call_strings(job_list),
+        "scheduled_times": scheduled_times,
         "num_jobs": num_jobs,
         "page": page,
         "page_range": page_range,

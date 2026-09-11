@@ -103,7 +103,7 @@
                                     {{ job.created_at|date:"Y-m-d, H:i:s" }}
                                 </td>
                                 <td>
-                                    {{ job|job_scheduled_time:queue|date:"Y-m-d, H:i:s" }}
+                                    {{ scheduled_times|get_item:job.name|date:"Y-m-d, H:i:s" }}
                                 </td>
                                 <td>
                                     {{ job.enqueued_at|date:"Y-m-d, H:i:s" }}
@@ -112,7 +112,7 @@
                                     {{ job.ended_at|date:"Y-m-d, H:i:s" }}
                                 </td>
                                 <td>{{ job.status }}</td>
-                                <td>{{ job|show_func_name }}</td>
+                                <td>{{ call_strings|get_item:job.name }}</td>
                                 <td>{{ job.worker_name|default:'-' }}</td>
                                 {% block extra_columns_values %}
                                 {% endblock extra_columns_values %}

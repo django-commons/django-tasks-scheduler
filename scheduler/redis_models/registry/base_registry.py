@@ -32,6 +32,10 @@ class ZSetModel(BaseModel):
         logger.debug(f"[registry {self._key}] Deleting {job_name}")
         connection.zrem(self._key, job_name)
 
+    def delete_many(self, connection: ConnectionType, job_names: Sequence[str]) -> None:
+        if job_names:
+            connection.zrem(self._key, *job_names)
+
     def exists(self, connection: ConnectionType, job_name: str) -> bool:
         return connection.zrank(self._key, job_name) is not None
 

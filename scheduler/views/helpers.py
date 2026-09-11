@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from urllib.parse import urlparse
 
 from django.contrib import messages
@@ -7,6 +8,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 
 from scheduler.helpers.queues import Queue
 from scheduler.helpers.queues import get_queue as get_queue_base
+from scheduler.models import Task
+from scheduler.models.task import run_task
 from scheduler.redis_models import JobModel
 from scheduler.settings import QueueNotFoundError, get_queue_names, logger
 
@@ -48,6 +51,25 @@ def _check_next_url(request: HttpRequest, default_next_url: str) -> str:
         messages.warning(request, "Bad followup URL")
         next_url = default_next_url
     return next_url
+
+
+def _call_strings(jobs: Sequence[JobModel]) -> dict[str, str]:
+    """Maps each job's name to the call it makes: its scheduled task's function string, or else its function name.
+
+    Reads all the jobs' tasks, with their arguments, in one go rather than a few queries per job.
+    """
+    run_task_name = f"{run_task.__module__}.{run_task.__qualname__}"
+
+    def task_id(job: JobModel) -> int | None:
+        return int(job.args[1]) if job.func_name == run_task_name and len(job.args) == 2 else None
+
+    task_ids = {task_id(job) for job in jobs} - {None}
+    tasks = Task.objects.prefetch_related("callable_args", "callable_kwargs").in_bulk(task_ids)
+    call_strings = {}
+    for job in jobs:
+        task = tasks.get(task_id(job))
+        call_strings[job.name] = task.function_string() if task is not None else job.func_name
+    return call_strings
 
 
 def _enqueue_multiple_jobs(queue: Queue, job_names: list[str], at_front: bool = False) -> int:

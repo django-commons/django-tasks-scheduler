@@ -1,13 +1,15 @@
 import time
 from datetime import datetime
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from scheduler.helpers.queues import get_queue
-from scheduler.models import Task, TaskType
+from scheduler.models import Task, TaskArg, TaskType
 from scheduler.tests.jobs import test_job
 from scheduler.tests.test_views.base import BaseTestCase
-from scheduler.tests.testtools import task_factory
+from scheduler.tests.testtools import task_factory, taskarg_factory
 
 
 class QueueRegistryJobsViewTest(BaseTestCase):
@@ -66,6 +68,34 @@ class QueueRegistryJobsViewTest(BaseTestCase):
         job = queue.create_and_enqueue_job(test_job, when=datetime.now())
         res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
         self.assertEqual(res.context["jobs"], [job])
+
+    def test_scheduled_jobs__task_jobs__query_count_does_not_grow_with_rows(self):
+        queue_name = "django_tasks_scheduler_test"
+        url = reverse("queue_registry_jobs", args=[queue_name, "scheduled"])
+        task_factory(TaskType.ONCE, queue=queue_name)
+        with CaptureQueriesContext(connection) as one_row:
+            self.client.get(url)
+        for _ in range(3):
+            task_factory(TaskType.ONCE, queue=queue_name)
+
+        with CaptureQueriesContext(connection) as four_rows:
+            res = self.client.get(url)
+
+        self.assertEqual(4, len(res.context["jobs"]))
+        self.assertEqual(len(one_row), len(four_rows))
+
+    def test_scheduled_jobs__shows_the_scheduled_time_and_the_escaped_task_call(self):
+        queue_name = "django_tasks_scheduler_test"
+        task = task_factory(TaskType.ONCE, queue=queue_name)
+        taskarg_factory(TaskArg, val="<b>x</b>", content_object=task)
+
+        res = self.client.get(reverse("queue_registry_jobs", args=[queue_name, "scheduled"]))
+
+        job = res.context["jobs"][0]
+        self.assertEqual(task.function_string(), res.context["call_strings"][job.name])
+        scheduled_time = res.context["scheduled_times"][job.name]
+        self.assertAlmostEqual(task.scheduled_time.timestamp(), scheduled_time.timestamp(), delta=1)
+        self.assertNotContains(res, "<b>x</b>")
 
     def test_scheduled_jobs_registry_removal(self):
         """Ensure that non-existing job is being deleted from registry by view"""
