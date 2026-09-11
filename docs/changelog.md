@@ -2,6 +2,19 @@
 
 ## Unreleased 🌈
 
+## v4.4.0 🌈
+
+### 🚀 Features
+
+- `float` and `json` task argument types, and argument values up to 2048 characters
+- Workers no longer check every queued job before each dequeue, and save their record in one round trip
+- The scheduler loop checks only its own queues' tasks, in one query and one broker round trip per queue
+- Admin pages - task list, task and worker executions, registry job lists, stats, workers - no longer query per row,
+  and bulk task actions no longer work task by task
+- A task's executions are read from a per-task index instead of a queue scan; those created before upgrading no longer
+  show
+- Batch export, import and job deletion
+
 ### 🐛 Bug Fixes
 
 - Only a scheduler lock's holder can extend or release it, and a scheduler that loses its lock stops scheduling the
@@ -16,17 +29,6 @@
 - `get_current_job()` is isolated per thread and async context, and keeps an async job's `meta` changes
 - `TimerDeathPenalty` no longer rewrites every `JobTimeoutException` message; comparing a `WorkerModel` to another type
   no longer raises
-
-### 🚀 Features
-
-- `float` and `json` task argument types, and argument values up to 2048 characters
-- Workers no longer check every queued job before each dequeue, and save their record in one round trip
-- The scheduler loop checks only its own queues' tasks, in one query and one broker round trip per queue
-- Admin pages - task list, task and worker executions, registry job lists, stats, workers - no longer query per row,
-  and bulk task actions no longer work task by task
-- A task's executions are read from a per-task index instead of a queue scan; those created before upgrading no longer
-  show
-- Batch export, import and job deletion
 
 ## v4.3.1 🌈
 
