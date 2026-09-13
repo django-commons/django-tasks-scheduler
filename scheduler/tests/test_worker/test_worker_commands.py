@@ -9,8 +9,8 @@ from scheduler.tests.jobs import test_job, two_seconds_job
 from ...helpers.callback import Callback
 from ...redis_models import JobModel, JobStatus, WorkerModel
 from ...worker import create_worker
-from ...worker.commands import StopJobCommand, send_command
-from ...worker.commands.suspend_worker import SuspendWorkCommand
+from ...worker.commands import StopJobCommand, SuspendWorkCommand, send_command
+from ...worker.commands.worker_commands import WorkerCommand
 from ..test_views.base import BaseTestCase
 
 
@@ -55,6 +55,21 @@ class WorkerCommandsTest(BaseTestCase):
         self.assertFalse(worker._model.is_suspended)
         job = JobModel.get(job.name, connection=queue.connection)
         self.assertFalse(job.is_queued)
+
+    def test_every_command_is_registered_by_importing_the_package(self):
+        """A worker imports `scheduler.worker.commands` and nothing deeper.
+
+        Commands self-register on import, so one whose module the package never imports is unreachable:
+        the listener rejects its payload with "Invalid command". `suspend` and `resume` were in that
+        state, and importing their module directly from the tests hid it.
+        """
+        for command_name in ("suspend", "resume", "stop-job", "shutdown", "kill-worker"):
+            with self.subTest(command=command_name):
+                payload = {"command": command_name, "worker_name": "test", "job_name": "some-job"}
+
+                command = WorkerCommand.from_payload(payload)
+
+                self.assertEqual(command_name, command.command_name)
 
     @mock.patch("scheduler.redis_models.job.JobModel.call_stopped_callback")
     def test_stop_job_command__success(self, mock_stopped_callback):
