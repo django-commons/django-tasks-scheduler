@@ -86,8 +86,12 @@ class TestRepeatableTask(BaseTestCases.TestSchedulableTask):
         task.interval = 2  # Smaller than 10
         task.success_ttl = -1
         task.interval_unit = "seconds"
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as caught:
             task.clean_interval_unit()
+
+        # Rendering the message is what a form does, and it is where an incomplete format spec bites:
+        # asserting only that ValidationError was raised passed straight over `ValueError: incomplete format`.
+        self.assertIn("minimum interval is 10", " ".join(caught.exception.messages))
 
     def test_clean_short_result_ttl(self):
         task = task_factory(TaskType.REPEATABLE)
