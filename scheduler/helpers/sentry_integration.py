@@ -1,9 +1,8 @@
 import weakref
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import sentry_sdk
-from sentry_sdk._types import Event, EventProcessor, ExcInfo
 from sentry_sdk.api import continue_trace
 from sentry_sdk.consts import OP
 from sentry_sdk.integrations import Integration, _check_minimum_version
@@ -18,9 +17,14 @@ from sentry_sdk.utils import (
 
 import scheduler
 from scheduler.helpers.queues import Queue
-from scheduler.redis_models import JobModel, JobStatus
-from scheduler.timeouts import JobTimeoutException
+from scheduler.helpers.timeouts import JobTimeoutException
+from scheduler.redis_models import JobModel
 from scheduler.worker import Worker
+
+if TYPE_CHECKING:
+    # `sentry_sdk._types` defines these under `TYPE_CHECKING` only; importing them at runtime raises
+    # ImportError, which `register_sentry` used to swallow as "Sentry SDK not installed".
+    from sentry_sdk._types import Event, EventProcessor, ExcInfo
 
 
 class SentryIntegration(Integration):
@@ -57,10 +61,9 @@ class SentryIntegration(Integration):
                 ):
                     rv = old_perform_job(self, job_model, *args, **kwargs)
 
-            if self.is_horse:
-                # We're inside of a forked process and RQ is
-                # about to call `os._exit`. Make sure that our
-                # events get sent out.
+            if self._is_job_execution_process:
+                # We're inside the forked job execution process, which is about to call `os._exit`.
+                # Make sure that our events get sent out.
                 sentry_sdk.get_client().flush()
 
             return rv
@@ -71,7 +74,7 @@ class SentryIntegration(Integration):
 
         def sentry_patched_handle_exception(self: Worker, job: Any, *exc_info: Any, **kwargs: Any) -> Any:
             retry = hasattr(job, "retries_left") and job.retries_left and job.retries_left > 0
-            failed = job._status == JobStatus.FAILED or job.is_failed
+            failed = job.is_failed
             if failed and not retry:
                 _capture_exception(exc_info)
 
@@ -94,8 +97,8 @@ class SentryIntegration(Integration):
         ignore_logger("rq.worker")
 
 
-def _make_event_processor(weak_job: Callable[[], JobModel]) -> EventProcessor:
-    def event_processor(event: Event, hint: dict[str, Any]) -> Event:
+def _make_event_processor(weak_job: Callable[[], JobModel]) -> "EventProcessor":
+    def event_processor(event: "Event", hint: dict[str, Any]) -> "Event":
         job = weak_job()
         if job is not None:
             with capture_internal_exceptions():
@@ -112,7 +115,7 @@ def _make_event_processor(weak_job: Callable[[], JobModel]) -> EventProcessor:
     return event_processor
 
 
-def _capture_exception(exc_info: ExcInfo, **kwargs: Any) -> None:
+def _capture_exception(exc_info: "ExcInfo", **kwargs: Any) -> None:
     client = sentry_sdk.get_client()
 
     event, hint = event_from_exception(

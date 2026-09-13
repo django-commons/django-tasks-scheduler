@@ -46,10 +46,16 @@ def _parse_bool(value: str) -> bool:
 def register_sentry(sentry_dsn: str, **opts: Any) -> None:
     try:
         import sentry_sdk
-
-        from scheduler.helpers.sentry_integration import SentryIntegration
     except ImportError:
         logger.error("Sentry SDK not installed. Skipping Sentry Integration")
+        return
+
+    try:
+        from scheduler.helpers.sentry_integration import SentryIntegration
+    except ImportError:
+        # Reported separately, and with the traceback: reporting this as a missing SDK hid a broken
+        # import inside the integration itself, leaving `--sentry-dsn` silently reporting nothing.
+        logger.error("Could not import the Sentry integration. Skipping Sentry Integration", exc_info=True)
         return
 
     sentry_sdk.init(sentry_dsn, integrations=[SentryIntegration()], **opts)
