@@ -11,7 +11,7 @@ from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.utils import formats, timezone
 from django.utils.html import format_html, format_html_join
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.timezone import is_naive
 from django.utils.translation import gettext_lazy as _
 
@@ -51,7 +51,7 @@ def _check_scheduled(tasks: Iterable[Task]) -> None:
             logger.warning(f"Could not check whether tasks on queue {queue_name} are scheduled: {e}")
             pending = set()
         for task in queue_tasks:
-            task._is_scheduled = task.job_name in pending
+            task._is_scheduled = task.job_name in pending  # type: ignore[attr-defined]
 
 
 def _delete_pending_jobs(queryset: QuerySet[Task]) -> list[Task]:
@@ -99,7 +99,7 @@ class JobMethodsDatalistWidget(forms.TextInput):
     def __init__(self, attrs: dict[str, Any] | None = None) -> None:
         super().__init__({**(attrs or {}), "list": self.datalist_id, "autocomplete": "off"})
 
-    def render(self, name: str, value: Any, attrs: dict[str, Any] | None = None, renderer: Any = None) -> str:
+    def render(self, name: str, value: Any, attrs: dict[str, Any] | None = None, renderer: Any = None) -> SafeString:
         text_input = super().render(name, value, attrs=attrs, renderer=renderer)
         options = format_html_join("", '<option value="{}"></option>', ((method,) for method in JOB_METHODS_LIST))
         datalist = format_html('<datalist id="{}">{}</datalist>', self.datalist_id, options)
@@ -107,7 +107,7 @@ class JobMethodsDatalistWidget(forms.TextInput):
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     """TaskAdmin admin view for all task models."""
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Task]:
@@ -192,6 +192,8 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description="Schedule")
     def task_schedule(self, o: Task) -> str:
         if o.task_type == TaskType.ONCE.value:
+            if o.scheduled_time is None:
+                return ""
             if timezone.is_naive(o.scheduled_time):
                 local_time = timezone.make_aware(o.scheduled_time, timezone.get_current_timezone())
             else:
@@ -219,20 +221,28 @@ class TaskAdmin(admin.ModelAdmin):
         # Display only: rendering the list must not write. The scheduler loop keeps `scheduled_time` current.
         res = o.scheduled_time
         if res is None:
-            return _("Not scheduled")
+            return str(_("Not scheduled"))
         if is_naive(res):
             res = timezone.make_aware(res, timezone.get_current_timezone())
         return res
 
-    def change_view(self, request: HttpRequest, object_id, form_url="", extra_context=None) -> HttpResponse:
-        extra = extra_context or {}
+    def change_view(
+        self, request: HttpRequest, object_id: str, form_url: str = "", extra_context: dict[str, Any] | None = None
+    ) -> HttpResponse:
         obj = self.get_object(request, object_id)
+        if obj is None:  # the admin reports a missing object itself
+            return super().change_view(request, object_id, form_url, extra_context=extra_context)
+        extra = extra_context or {}
         try:
             execution_list = get_job_executions_for_task(obj.queue, obj)
         except ConnectionErrorTypes as e:
             logger.warn(f"Could not get job executions: {e}")
             execution_list = []
-        paginator = self.get_paginator(request, execution_list, SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)
+        paginator = self.get_paginator(
+            request,
+            execution_list,  # type: ignore[arg-type]  # any sequence paginates, not only a queryset
+            SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE,
+        )
         page_number = request.GET.get("p", 1)
         page_obj = paginator.get_page(page_number)
         page_range = paginator.get_elided_page_range(page_obj.number)
@@ -254,12 +264,12 @@ class TaskAdmin(admin.ModelAdmin):
 
         return super().change_view(request, object_id, form_url, extra_context=extra)
 
-    def delete_queryset(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def delete_queryset(self, request: HttpRequest, queryset: QuerySet[Task]) -> None:
         _delete_pending_jobs(queryset)
         super().delete_queryset(request, queryset)
 
     @admin.action(description=_("Disable selected %(verbose_name_plural)s"), permissions=("change",))
-    def disable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def disable_selected(self, request: HttpRequest, queryset: QuerySet[Task]) -> None:
         tasks = _delete_pending_jobs(queryset.filter(enabled=True))
         rows_updated = Task.objects.filter(id__in=[task.id for task in tasks]).update(
             enabled=False, job_name=None, updated_at=timezone.now()
@@ -271,7 +281,7 @@ class TaskAdmin(admin.ModelAdmin):
         )
 
     @admin.action(description=_("Enable selected %(verbose_name_plural)s"), permissions=("change",))
-    def enable_selected(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def enable_selected(self, request: HttpRequest, queryset: QuerySet[Task]) -> None:
         rows_updated = 0
         for obj in queryset.filter(enabled=False).iterator(chunk_size=2000):
             obj.enabled = True
@@ -282,7 +292,7 @@ class TaskAdmin(admin.ModelAdmin):
         self.message_user(request, f"{get_message_bit(rows_updated)} successfully enabled and scheduled.", level=level)
 
     @admin.action(description="Enqueue now", permissions=("change",))
-    def enqueue_job_now(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def enqueue_job_now(self, request: HttpRequest, queryset: QuerySet[Task]) -> None:
         task_names = []
         for task in queryset:
             task.enqueue_to_run()

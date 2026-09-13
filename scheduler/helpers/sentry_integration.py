@@ -1,6 +1,6 @@
 import weakref
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import sentry_sdk
 from sentry_sdk._types import Event, EventProcessor, ExcInfo
@@ -20,6 +20,7 @@ import scheduler
 from scheduler.helpers.queues import Queue
 from scheduler.redis_models import JobModel, JobStatus
 from scheduler.timeouts import JobTimeoutException
+from scheduler.types import PipelineType
 from scheduler.worker import Worker
 
 
@@ -35,13 +36,13 @@ class SentryIntegration(Integration):
         old_perform_job = Worker.worker_perform_job
 
         @ensure_integration_enabled(SentryIntegration, old_perform_job)
-        def sentry_patched_perform_job(self: Any, job_model: JobModel, *args: Queue, **kwargs: Any) -> bool:
+        def sentry_patched_perform_job(self: Any, job: JobModel, queue: Queue) -> bool:
             with sentry_sdk.new_scope() as scope:
                 scope.clear_breadcrumbs()
-                scope.add_event_processor(_make_event_processor(weakref.ref(job_model)))
+                scope.add_event_processor(_make_event_processor(weakref.ref(job)))
 
                 transaction = continue_trace(
-                    job_model.meta.get("_sentry_trace_headers") or {},
+                    cast(dict[str, Any], job.meta.get("_sentry_trace_headers") or {}),
                     op=OP.QUEUE_TASK_RQ,
                     name="unknown RQ task",
                     source=TransactionSource.TASK,
@@ -49,13 +50,13 @@ class SentryIntegration(Integration):
                 )
 
                 with capture_internal_exceptions():
-                    transaction.name = job_model.func_name
+                    transaction.name = job.func_name
 
                 with sentry_sdk.start_transaction(
                     transaction,
-                    custom_sampling_context={"rq_job": job_model},
+                    custom_sampling_context={"rq_job": job},
                 ):
-                    rv = old_perform_job(self, job_model, *args, **kwargs)
+                    rv = old_perform_job(self, job, queue)
 
             if self.is_horse:
                 # We're inside of a forked process and RQ is
@@ -82,19 +83,21 @@ class SentryIntegration(Integration):
         old_enqueue_job = Queue.enqueue_job
 
         @ensure_integration_enabled(SentryIntegration, old_enqueue_job)
-        def sentry_patched_enqueue_job(self: Queue, job: Any, **kwargs: Any) -> Any:
+        def sentry_patched_enqueue_job(
+            self: Queue, job_model: Any, pipeline: PipelineType | None = None, at_front: bool = False
+        ) -> Any:
             scope = sentry_sdk.get_current_scope()
             if scope.span is not None:
-                job.meta["_sentry_trace_headers"] = dict(scope.iter_trace_propagation_headers())
+                job_model.meta["_sentry_trace_headers"] = dict(scope.iter_trace_propagation_headers())
 
-            return old_enqueue_job(self, job, **kwargs)
+            return old_enqueue_job(self, job_model, pipeline=pipeline, at_front=at_front)
 
         Queue.enqueue_job = sentry_patched_enqueue_job  # type: ignore[method-assign]
 
         ignore_logger("rq.worker")
 
 
-def _make_event_processor(weak_job: Callable[[], JobModel]) -> EventProcessor:
+def _make_event_processor(weak_job: Callable[[], JobModel | None]) -> EventProcessor:
     def event_processor(event: Event, hint: dict[str, Any]) -> Event:
         job = weak_job()
         if job is not None:
@@ -102,7 +105,7 @@ def _make_event_processor(weak_job: Callable[[], JobModel]) -> EventProcessor:
                 extra = event.setdefault("extra", {})
                 extra["job"] = job.serialize()
 
-        if "exc_info" in hint:
+        if job is not None and "exc_info" in hint:
             with capture_internal_exceptions():
                 if issubclass(hint["exc_info"][0], JobTimeoutException):
                     event["fingerprint"] = ["django-tasks-scheduler", "JobTimeoutException", job.func_name]

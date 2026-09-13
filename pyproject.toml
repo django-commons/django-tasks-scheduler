@@ -58,6 +58,7 @@ urls.Homepage = "https://github.com/django-commons/django-tasks-scheduler"
 dev = [
   "beautifulsoup4>=4.13.4",
   "coverage[toml]>=7.10",
+  "django-stubs>=6.0.9",
   "fakeredis[lua]>=2.28",
   "mypy>=1.20",
   "pre-commit>=4.2",
@@ -98,6 +99,7 @@ lint.per-file-ignores."scheduler/tests/**" = [
 lint.mccabe.max-complexity = 13
 
 [tool.mypy]
+mypy_path = "testproject"
 packages = ["scheduler"]
 exclude = [
   "scheduler/migrations/.*\\.py",
@@ -109,4 +111,14 @@ ignore_missing_imports = true
 follow_imports = "silent"
 check_untyped_defs = true
 strict = true
+plugins = ["mypy_django_plugin.main"]
 scripts_are_modules = true
+
+[[tool.mypy.overrides]]
+# Without the sentry extra installed, sentry-sdk's integration base class and decorator type as `Any`.
+module = "scheduler.helpers.sentry_integration"
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
+
+[tool.django-stubs]
+django_settings_module = "testproject.settings"

@@ -22,8 +22,8 @@ class JobDetailAction(str, Enum):
     CANCEL = "cancel"
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     queue, job = _find_job(job_name)
     if job is None or queue is None:
@@ -51,8 +51,8 @@ def job_detail(request: HttpRequest, job_name: str) -> HttpResponse:
     return render(request, "admin/scheduler/job_detail.html", context_data)
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse:
     queue, job = _find_job(job_name)
     if job is None or queue is None:
@@ -81,9 +81,10 @@ def job_action(request: HttpRequest, job_name: str, action: str) -> HttpResponse
             messages.info(request, f"You have successfully enqueued {job.name}")
             return redirect("job_details", job_name)
         elif action == JobDetailAction.CANCEL:
-            send_command(
-                connection=queue.connection, command=StopJobCommand(job_name=job.name, worker_name=job.worker_name)
-            )
+            if job.worker_name is not None:  # a job that has not started has no worker to stop it
+                send_command(
+                    connection=queue.connection, command=StopJobCommand(job_name=job.name, worker_name=job.worker_name)
+                )
             queue.cancel_job(job.name)
             messages.info(request, f"You have successfully cancelled {job.name}")
             return redirect("job_details", job_name)

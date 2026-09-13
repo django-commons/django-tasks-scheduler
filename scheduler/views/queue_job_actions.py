@@ -25,14 +25,18 @@ class QueueJobAction(Enum):
         return [item.value for item in cls]
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))
     action = request.POST.get("action", False)
-    job_names = request.POST.get("job_names", False)
-    if request.method != "POST" or not action or not job_names or action not in QueueJobAction.values():
+    if (
+        request.method != "POST"
+        or not action
+        or not request.POST.get("job_names")
+        or action not in QueueJobAction.values()
+    ):
         return redirect(next_url)
     job_names = request.POST.getlist("job_names")
     if action == QueueJobAction.DELETE.value:
@@ -48,8 +52,9 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
             if job is None:
                 continue
             try:
-                command = StopJobCommand(job_name=job.name, worker_name=job.worker_name)
-                send_command(connection=queue.connection, command=command)
+                if job.worker_name is not None:  # a job that has not started has no worker to stop it
+                    command = StopJobCommand(job_name=job.name, worker_name=job.worker_name)
+                    send_command(connection=queue.connection, command=command)
                 queue.cancel_job(job.name)
                 cancelled_jobs += 1
             except Exception as e:
@@ -59,8 +64,8 @@ def queue_job_actions(request: HttpRequest, queue_name: str) -> HttpResponse:
     return redirect(next_url)
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def queue_confirm_job_action(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     next_url = _check_next_url(request, reverse("queue_registry_jobs", args=[queue_name, "queued"]))

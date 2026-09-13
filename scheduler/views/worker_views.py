@@ -18,7 +18,7 @@ from scheduler.views.helpers import get_queue
 def _worker_job_names(worker: WorkerModel) -> list[tuple[str, str]]:
     """Returns (queue name, job name) for the jobs the worker ran, reading only each job's worker name - not the whole
     job - to find them."""
-    entries = []
+    entries: list[tuple[str, str]] = []
     for queue_name in worker.queue_names:
         queue = get_queue(queue_name)
         job_names = queue.get_all_job_names()
@@ -58,8 +58,8 @@ def _latest_results(jobs: list[JobModel]) -> dict[str, Result]:
     return latest_results
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     worker = get_worker(name)
 
@@ -70,13 +70,13 @@ def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     paginator = Paginator(_worker_job_names(worker), SCHEDULER_CONFIG.EXECUTIONS_IN_PAGE)
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
-    page_obj.object_list = _get_jobs(list(page_obj.object_list))
+    page_jobs = _get_jobs(list(page_obj.object_list))
+    page_obj.object_list = page_jobs  # type: ignore[assignment]
     page_range = paginator.get_elided_page_range(page_obj.number)
     current_job = None
     if worker.current_job_name is not None:
         queue = get_queue(worker.queue_names[0])
         current_job = JobModel.get(worker.current_job_name, connection=queue.connection)
-    page_jobs = list(page_obj)
     task_ids = {job.scheduled_task_id for job in page_jobs if job.scheduled_task_id is not None}
     context_data = {
         **admin.site.each_context(request),
@@ -92,8 +92,8 @@ def worker_details(request: HttpRequest, name: str) -> HttpResponse:
     return render(request, "admin/scheduler/worker_details.html", context_data)
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def workers_list(request: HttpRequest) -> HttpResponse:
     all_workers = get_all_workers()
     worker_list = list(all_workers)

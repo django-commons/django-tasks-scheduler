@@ -77,7 +77,7 @@ class WorkerCommandsChannelListener:
     def start(self) -> None:
         """Subscribe to this worker's channel"""
         logger.info(f"Subscribing to channel {self.pubsub_channel_name}")
-        self.pubsub = self.connection.pubsub()
+        self.pubsub = self.connection.pubsub()  # type: ignore[no-untyped-call, unused-ignore]  # needed with valkey
         self.pubsub.subscribe(**{self.pubsub_channel_name: self.handle_payload})
         self.pubsub_thread = self.pubsub.run_in_thread(sleep_time=0.2, daemon=True)
 

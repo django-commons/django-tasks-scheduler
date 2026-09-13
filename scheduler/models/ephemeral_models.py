@@ -7,7 +7,7 @@ class Queue(models.Model):
     class Meta:
         managed = False  # not in Django's database
         default_permissions = ()
-        permissions = [["view", "Access admin page"]]
+        permissions = [["view", "Access admin page"]]  # type: ignore[list-item]  # lists, as the migrations have it
         verbose_name_plural = " Queues"
 
 
@@ -17,5 +17,5 @@ class Worker(models.Model):
     class Meta:
         managed = False  # not in Django's database
         default_permissions = ()
-        permissions = [["view", "Access admin page"]]
+        permissions = [["view", "Access admin page"]]  # type: ignore[list-item]  # lists, as the migrations have it
         verbose_name_plural = " Workers"

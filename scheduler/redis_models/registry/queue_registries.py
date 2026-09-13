@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta, timezone
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from scheduler.helpers.utils import current_timestamp
 from scheduler.types import ConnectionType
@@ -87,7 +87,9 @@ class ScheduledJobRegistry(JobNamesRegistry):
         :param chunk_size: Max results to return.
         :returns: A list of job names
         """
-        jobs_to_schedule = connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
+        jobs_to_schedule = cast(
+            list[bytes], connection.zrangebyscore(self._key, 0, max=timestamp, start=0, num=chunk_size)
+        )
         return [as_str(job_name) for job_name in jobs_to_schedule]
 
     def get_scheduled_time(self, connection: ConnectionType, job_name: str) -> datetime | None:
@@ -98,7 +100,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         :returns: The scheduled time as datetime object, or None if job is not found
         """
 
-        score: float | None = connection.zscore(self._key, job_name)
+        score = cast(float | None, connection.zscore(self._key, job_name))
         if not score:
             return None
 
@@ -118,5 +120,5 @@ class ActiveJobRegistry(JobNamesRegistry):
         timestamp defaults to calltime if unspecified.
         """
         score = timestamp or current_timestamp()
-        jobs_before = connection.zrangebyscore(self._key, 0, score, withscores=True)
+        jobs_before = cast(list[tuple[bytes, float]], connection.zrangebyscore(self._key, 0, score, withscores=True))
         return [(as_str(job_name), score) for (job_name, score) in jobs_before]
