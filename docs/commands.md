@@ -107,13 +107,16 @@ Run a method in a queue immediately.
 python manage.py run_job {callable} {callable args ...}
 ```
 
-## `delete_failed_jobs` - delete failed jobs
+## `delete_failed_executions` - delete failed jobs
 
 Run this to empty failed jobs registry from a queue.
 
 ```shell
-python manage.py delete_failed_jobs
+python manage.py delete_failed_executions
 ```
+
+Optionally, restrict the deletion to one queue with `-q`/`--queue`, to a single callable with
+`-f`/`--func`, or list what would be deleted without deleting it using `--dry-run`.
 
 ## `scheduler_stats` - Show scheduler stats
 
