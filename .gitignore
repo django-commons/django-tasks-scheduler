@@ -47,3 +47,4 @@ target/
 *.sqlite3
 .DS_Store
 *.iml
+notes/
