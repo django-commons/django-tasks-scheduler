@@ -10,6 +10,39 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: "ruff"
+    env:
+      UV_LOCKED: 1
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: "0.11.21"
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          cache-dependency-path: uv.lock
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --extra yaml
+
+      - name: ruff check
+        run: uv run --no-sync ruff check --output-format=github
+
+      - name: ruff format
+        run: uv run --no-sync ruff format --check
+
   test-regular:
     runs-on: ubuntu-latest
     name: "Tests py${{ matrix.python-version }}/dj${{ matrix.django-version }}/${{ matrix.broker }}"
