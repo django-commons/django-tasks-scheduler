@@ -16,7 +16,7 @@ from enum import Enum
 from logging import DEBUG, ERROR, INFO, WARNING
 from random import shuffle
 from types import FrameType
-from typing import Any
+from typing import Any, cast
 
 import scheduler
 from scheduler.helpers.queues import get_queue
@@ -42,7 +42,7 @@ from .scheduler import SchedulerStatus, WorkerScheduler
 try:
     from signal import SIGKILL
 except ImportError:
-    from signal import SIGTERM as SIGKILL  # type:ignore
+    from signal import SIGTERM as SIGKILL
 
 from scheduler.helpers.queues import Queue, queue_perform_job
 from scheduler.helpers.timeouts import JobExecutionMonitorTimeoutException, JobTimeoutException
@@ -174,7 +174,7 @@ class Worker:
             connection.connection_pool.connection_kwargs.update(timeout_config)
         return connection
 
-    def log(self, level: int, message: str, *args, **kwargs) -> None:
+    def log(self, level: int, message: str, *args: Any, **kwargs: Any) -> None:
         logger.log(level, f"[Worker {self.name}/{self._pid}]: {message}", *args, **kwargs)
 
     def should_run_maintenance_tasks(self) -> bool:
@@ -700,9 +700,11 @@ class Worker:
         connection = self.connection
         self._model.save(connection=connection)
         self._is_job_execution_process = True
-        job = JobModel.get(job.name, connection)
+        current_job = JobModel.get(job.name, connection)
+        if current_job is None:  # deleted or expired since it was dequeued
+            os._exit(1)
         try:
-            self.worker_perform_job(job, queue)
+            self.worker_perform_job(current_job, queue)
         except:  # noqa
             os._exit(1)
         os._exit(0)
@@ -847,7 +849,7 @@ def _get_ip_address_from_connection(connection: ConnectionType, client_name: str
     except ResponseErrorTypes:
         warnings.warn("CLIENT SETNAME command not supported, setting ip_address to unknown", Warning)
         return "unknown"
-    client_list = connection.client_list()
+    client_list = cast(list[dict[str, str]], connection.client_list())
     client_address_list: list[str] = [client["addr"] for client in client_list if client["name"] == client_name]
     if len(client_address_list) > 0:
         return client_address_list[0]

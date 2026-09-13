@@ -1,5 +1,6 @@
 import sys
 from contextlib import ExitStack
+from datetime import datetime
 from typing import Any
 
 import click
@@ -49,11 +50,11 @@ def create_task_from_dict(task_dict: dict[str, Any], update: bool) -> Task | Non
     del kwargs["callable_args"]
     del kwargs["callable_kwargs"]
     if kwargs.get("scheduled_time", None):
-        target = timezone.datetime.fromisoformat(kwargs["scheduled_time"])
+        target = datetime.fromisoformat(kwargs["scheduled_time"])
         if not settings.USE_TZ and not timezone.is_naive(target):
             target = timezone.make_naive(target)
         kwargs["scheduled_time"] = target
-    model_fields = {field.attname for field in filter(lambda field: hasattr(field, "attname"), Task._meta.get_fields())}
+    model_fields = {field.attname for field in Task._meta.get_fields() if hasattr(field, "attname")}
     keys_to_ignore = list(filter(lambda _k: _k not in model_fields, kwargs.keys()))
     for k in keys_to_ignore:
         del kwargs[k]

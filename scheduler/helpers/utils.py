@@ -15,10 +15,10 @@ def utcnow() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-def callable_func(callable_str: str) -> Callable[[Any], Any]:
+def callable_func(callable_str: str) -> Callable[..., Any]:
     path = callable_str.split(".")
     module = importlib.import_module(".".join(path[:-1]))
-    func: Callable[[Any], Any] = getattr(module, path[-1])
+    func: Callable[..., Any] = getattr(module, path[-1])
     if not callable(func):
         raise TypeError(f"'{callable_str}' is not callable")
     return func

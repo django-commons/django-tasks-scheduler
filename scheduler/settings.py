@@ -16,7 +16,7 @@ class QueueNotFoundError(Exception):
     pass
 
 
-def conf_settings():
+def conf_settings() -> None:
     global SCHEDULER_CONFIG
 
     app_queues = getattr(settings, "SCHEDULER_QUEUES", None)
@@ -33,7 +33,7 @@ def conf_settings():
 
     user_settings = getattr(settings, "SCHEDULER_CONFIG", {})
     if isinstance(user_settings, SchedulerConfiguration):
-        SCHEDULER_CONFIG = user_settings  # type: ignore
+        SCHEDULER_CONFIG = user_settings
         return
     if not isinstance(user_settings, dict):
         raise ImproperlyConfigured("SCHEDULER_CONFIG should be a SchedulerConfiguration or dict")

@@ -18,7 +18,7 @@ ARG_TYPE_TYPES_DICT: dict[str, type] = {
     "bool": bool,
     "datetime": datetime,
     "json": object,  # any JSON value: dict, list, str, number, bool or None
-    "callable": Callable,
+    "callable": Callable,  # type: ignore[dict-item]  # a class at runtime, a special form to mypy
 }
 
 
@@ -54,7 +54,7 @@ class BaseTaskArg(models.Model):
                 datetime.fromisoformat(self.val)
             elif self.arg_type == "bool":
                 if self.val.lower() not in {"true", "false"}:
-                    raise ValidationError
+                    raise ValueError
             elif self.arg_type == "int":
                 int(self.val)
             elif self.arg_type == "float":

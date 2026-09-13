@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Any
+
 from django import template
 from django.utils.safestring import mark_safe
 
@@ -23,12 +26,12 @@ def show_func_name(job: JobModel) -> str:
 
 
 @register.filter
-def get_item(dictionary: dict, key):
+def get_item(dictionary: dict[Any, Any], key: Any) -> Any:
     return dictionary.get(key)
 
 
 @register.filter
-def scheduled_task(job: JobModel) -> Task | None:
+def scheduled_task(job: JobModel) -> str | None:
     try:
         django_scheduled_task = get_scheduled_task(*job.args)
         return django_scheduled_task.get_absolute_url()
@@ -55,21 +58,23 @@ def job_result(job: JobModel) -> str | None:
 
 @register.filter
 def job_scheduled_task(job: JobModel) -> str | None:
+    if job.scheduled_task_id is None:
+        return None
     task = Task.objects.filter(id=job.scheduled_task_id).first()
     return task.name if task is not None else None
 
 
 @register.filter
-def job_status(job: JobModel):
+def job_status(job: JobModel) -> str:
     result = job.status
     return result.capitalize()
 
 
 @register.filter
-def job_runtime(job: JobModel):
+def job_runtime(job: JobModel) -> str:
     ended_at = job.ended_at
-    if ended_at:
-        runtime = job.ended_at - job.started_at
+    if ended_at and job.started_at:
+        runtime = ended_at - job.started_at
         return f"{int(runtime.microseconds / 1000)}ms"
     elif job.started_at:
         return "Still running"
@@ -78,5 +83,5 @@ def job_runtime(job: JobModel):
 
 
 @register.filter
-def job_scheduled_time(job: JobModel, queue: Queue):
+def job_scheduled_time(job: JobModel, queue: Queue) -> datetime | None:
     return queue.scheduled_job_registry.get_scheduled_time(queue.connection, job.name)
