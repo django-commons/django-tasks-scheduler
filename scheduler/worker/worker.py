@@ -357,7 +357,7 @@ class Worker:
             return
         if self.scheduler is None and self.with_scheduler:
             self.log(DEBUG, "Creating scheduler")
-            self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
+            self.scheduler = WorkerScheduler(self.queues, worker_name=self.name)
         if self.scheduler.status == SchedulerStatus.STOPPED:
             self.log(DEBUG, "Starting scheduler thread")
             self.scheduler.start()
