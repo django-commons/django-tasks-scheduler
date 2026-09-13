@@ -20,7 +20,7 @@ keywords = [
 license = "MIT"
 maintainers = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
 authors = [{ name = "Daniel Moran", email = "daniel@moransoftware.ca" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Web Environment",
@@ -33,7 +33,6 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",

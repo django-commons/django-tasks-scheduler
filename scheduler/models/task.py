@@ -453,7 +453,7 @@ class Task(models.Model):
         config = settings.SCHEDULER_CONFIG
         if config.SCHEDULER_INTERVAL > self.interval_seconds():
             raise ValidationError(
-                _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)"),
+                _("Job interval is set lower than %(queue)r queue's interval. minimum interval is %(interval)s"),
                 code="invalid",
                 params={"queue": self.queue, "interval": config.SCHEDULER_INTERVAL},
             )
