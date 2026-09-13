@@ -295,7 +295,7 @@ class Worker:
             self._model.failed_job_count += 1
             self._model.completed_jobs += 1
         if job.started_at is not None and job.ended_at is not None:
-            self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
+            self._model.total_working_time_ms += (job.ended_at - job.started_at).total_seconds() * 1000
         self._model.save(connection=self.connection)
 
     def bootstrap(self) -> None:
@@ -357,7 +357,7 @@ class Worker:
             return
         if self.scheduler is None and self.with_scheduler:
             self.log(DEBUG, "Creating scheduler")
-            self.scheduler = WorkerScheduler(self.queues, worker_name=self.name, connection=self.connection)
+            self.scheduler = WorkerScheduler(self.queues, worker_name=self.name)
         if self.scheduler.status == SchedulerStatus.STOPPED:
             self.log(DEBUG, "Starting scheduler thread")
             self.scheduler.start()
@@ -753,7 +753,7 @@ class Worker:
                 self._model.successful_job_count += 1
                 self._model.completed_jobs += 1
                 if job.started_at is not None and job.ended_at is not None:
-                    self._model.total_working_time_ms += (job.ended_at - job.started_at).microseconds / 1000.0
+                    self._model.total_working_time_ms += (job.ended_at - job.started_at).total_seconds() * 1000
                 self._model.save(connection=connection)
                 job.expire(job.success_ttl, connection=connection)
                 self.log(DEBUG, f"Finished handling successful execution of job {job.name}")

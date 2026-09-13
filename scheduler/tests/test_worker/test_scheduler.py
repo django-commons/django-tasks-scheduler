@@ -24,6 +24,21 @@ class TestWorkerScheduler(SchedulerBaseCase):
         worker.stop_scheduler()
         self.assertIsNone(worker.scheduler)
 
+    def test_maintenance_recreates_a_scheduler_that_was_stopped(self):
+        """`stop_scheduler()` leaves `with_scheduler` set and `scheduler` None, and the next maintenance
+        pass has to build a new one. It passed a `connection` keyword `WorkerScheduler` does not accept,
+        so this path raised `TypeError` instead of scheduling anything."""
+        SCHEDULER_CONFIG.SCHEDULER_INTERVAL = 1
+        worker = create_worker("default", name="test-maintenance-scheduler", burst=True, with_scheduler=True)
+        worker.bootstrap()
+        worker.stop_scheduler()
+        self.assertIsNone(worker.scheduler)
+
+        worker.run_maintenance_tasks()
+
+        self.assertIsNotNone(worker.scheduler)
+        worker.stop_scheduler()
+
     def test_scheduler_schedules_tasks(self):
         with time_machine.travel(0.0, tick=False) as traveller:
             # arrange

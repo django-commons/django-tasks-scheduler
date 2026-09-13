@@ -31,6 +31,7 @@ SCHEDULER_QUEUES: Dict[str, QueueConfiguration] = {
     "default": QueueConfiguration(
         HOST="localhost",
         PORT=6379,
+        DB=0,
         USERNAME="some-user",
         PASSWORD="some-password",
         CONNECTION_KWARGS={  # Eventual additional Broker connection arguments
