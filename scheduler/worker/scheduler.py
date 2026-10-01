@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import Enum
 from logging import DEBUG, INFO, WARNING
 from threading import Thread
+from typing import Any
 
 import django
 
@@ -75,7 +76,7 @@ class WorkerScheduler:
     def pid(self) -> int | None:
         return self._pid
 
-    def log(self, level: int, message: str, *args, **kwargs) -> None:
+    def log(self, level: int, message: str, *args: Any, **kwargs: Any) -> None:
         logger.log(level, f"[Scheduler {self.worker_name}/{self._pid}]: {message}", *args, **kwargs)
 
     def _should_reacquire_locks(self) -> bool:

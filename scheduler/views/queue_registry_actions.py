@@ -45,8 +45,8 @@ def _requeue_job_names(request: HttpRequest, queue: Queue, registry_name: str) -
     messages.info(request, f"You have successfully re-queued {jobs_requeued_count} jobs!")
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def queue_registry_actions(request: HttpRequest, queue_name: str, registry_name: str, action: str) -> HttpResponse:
     queue = get_queue(queue_name)
     try:

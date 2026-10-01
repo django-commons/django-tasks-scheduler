@@ -1,16 +1,19 @@
 # This is a helper module to obfuscate types used by different broker implementations.
 from collections import namedtuple
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import redis
 
-try:
+if TYPE_CHECKING:  # the fallback below is for the runtime only; type checking uses valkey's own types
     import valkey
-except ImportError:
-    valkey = redis
-    valkey.Valkey = redis.Redis
-    valkey.StrictValkey = redis.StrictRedis
+else:
+    try:
+        import valkey
+    except ImportError:
+        valkey = redis
+        valkey.Valkey = redis.Redis
+        valkey.StrictValkey = redis.StrictRedis
 
 from .settings_types import Broker
 

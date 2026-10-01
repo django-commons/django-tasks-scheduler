@@ -22,7 +22,7 @@ class Result(StreamModel):
     type: ResultType
     worker_name: str
     ttl: int | None = None
-    name: str | None = None
+    name: str | None = None  # type: ignore[assignment]  # stream entries have no name
     created_at: datetime = dataclasses.field(default_factory=utcnow)
     return_value: Any | None = None
     exc_string: str | None = None

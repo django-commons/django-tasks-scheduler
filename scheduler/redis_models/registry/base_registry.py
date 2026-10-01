@@ -1,6 +1,6 @@
 import dataclasses
 from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import ClassVar, cast
 
 from scheduler.helpers.utils import current_timestamp
 from scheduler.redis_models.base import BaseModel, as_str
@@ -22,11 +22,11 @@ class ZSetModel(BaseModel):
     def count(self, connection: ConnectionType) -> int:
         """Returns the number of jobs in this registry"""
         self.cleanup(connection=connection)
-        return connection.zcard(self._key)
+        return cast(int, connection.zcard(self._key))
 
     def add(self, connection: ConnectionType, job_name: str, score: float, update_existing_only: bool = False) -> int:
         logger.debug(f"[registry {self._key}] Adding {job_name} / {score}")
-        return connection.zadd(self._key, {job_name: float(score)}, xx=update_existing_only)
+        return cast(int, connection.zadd(self._key, {job_name: float(score)}, xx=update_existing_only))
 
     def delete(self, connection: ConnectionType, job_name: str) -> None:
         logger.debug(f"[registry {self._key}] Deleting {job_name}")
@@ -55,7 +55,7 @@ class JobNamesRegistry(ZSetModel):
         :returns: Returns a list of all job names with timestamp from start to end
         """
         self.cleanup(connection)
-        res = [as_str(job_name) for job_name in connection.zrange(self._key, start, end)]
+        res = [as_str(job_name) for job_name in cast(list[bytes], connection.zrange(self._key, start, end))]
         logger.debug(f"Getting jobs for registry {self.key}: {len(res)} found.")
         return res
 
@@ -68,14 +68,14 @@ class JobNamesRegistry(ZSetModel):
         :returns: Returns a list of all job names with timestamp from start to end
         """
         self.cleanup(connection)
-        res = connection.zrange(self._key, start, end, withscores=True)
+        res = cast(list[tuple[bytes, float]], connection.zrange(self._key, start, end, withscores=True))
         logger.debug(f"Getting jobs for registry {self._key}: {len(res)} found.")
         return [(as_str(job_name), timestamp) for job_name, timestamp in res]
 
     def get_first(self, connection: ConnectionType) -> str | None:
         """Returns the first job in the registry."""
         self.cleanup(connection)
-        first_job = connection.zrange(self._key, 0, 0)
+        first_job = cast(list[bytes], connection.zrange(self._key, 0, 0))
         return as_str(first_job[0]) if first_job else None
 
     @property
@@ -101,7 +101,7 @@ class JobNamesRegistry(ZSetModel):
         if timeout is not None:  # blocking variant
             colored_registries = ",".join(map(str, [str(registry) for registry in registry_keys]))
             logger.debug(f"Starting BZMPOP operation for queues {colored_registries} with timeout of {timeout}")
-            result = connection.bzpopmin(registry_keys, timeout)
+            result = cast(tuple[bytes | str, bytes | str, float] | None, connection.bzpopmin(registry_keys, timeout))
             if not result:
                 logger.debug(f"BZMPOP timeout, no jobs found on queues {colored_registries}")
                 raise DequeueTimeout(timeout, registry_keys)
@@ -109,7 +109,7 @@ class JobNamesRegistry(ZSetModel):
             return as_str(registry_key), as_str(job_name)
         else:  # non-blocking variant
             for registry_key in registry_keys:
-                results: list[Any] = connection.zpopmin(registry_key)
+                results = cast(list[tuple[bytes, float]], connection.zpopmin(registry_key))
                 if results:
                     job_name, _timestamp = results[0]
                     return as_str(registry_key), as_str(job_name)

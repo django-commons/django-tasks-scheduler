@@ -1,3 +1,5 @@
+__all__ = ["Broker", "QueueConfiguration", "SchedulerConfiguration", "Self"]
+
 import signal
 import sys
 from collections.abc import Callable
@@ -84,7 +86,7 @@ class QueueConfiguration:
     MASTER_NAME: str | None = None
     CONNECTION_KWARGS: dict[str, Any] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not any((self.URL, self.UNIX_SOCKET_PATH, self.HOST, self.SENTINELS)):
             raise ValueError(f"At least one of URL, UNIX_SOCKET_PATH, HOST must be provided: {self}")
         if sum((self.URL is not None, self.UNIX_SOCKET_PATH is not None, self.HOST is not None)) > 1:

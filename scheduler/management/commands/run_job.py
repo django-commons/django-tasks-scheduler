@@ -31,8 +31,8 @@ class Command(BaseCommand):
         verbosity = int(options.get("verbosity", 1))
         timeout = options.get("timeout")
         result_ttl = options.get("result_ttl")
-        queue = get_queue(options.get("queue"))
-        func = options.get("callable")
+        queue = get_queue(options["queue"])
+        func = options["callable"]
         args = options.get("args")
         job = queue.create_and_enqueue_job(func, args=args, timeout=timeout, result_ttl=result_ttl, when=None)
         if verbosity:

@@ -7,7 +7,7 @@ from scheduler import views
 from scheduler.models.ephemeral_models import Queue, Worker
 
 
-class ImmutableAdmin(admin.ModelAdmin):
+class ImmutableAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False  # Hide the admin "+ Add" link for Queues
 
@@ -22,7 +22,7 @@ class ImmutableAdmin(admin.ModelAdmin):
         not restrict access to the add, change or delete views. Use `ModelAdmin.has_(add|change|delete)_permission` for
         that.
         """
-        return request.user.has_module_perms("scheduler")  # type: ignore
+        return request.user.has_module_perms("scheduler")
 
 
 @admin.register(Queue)

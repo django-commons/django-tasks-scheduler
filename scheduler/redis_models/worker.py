@@ -77,7 +77,7 @@ class WorkerModel(HashModel):
             return NotImplemented
         return self._key == other._key
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """The hash does not take the database/connection into account"""
         return hash((self._key, ",".join(self.queue_names)))
 
@@ -91,7 +91,7 @@ class WorkerModel(HashModel):
         logger.debug(f"Next heartbeat for worker {self._key} should arrive in {timeout} seconds.")
 
     @classmethod
-    def cleanup(cls, connection: ConnectionType, queue_name: str | None = None):
+    def cleanup(cls, connection: ConnectionType, queue_name: str | None = None) -> None:
         worker_names = cls.all_names(connection, queue_name)
         worker_keys = [cls.key_for(worker_name) for worker_name in worker_names]
         with connection.pipeline() as pipeline:

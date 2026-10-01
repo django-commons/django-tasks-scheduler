@@ -2,6 +2,8 @@ import ctypes
 import logging
 import signal
 import threading
+from types import FrameType, TracebackType
+from typing import Any, Literal
 
 logger = logging.getLogger("scheduler")
 
@@ -27,14 +29,16 @@ class JobExecutionMonitorTimeoutException(BaseTimeoutException):
 class BaseDeathPenalty:
     """Base class to setup job timeouts."""
 
-    def __init__(self, timeout, exception=BaseTimeoutException, **kwargs):
+    def __init__(self, timeout: int, exception: type[BaseException] = BaseTimeoutException, **kwargs: Any) -> None:
         self._timeout = timeout
         self._exception = exception
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.setup_death_penalty()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(
+        self, type: type[BaseException] | None, value: BaseException | None, traceback: TracebackType | None
+    ) -> Literal[False]:
         # Always cancel immediately, since we're done
         try:
             self.cancel_death_penalty()
@@ -48,15 +52,15 @@ class BaseDeathPenalty:
         # context.
         return False
 
-    def setup_death_penalty(self):
+    def setup_death_penalty(self) -> None:
         raise NotImplementedError
 
-    def cancel_death_penalty(self):
+    def cancel_death_penalty(self) -> None:
         raise NotImplementedError
 
 
 class UnixSignalDeathPenalty(BaseDeathPenalty):
-    def handle_death_penalty(self, signum, frame) -> None:
+    def handle_death_penalty(self, signum: int, frame: FrameType | None) -> None:
         raise self._exception(f"Task exceeded maximum timeout value ({self._timeout} seconds)")
 
     def setup_death_penalty(self) -> None:
@@ -78,16 +82,16 @@ class UnixSignalDeathPenalty(BaseDeathPenalty):
 
 
 class TimerDeathPenalty(BaseDeathPenalty):
-    def __init__(self, timeout, exception=JobTimeoutException, **kwargs):
+    def __init__(self, timeout: int, exception: type[BaseException] = JobTimeoutException, **kwargs: Any) -> None:
         super().__init__(timeout, exception, **kwargs)
-        self._target_thread_id = threading.current_thread().ident
-        self._timer = None
+        self._target_thread_id = threading.get_ident()
+        self._timer: threading.Timer | None = None
 
         # PyThreadState_SetAsyncExc can only raise a class, not an instance, so the message goes into a subclass made for
         # this timeout. Patching `exception` itself would rewrite the message of every instance of it, process-wide.
         message = f"Task exceeded maximum timeout value ({timeout} seconds)"
 
-        def init_with_message(self, *args, **kwargs):
+        def init_with_message(self: BaseException, *args: Any, **kwargs: Any) -> None:
             exception.__init__(self, message)
 
         self._exception = type(
@@ -96,11 +100,11 @@ class TimerDeathPenalty(BaseDeathPenalty):
             {"__init__": init_with_message, "__module__": exception.__module__, "__qualname__": exception.__qualname__},
         )
 
-    def new_timer(self):
+    def new_timer(self) -> threading.Timer:
         """Returns a new timer since timers can only be used once."""
         return threading.Timer(self._timeout, self.handle_death_penalty)
 
-    def handle_death_penalty(self):
+    def handle_death_penalty(self) -> None:
         """Raises an asynchronous exception in another thread.
 
         Reference http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc for more info.
@@ -114,16 +118,16 @@ class TimerDeathPenalty(BaseDeathPenalty):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self._target_thread_id), 0)
             raise SystemError("PyThreadState_SetAsyncExc failed")
 
-    def setup_death_penalty(self):
+    def setup_death_penalty(self) -> None:
         """Starts the timer."""
         if self._timeout <= 0:
             return
         self._timer = self.new_timer()
         self._timer.start()
 
-    def cancel_death_penalty(self):
+    def cancel_death_penalty(self) -> None:
         """Cancels the timer."""
-        if self._timeout <= 0:
+        if self._timeout <= 0 or self._timer is None:
             return
         self._timer.cancel()
         self._timer = None
