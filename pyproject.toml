@@ -68,6 +68,10 @@ dev = [
 ]
 docs = ["mkdocs>=1.6.1", "mkdocs-material>=9.7.4"]
 
+[tool.codespell]
+# `.pre-commit-config.yaml` points here for codespell's arguments, and installs tomli so it can read them.
+skip = "uv.lock,./.git,./.venv,./.mypy_cache,./.ruff_cache,./docs/media"
+
 [tool.hatch]
 build.targets.wheel.include = ["scheduler"]
 build.targets.sdist.include = ["scheduler"]
