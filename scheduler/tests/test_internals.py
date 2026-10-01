@@ -1,5 +1,4 @@
-from datetime import timedelta
-from datetime import timezone as dt_timezone
+from datetime import UTC, timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
@@ -121,4 +120,4 @@ class TestConfSettings(SchedulerBaseCase):
         next_cron_time = get_next_cron_time("0 0 * * *")
         self.assertIsNotNone(next_cron_time)
         self.assertTrue(next_cron_time > timezone.now())
-        self.assertEqual(dt_timezone.utc, next_cron_time.tzinfo)
+        self.assertEqual(UTC, next_cron_time.tzinfo)

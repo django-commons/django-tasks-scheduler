@@ -1,5 +1,5 @@
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import ClassVar, cast
 
 from scheduler.helpers.utils import current_timestamp
@@ -104,7 +104,7 @@ class ScheduledJobRegistry(JobNamesRegistry):
         if not score:
             return None
 
-        return datetime.fromtimestamp(score, tz=timezone.utc)
+        return datetime.fromtimestamp(score, tz=UTC)
 
 
 class ActiveJobRegistry(JobNamesRegistry):
