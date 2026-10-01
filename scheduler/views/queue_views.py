@@ -1,5 +1,5 @@
 import dataclasses
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from math import ceil
 from typing import Any
 
@@ -54,7 +54,7 @@ def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str
     job_list, num_jobs, page_range, scores = _get_registry_job_list(queue, registry, page)
     # A scheduled job's score is the time it is due; the other registries score by other things.
     scheduled_times = (
-        {name: datetime.fromtimestamp(score, tz=timezone.utc) for name, score in scores.items()}
+        {name: datetime.fromtimestamp(score, tz=UTC) for name, score in scores.items()}
         if isinstance(registry, ScheduledJobRegistry)
         else {}
     )

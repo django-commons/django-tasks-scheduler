@@ -1,6 +1,6 @@
 import json
 from abc import ABC
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from scheduler.settings import logger
@@ -28,7 +28,7 @@ class WorkerCommand(ABC):
             "command": self.command_name,
             "worker_name": self.worker_name,
             "channel_name": commands_channel,
-            "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            "created_at": datetime.now(tz=UTC).isoformat(),
         }
         if kwargs:
             payload.update(kwargs)

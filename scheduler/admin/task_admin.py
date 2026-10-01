@@ -236,7 +236,7 @@ class TaskAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
         try:
             execution_list = get_job_executions_for_task(obj.queue, obj)
         except ConnectionErrorTypes as e:
-            logger.warn(f"Could not get job executions: {e}")
+            logger.warning(f"Could not get job executions: {e}")
             execution_list = []
         paginator = self.get_paginator(
             request,

@@ -1,5 +1,6 @@
 import threading
 import time
+from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -33,6 +34,11 @@ def test_job_timeout():
 
 @job(result_ttl=1)
 def test_job_result_ttl():
+    return 1 + 1
+
+
+@job(at_front=True)
+def priority_job():
     return 1 + 1
 
 
@@ -86,7 +92,41 @@ class JobDecoratorTest(TestCase):
         get_queue("default").connection.flushall()
 
     def test_all_job_methods_registered(self):
-        self.assertEqual(9, len(JOB_METHODS_LIST))
+        self.assertEqual(10, len(JOB_METHODS_LIST))
+
+    def test_delay_false_overrides_priority_default(self):
+        queue = get_queue("default")
+        with patch("scheduler.helpers.queues.queue_logic.current_timestamp", side_effect=[100, 200]):
+            waiting = test_job.delay()
+            delayed = priority_job.delay(at_front=False)
+
+        self.assertEqual([waiting.name, delayed.name], queue.queued_job_registry.all(queue.connection))
+        self.assertEqual({}, delayed.kwargs)
+
+    def test_delay_uses_priority_default(self):
+        queue = get_queue("default")
+        with patch("scheduler.helpers.queues.queue_logic.current_timestamp", side_effect=[100, 200]):
+            waiting = test_job.delay()
+            delayed = priority_job.delay()
+
+        self.assertEqual([delayed.name, waiting.name], queue.queued_job_registry.all(queue.connection))
+
+    def test_delay_true_overrides_regular_default(self):
+        queue = get_queue("default")
+        with patch("scheduler.helpers.queues.queue_logic.current_timestamp", side_effect=[100, 200]):
+            waiting = test_job.delay()
+            delayed = test_job.delay(at_front=True)
+
+        self.assertEqual([delayed.name, waiting.name], queue.queued_job_registry.all(queue.connection))
+        self.assertEqual({}, delayed.kwargs)
+
+    def test_delay_uses_regular_default(self):
+        queue = get_queue("default")
+        with patch("scheduler.helpers.queues.queue_logic.current_timestamp", side_effect=[100, 200]):
+            waiting = test_job.delay()
+            delayed = test_job.delay()
+
+        self.assertEqual([waiting.name, delayed.name], queue.queued_job_registry.all(queue.connection))
 
     def test_get_current_job__within_job_context(self):
         enqueued = job_recording_current_job.delay()
