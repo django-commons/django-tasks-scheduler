@@ -9,6 +9,7 @@
 
 ### 🐛 Bug Fixes
 
+- Honor an explicit `at_front=False` override in `delay()` when the job decorator sets `at_front=True`.
 - Saving a cron task without a cron string reports a validation error instead of raising
 - The admin no longer errors on the page of a deleted task, on a run-once task with no scheduled time, or on the runtime
   of a job that ended without starting; exporting a task with no scheduled time no longer raises

@@ -41,24 +41,21 @@ cd testproject/ && uv run python manage.py makemigrations --check
 ```bash
 ruff check --fix
 ruff format
-mypy scheduler/     # see caveat below
+mypy scheduler/     # not run by pre-commit; gated in CI
 ```
 
 Pre-commit (`pre-commit install`) runs ruff check + ruff format, codespell, django-upgrade
 (`--target-version 5.0`), pyproject-fmt, validate-pyproject, and the basic file hygiene hooks.
-It does **not** run mypy, and neither does CI — `.github/workflows/test.yml` runs only the test matrix.
-Ruff is therefore the only gate that actually blocks; keep `ruff check` and `ruff format --check` clean.
+It does **not** run mypy. CI does: the `lint` job in `.github/workflows/test.yml` runs `ruff check`,
+`ruff format --check` and `mypy scheduler/` alongside the test matrix, and all three block — keep them clean.
 
-`mypy scheduler/` is configured `strict = true` but is **not** clean (~190 errors, concentrated in
-`redis_models/`, `templatetags/`, `helpers/timeouts.py`, `admin/task_admin.py`), partly because
-django-stubs is not a dev dependency, so Django base classes type as `Any`. Do not treat a non-empty
-mypy run as a regression you caused; check whether your file was already failing before.
+`mypy scheduler/` is configured `strict = true` with the django-stubs plugin. It skips `scheduler/tests/`,
+`scheduler/migrations/` and `testproject/`.
 
 ### Supported versions
 
-`requires-python = ">=3.10"` and `django>=5`, but CI only exercises Python 3.11–3.14 (plus free-threaded
-3.14t) against Django 5.2 and 6.0. Code must still import on 3.10 (`scheduler/types/settings_types.py`
-falls back to `typing_extensions.Self`), but nothing tests it.
+`requires-python = ">=3.11"` and `django>=5`. CI exercises Python 3.11–3.14 (plus free-threaded 3.14t)
+against Django 5.2 and 6.0; Django 5.0 and 5.1 are declared supported but nothing tests them.
 
 ### Release
 
