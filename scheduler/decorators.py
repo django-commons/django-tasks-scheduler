@@ -78,10 +78,7 @@ class job:
             queue = get_queue(self.queue) if isinstance(self.queue, str) else self.queue
 
             job_name = kwargs.pop("job_name", None)
-            at_front = kwargs.pop("at_front", False)
-
-            if not at_front:
-                at_front = self.at_front
+            at_front = kwargs.pop("at_front", self.at_front)
 
             return queue.create_and_enqueue_job(
                 f,
