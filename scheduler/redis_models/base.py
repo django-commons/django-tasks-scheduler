@@ -1,7 +1,7 @@
 import dataclasses
 import json
 from collections.abc import Collection, Iterable, Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, ClassVar, cast, overload
 
@@ -287,7 +287,7 @@ class HashModel(BaseModel):
 @dataclasses.dataclass(slots=True, kw_only=True)
 class StreamModel(BaseModel):
     parent: str
-    created_at: datetime = dataclasses.field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = dataclasses.field(default_factory=lambda: datetime.now(UTC))
     _children_key_template: ClassVar[str] = ":children:{}:"
 
     @property
