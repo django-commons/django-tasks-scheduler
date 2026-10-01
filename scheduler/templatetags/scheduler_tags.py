@@ -75,7 +75,7 @@ def job_runtime(job: JobModel) -> str:
     ended_at = job.ended_at
     if ended_at and job.started_at:
         runtime = ended_at - job.started_at
-        return f"{int(runtime.microseconds / 1000)}ms"
+        return f"{int(runtime.total_seconds() * 1000)}ms"
     elif job.started_at:
         return "Still running"
     else:
