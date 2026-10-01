@@ -3,7 +3,7 @@ import json
 from collections.abc import Collection, Iterable, Sequence
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast, overload
 
 from scheduler.settings import logger
 from scheduler.types import ConnectionType, PipelineType, Self
@@ -11,7 +11,15 @@ from scheduler.types import ConnectionType, PipelineType, Self
 MAX_KEYS = 1000
 
 
-def as_str(v: bytes | str) -> str | None:
+@overload
+def as_str(v: bytes | str) -> str: ...
+
+
+@overload
+def as_str(v: bytes | str | None) -> str | None: ...
+
+
+def as_str(v: bytes | str | None) -> str | None:
     """Converts a `bytes` value to a string using `utf-8`.
 
     :param v: The value (None/bytes/str)
@@ -47,7 +55,7 @@ def _serialize(value: Any) -> Any | None:
     return str(value)
 
 
-def _deserialize(value: str, _type: type) -> Any:
+def _deserialize(value: bytes | str | None, _type: Any) -> Any:
     if value is None:
         return None
     try:
@@ -66,7 +74,7 @@ def _deserialize(value: str, _type: type) -> Any:
         elif issubclass(_type, Enum):
             return _type(as_str(value))
     except (ValueError, TypeError) as e:
-        logger.warning(f"Failed to deserialize {value} as {_type}: {e}")
+        logger.warning(f"Failed to deserialize {value!r} as {_type}: {e}")
     return value
 
 
@@ -119,11 +127,11 @@ class HashModel(BaseModel):
     _list_key: ClassVar[str] = ":list_all:"
     _children_key_template: ClassVar[str] = ":children:{}:"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._dirty_fields = set()
         self._save_all = True
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         if not key.startswith("_") and hasattr(self, "_dirty_fields"):
             self._dirty_fields.add(key)
         super(HashModel, self).__setattr__(key, value)
@@ -144,7 +152,7 @@ class HashModel(BaseModel):
     @classmethod
     def all_names(cls, connection: ConnectionType, parent: str | None = None) -> Collection[str]:
         collection_key = cls._children_key_template.format(parent) if parent else cls._list_key
-        collection_members = connection.smembers(collection_key)
+        collection_members = cast(set[bytes], connection.smembers(collection_key))
         return [r.decode() for r in collection_members]
 
     @classmethod
@@ -156,7 +164,7 @@ class HashModel(BaseModel):
     def exists(cls, name: str, connection: ConnectionType) -> bool:
         if name is None:
             return False
-        return connection.exists(cls._element_key_template.format(name)) > 0
+        return cast(int, connection.exists(cls._element_key_template.format(name))) > 0
 
     @classmethod
     def exists_many(cls, names: Sequence[str], connection: ConnectionType) -> list[bool]:
@@ -177,7 +185,8 @@ class HashModel(BaseModel):
 
     @classmethod
     def get(cls, name: str, connection: ConnectionType) -> Self | None:
-        return cls._deserialize_or_none(name, connection.hgetall(cls._element_key_template.format(name)))
+        value = cast(dict[bytes, bytes], connection.hgetall(cls._element_key_template.format(name)))
+        return cls._deserialize_or_none(name, value)
 
     @classmethod
     def get_many(cls, names: Sequence[str], connection: ConnectionType) -> list[Self | None]:
@@ -226,7 +235,7 @@ class HashModel(BaseModel):
             pipeline.hdel(self._key, *none_values)
         mapping = {k: v for k, v in mapping.items() if v is not None}
         if mapping:
-            pipeline.hset(self._key, mapping=mapping)
+            pipeline.hset(self._key, mapping=cast(dict[Any, Any], mapping))
         self._dirty_fields = set()
         self._save_all = False
 
@@ -256,11 +265,11 @@ class HashModel(BaseModel):
             result = connection.scard(cls._children_key_template.format(parent))
         else:
             result = connection.scard(cls._list_key)
-        return result
+        return cast(int, result)
 
     def get_field(self, field: str, connection: ConnectionType) -> Any:
         types = {f.name: f.type for f in dataclasses.fields(self)}
-        res = connection.hget(self._key, field)
+        res = cast(bytes | None, connection.hget(self._key, field))
         return _deserialize(res, types[field])
 
     def set_field(self, field: str, value: Any, connection: ConnectionType, set_attribute: bool = True) -> None:
@@ -277,12 +286,9 @@ class HashModel(BaseModel):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class StreamModel(BaseModel):
+    parent: str
+    created_at: datetime = dataclasses.field(default_factory=lambda: datetime.now(timezone.utc))
     _children_key_template: ClassVar[str] = ":children:{}:"
-
-    def __init__(self, name: str, parent: str, created_at: datetime | None = None):
-        self.name = name
-        self.created_at: datetime = created_at or datetime.now(timezone.utc)
-        self.parent: str = parent
 
     @property
     def _parent_key(self) -> str:
@@ -290,7 +296,8 @@ class StreamModel(BaseModel):
 
     @classmethod
     def all(cls, connection: ConnectionType, parent: str) -> list[Self]:
-        results = connection.xrevrange(cls._children_key_template.format(parent), "+", "-")
+        key = cls._children_key_template.format(parent)
+        results = cast(list[tuple[bytes, dict[bytes, bytes]]], connection.xrevrange(key, "+", "-"))
         return [cls.deserialize(decode_dict(result[1], exclude_keys=set())) for result in results]
 
     def save(self, connection: ConnectionType, ttl: int | None = None) -> bool:
@@ -305,7 +312,7 @@ class StreamModel(BaseModel):
             connection.delete(self._parent_key)
             return False
         with connection.pipeline() as pipeline:
-            pipeline.xadd(self._parent_key, self.serialize(), maxlen=10)
+            pipeline.xadd(self._parent_key, cast(dict[Any, Any], self.serialize()), maxlen=10)
             if ttl is not None:
                 if ttl > 0:
                     pipeline.expire(self._parent_key, ttl)

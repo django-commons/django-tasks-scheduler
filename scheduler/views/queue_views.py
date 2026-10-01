@@ -34,15 +34,15 @@ def _get_registry_job_list(
     offset = items_per_page * (page - 1)
     scores = dict(registry.all_with_timestamps(queue.connection, offset, offset + items_per_page - 1))
     job_names = list(scores)
-    job_list = JobModel.get_many(job_names, connection=queue.connection)
-    registry.delete_many(queue.connection, [name for name, job in zip(job_names, job_list) if job is None])
-    valid_jobs = [job for job in job_list if job is not None]
+    jobs = JobModel.get_many(job_names, connection=queue.connection)
+    registry.delete_many(queue.connection, [name for name, job in zip(job_names, jobs) if job is None])
+    valid_jobs = [job for job in jobs if job is not None]
 
     return valid_jobs, num_jobs, page_range, scores
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     try:
@@ -75,8 +75,8 @@ def list_registry_jobs(request: HttpRequest, queue_name: str, registry_name: str
     return render(request, "admin/scheduler/jobs.html", context_data)
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def queue_workers(request: HttpRequest, queue_name: str) -> HttpResponse:
     queue = get_queue(queue_name)
     queue.clean_registries()
@@ -101,8 +101,8 @@ def stats_json(request: HttpRequest) -> JsonResponse | HttpResponseNotFound:
     return HttpResponseNotFound()
 
 
-@never_cache  # type: ignore
-@staff_member_required  # type: ignore
+@never_cache
+@staff_member_required
 def stats(request: HttpRequest) -> HttpResponse:
     context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
     return render(request, "admin/scheduler/stats.html", context_data)

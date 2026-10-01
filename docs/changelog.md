@@ -2,6 +2,19 @@
 
 ## Unreleased 🌈
 
+### Improvements
+
+- The package type-checks against `django-stubs`; `@job`'s `on_success`, `on_failure` and `on_stopped` are typed as the
+  `Callback` they have always required
+
+### 🐛 Bug Fixes
+
+- Saving a cron task without a cron string reports a validation error instead of raising
+- The admin no longer errors on the page of a deleted task, on a run-once task with no scheduled time, or on the runtime
+  of a job that ended without starting; exporting a task with no scheduled time no longer raises
+- A job created by `JobModel.create()` without a status is queued, instead of being saved unreadable
+- `Task.delete()` returns Django's deletion counts
+
 ## v4.4.0 🌈
 
 ### 🚀 Features

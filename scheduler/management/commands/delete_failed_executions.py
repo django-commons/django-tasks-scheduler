@@ -1,3 +1,5 @@
+from typing import Any
+
 import click
 from django.core.management import CommandParser
 from django.core.management.base import BaseCommand
@@ -14,7 +16,7 @@ class Command(BaseCommand):
         parser.add_argument("-f", "--func", help='optional job function name, e.g. "app.tasks.func"')
         parser.add_argument("--dry-run", action="store_true", help="Do not actually delete failed jobs")
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         queue = get_queue(options.get("queue", "default"))
         job_names = queue.failed_job_registry.all(queue.connection)
         jobs = [job for job in JobModel.get_many(job_names, connection=queue.connection) if job is not None]

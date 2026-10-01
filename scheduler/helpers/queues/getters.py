@@ -63,7 +63,7 @@ def _get_connection(
             sentinel_kwargs = _fail_fast_kwargs(sentinel_kwargs)
         SentinelClass = BrokerMetaData[(SCHEDULER_CONFIG.BROKER, use_strict_broker)].sentinel_type
         sentinel = SentinelClass(config.SENTINELS, sentinel_kwargs=sentinel_kwargs, **full_connection_kwargs)
-        return sentinel.master_for(  # type: ignore
+        return sentinel.master_for(  # type: ignore[no-any-return, unused-ignore]  # needed with valkey
             service_name=config.MASTER_NAME,
             redis_class=broker_cls,
         )

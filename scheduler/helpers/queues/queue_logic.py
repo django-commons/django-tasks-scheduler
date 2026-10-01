@@ -4,7 +4,7 @@ import sys
 import traceback
 from collections.abc import Iterable, Sequence
 from datetime import datetime
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from scheduler.helpers.callback import Callback
 from scheduler.helpers.utils import current_timestamp, utcnow
@@ -220,7 +220,7 @@ class Queue:
 
     def get_all_jobs(self) -> list[JobModel]:
         job_names = self.get_all_job_names()
-        return JobModel.get_many(job_names, connection=self.connection)
+        return [job for job in JobModel.get_many(job_names, connection=self.connection) if job is not None]
 
     def create_and_enqueue_job(
         self,
@@ -456,7 +456,10 @@ class Queue:
 
         if self._is_async:
             if at_front:
-                first = self.connection.zrange(self.queued_job_registry.key, 0, 0, withscores=True)
+                first = cast(
+                    list[tuple[bytes, float]],
+                    self.connection.zrange(self.queued_job_registry.key, 0, 0, withscores=True),
+                )
                 score = int(first[0][1]) - 1 if first else current_timestamp()
             else:
                 score = current_timestamp()

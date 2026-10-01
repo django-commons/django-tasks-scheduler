@@ -1,7 +1,7 @@
 import math
 from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any, Optional, overload
 
 import croniter
 from django.conf import settings as django_settings
@@ -41,8 +41,7 @@ _RUN_STATE_FIELDS = ("job_name", "successful_runs", "last_successful_run", "fail
 def _get_task_for_job(job: JobModel) -> Optional["Task"]:
     if job.task_type is None or job.scheduled_task_id is None:
         return None
-    task: Task = Task.objects.filter(id=job.scheduled_task_id).first()
-    return task
+    return Task.objects.filter(id=job.scheduled_task_id).first()
 
 
 def _complete_run(task: "Task", job: JobModel, connection: ConnectionType, failed: bool) -> None:
@@ -213,18 +212,18 @@ class Task(models.Model):
         ),
     )
 
-    def callable_func(self) -> Callable:
+    def callable_func(self) -> Callable[..., Any]:
         """Translate callable string to callable"""
         return utils.callable_func(self.callable)
 
-    @admin.display(boolean=True, description=_("is scheduled?"))  # type: ignore[misc]
+    @admin.display(boolean=True, description=_("is scheduled?"))
     def is_scheduled(self) -> bool:
         """Check whether a next job for this task is queued/scheduled to be executed"""
         if self.job_name is None:  # no job_id => is not scheduled
             return False
         return self.job_name in self.rqueue.pending_job_names([self.job_name])
 
-    @admin.display(description="Callable")  # type: ignore[misc]
+    @admin.display(description="Callable")
     def function_string(self) -> str:
         # Built from `display_value()` rather than the parsed args: rendering or logging a task must not call its
         # callable arguments.
@@ -254,7 +253,7 @@ class Task(models.Model):
         - Set job-id to proper format
         - set job meta
         """
-        res = {
+        res: dict[str, Any] = {
             "meta": {},
             "task_type": self.task_type,
             "scheduled_task_id": self.id,
@@ -303,20 +302,21 @@ class Task(models.Model):
         if self.task_type == TaskType.CRON:
             return get_next_cron_time(self.cron_string), self.repeat
         now = timezone.now()
-        if self.task_type == TaskType.REPEATABLE and self.scheduled_time < now:
+        if self.task_type == TaskType.REPEATABLE and self.scheduled_time is not None and self.scheduled_time < now:
             gap = math.ceil((now.timestamp() - self.scheduled_time.timestamp()) / self.interval_seconds())
             if self.repeat is None or self.repeat >= gap:
                 repeat = (self.repeat - gap) if self.repeat is not None else None
                 return self.scheduled_time + timedelta(seconds=self.interval_seconds() * gap), repeat
         return self.scheduled_time, self.repeat
 
-    def _schedule_time(self) -> datetime:
+    def _schedule_time(self) -> datetime | None:
         return _as_schedule_time(self._next_schedule()[0])
 
     def to_dict(self) -> dict[str, Any]:
         """Export model to dictionary, so it can be saved as external file backup"""
         interval_unit = str(self.interval_unit) if self.interval_unit else None
         scheduled_time, repeat = self._next_schedule()
+        schedule_time = _as_schedule_time(scheduled_time)
         res = {
             "model": str(self.task_type),
             "name": self.name,
@@ -332,7 +332,7 @@ class Task(models.Model):
             "timeout": self.timeout,
             "result_ttl": self.result_ttl,
             "cron_string": getattr(self, "cron_string", None),
-            "scheduled_time": _as_schedule_time(scheduled_time).isoformat(),
+            "scheduled_time": schedule_time.isoformat() if schedule_time is not None else None,
             "interval": getattr(self, "interval", None),
             "interval_unit": interval_unit,
             "successful_runs": getattr(self, "successful_runs", None),
@@ -365,6 +365,9 @@ class Task(models.Model):
             logger.debug(f"Task {self!s} disabled, enable task before scheduling")
             return False
         scheduled_time, repeat = self._next_schedule()
+        if scheduled_time is None:
+            logger.debug(f"Task {self!s} has no scheduled time, not scheduling")
+            return False
         schedule_time = _as_schedule_time(scheduled_time)
         if self.task_type in {TaskType.REPEATABLE, TaskType.ONCE} and schedule_time < timezone.now():
             logger.debug(f"Task {self!s} scheduled time is in the past, not scheduling")
@@ -420,17 +423,16 @@ class Task(models.Model):
             self.save(schedule_job=False, clean=False, update_fields=_SCHEDULING_FIELDS)
         return scheduled
 
-    def delete(self, **kwargs: Any) -> None:
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
         # Not `unschedule()`, which would first save the row this is about to delete.
         if self.job_name is not None:
             self.rqueue.delete_job(self.job_name)
-        super().delete(**kwargs)
+        return super().delete(*args, **kwargs)
 
     def interval_seconds(self) -> float:
-        kwargs = {
-            self.interval_unit: self.interval,
-        }
-        return timedelta(**kwargs).total_seconds()
+        if self.interval_unit is None or self.interval is None:
+            raise ValueError(f"Task {self.name} has no interval")
+        return timedelta(**{self.interval_unit: self.interval}).total_seconds()
 
     def clean_callable(self) -> None:
         try:
@@ -471,6 +473,8 @@ class Task(models.Model):
             )
 
     def clean_cron_string(self) -> None:
+        if self.cron_string is None:
+            raise ValidationError({"cron_string": ValidationError(_("Cron string is required"), code="invalid")})
         try:
             croniter.croniter(self.cron_string)
         except ValueError as e:
@@ -490,15 +494,28 @@ class Task(models.Model):
             self.clean_result_ttl()
         if self.task_type == TaskType.REPEATABLE and self.scheduled_time is None:
             self.scheduled_time = timezone.now() + timedelta(seconds=2)
-        if self.task_type == TaskType.ONCE and self.scheduled_time is None:
-            raise ValidationError({"scheduled_time": ValidationError(_("Scheduled time is required"), code="invalid")})
-        if self.task_type == TaskType.ONCE and self.scheduled_time < timezone.now():
-            raise ValidationError(
-                {"scheduled_time": ValidationError(_("Scheduled time must be in the future"), code="invalid")}
-            )
+        if self.task_type == TaskType.ONCE:
+            if self.scheduled_time is None:
+                raise ValidationError(
+                    {"scheduled_time": ValidationError(_("Scheduled time is required"), code="invalid")}
+                )
+            if self.scheduled_time < timezone.now():
+                raise ValidationError(
+                    {"scheduled_time": ValidationError(_("Scheduled time must be in the future"), code="invalid")}
+                )
 
 
-def _as_schedule_time(value: datetime) -> datetime:
+@overload
+def _as_schedule_time(value: datetime) -> datetime: ...
+
+
+@overload
+def _as_schedule_time(value: None) -> None: ...
+
+
+def _as_schedule_time(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
     return utc(value) if django_settings.USE_TZ else value
 
 
@@ -522,7 +539,7 @@ def get_scheduled_task(task_type_str: str, task_id: int) -> Task:
     task = Task.objects.filter(task_type=task_type, id=task_id).first()
     if task is None:
         raise ValueError(f"Job {task_type}:{task_id} does not exist")
-    return task  # type: ignore[no-any-return]
+    return task
 
 
 def run_task(task_model: str, task_id: int) -> Any:
@@ -533,5 +550,5 @@ def run_task(task_model: str, task_id: int) -> Any:
     logger.debug(f"Running task {scheduled_task!s}")
     args = scheduled_task.parse_args()
     kwargs = scheduled_task.parse_kwargs()
-    res = scheduled_task.callable_func()(*args, **kwargs)  # type: ignore[no-untyped-call]
+    res = scheduled_task.callable_func()(*args, **kwargs)
     return res
