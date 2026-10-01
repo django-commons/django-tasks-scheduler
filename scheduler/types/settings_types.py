@@ -1,20 +1,14 @@
 __all__ = ["Broker", "QueueConfiguration", "SchedulerConfiguration", "Self"]
 
 import signal
-import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from scheduler.helpers.timeouts import BaseDeathPenalty, TimerDeathPenalty, UnixSignalDeathPenalty
 
 _DEATH_PENALTY_CLASS = UnixSignalDeathPenalty if hasattr(signal, "SIGALRM") else TimerDeathPenalty
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 
 class Broker(Enum):
