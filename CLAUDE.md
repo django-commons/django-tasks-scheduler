@@ -41,16 +41,16 @@ cd testproject/ && uv run python manage.py makemigrations --check
 ```bash
 ruff check --fix
 ruff format
-mypy scheduler/     # not run by pre-commit or CI
+mypy scheduler/     # not run by pre-commit; gated in CI
 ```
 
 Pre-commit (`pre-commit install`) runs ruff check + ruff format, codespell, django-upgrade
 (`--target-version 5.0`), pyproject-fmt, validate-pyproject, and the basic file hygiene hooks.
-It does **not** run mypy, and neither does CI — `.github/workflows/test.yml` runs only the test matrix.
-Ruff is therefore the only gate that actually blocks; keep `ruff check` and `ruff format --check` clean.
+It does **not** run mypy. CI does: the `lint` job in `.github/workflows/test.yml` runs `ruff check`,
+`ruff format --check` and `mypy scheduler/` alongside the test matrix, and all three block — keep them clean.
 
-`mypy scheduler/` is configured `strict = true` with the django-stubs plugin and is clean, so a non-empty
-run is a regression. It skips `scheduler/tests/`, `scheduler/migrations/` and `testproject/`.
+`mypy scheduler/` is configured `strict = true` with the django-stubs plugin. It skips `scheduler/tests/`,
+`scheduler/migrations/` and `testproject/`.
 
 ### Supported versions
 

@@ -12,7 +12,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    name: "ruff"
+    name: "Lint (ruff, mypy)"
     env:
       UV_LOCKED: 1
     permissions:
@@ -42,6 +42,9 @@ jobs:
 
       - name: ruff format
         run: uv run --no-sync ruff format --check
+
+      - name: mypy
+        run: uv run --no-sync mypy scheduler/
 
   test-regular:
     runs-on: ubuntu-latest
