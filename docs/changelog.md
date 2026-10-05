@@ -1,53 +1,38 @@
 # Changelog
 
-## Unreleased 🌈
-
-### Improvements
-
-- The package type-checks against `django-stubs`; `@job`'s `on_success`, `on_failure` and `on_stopped` are typed as the
-  `Callback` they have always required
-
-### 🐛 Bug Fixes
-
-- Honor an explicit `at_front=False` override in `delay()` when the job decorator sets `at_front=True`.
-- Saving a cron task without a cron string reports a validation error instead of raising
-- The admin no longer errors on the page of a deleted task, on a run-once task with no scheduled time, or on the runtime
-  of a job that ended without starting; exporting a task with no scheduled time no longer raises
-- A job created by `JobModel.create()` without a status is queued, instead of being saved unreadable
-- `Task.delete()` returns Django's deletion counts
-
 ## v4.4.0 🌈
 
 ### 🚀 Features
 
-- `float` and `json` task argument types, and argument values up to 2048 characters
+- `float` and `json` task argument types; argument values up to 2048 characters
 - Batch export, import and job deletion
 
 ### Improvements
 
-- Workers no longer check every queued job before each dequeue, and save their record in one round trip
-- The scheduler loop checks only its own queues' tasks, in one query and one broker round trip per queue
-- Admin pages - task list, task and worker executions, registry job lists, stats, workers - no longer query per row,
-  and bulk task actions no longer work task by task
-- A task's executions are read from a per-task index instead of a queue scan; those created before upgrading no longer
-  show
-- Build `KvLock` (the scheduler and queue locks) on redis-py's `Lock`; its `expire()` and `release()` no longer take a
-  connection
+- Workers no longer check every queued job before each dequeue
+- The scheduler loop checks only its own queues' tasks
+- Admin pages and bulk task actions no longer query per row
+- Task executions are read from a per-task index; those created before upgrading no longer show
+- `KvLock` builds on redis-py's `Lock`; `expire()` and `release()` no longer take a connection
+- The package type-checks against `django-stubs`; `@job` callbacks are typed as `Callback`
 
 ### 🐛 Bug Fixes
 
-- Only a scheduler lock's holder can extend or release it, and a scheduler that loses its lock stops scheduling the
-  queue (the fakeredis broker now needs `fakeredis[lua]`)
+- Only a scheduler lock's holder can extend or release it (the fakeredis broker now needs `fakeredis[lua]`)
 - Lock registry cleanup per queue, not per worker
 - The scheduler loop skips tasks disabled or deleted mid-loop, and survives a broken task
-- `Task.save(update_fields=...)` persists the new job, and a failed save leaves no job behind
-- Exporting a task no longer changes it, and displaying a task or argument no longer calls callable arguments
-- `import` is all or nothing, and `import --reset` unschedules the tasks it removes
+- `Task.save(update_fields=...)` persists the new job; a failed save leaves no job behind
+- Exporting or displaying a task no longer changes it or calls callable arguments
+- `import` is all or nothing; `import --reset` unschedules the tasks it removes
 - `delete_failed_executions --func` deletes only the matching jobs
 - `scheduler_worker --fork-job-execution false` and `--worker-ttl` work
-- `get_current_job()` is isolated per thread and async context, and keeps an async job's `meta` changes
-- `TimerDeathPenalty` no longer rewrites every `JobTimeoutException` message; comparing a `WorkerModel` to another type
-  no longer raises
+- `get_current_job()` is isolated per thread and async context
+- `TimerDeathPenalty` no longer rewrites every `JobTimeoutException` message
+- `delay()` honors an explicit `at_front=False` override
+- A cron task without a cron string fails validation instead of raising
+- The admin no longer errors on a deleted task, an unscheduled run-once task, or a job that ended without starting
+- `JobModel.create()` without a status queues the job
+- `Task.delete()` returns Django's deletion counts
 
 ## v4.3.0 🌈
 
