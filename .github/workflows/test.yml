@@ -58,18 +58,20 @@ jobs:
       max-parallel: 6
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t"]
-        django-version: ["5.2.*", "6.0.*"]
+        django-version: ["5.2.*", "6.0.*", "6.1.*"]
         broker: ["redis", "fakeredis", "valkey"]
         exclude:
           - python-version: "3.11"
             django-version: "6.0.*"
+          - python-version: "3.11"
+            django-version: "6.1.*"
         include:
           - python-version: "3.14t"
             django-version: "5.2.*"
             broker: "redis"
             coverage: yes
           - python-version: "3.14t"
-            django-version: "6.0.*"
+            django-version: "6.1.*"
             broker: "redis"
             coverage: yes
     permissions:

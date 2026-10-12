@@ -45,7 +45,7 @@ mypy scheduler/     # not run by pre-commit; gated in CI
 ```
 
 Pre-commit (`pre-commit install`) runs ruff check + ruff format, codespell, django-upgrade
-(`--target-version 5.0`), pyproject-fmt, validate-pyproject, and the basic file hygiene hooks.
+(`--target-version 5.2`), pyproject-fmt, validate-pyproject, and the basic file hygiene hooks.
 It does **not** run mypy. CI does: the `lint` job in `.github/workflows/test.yml` runs `ruff check`,
 `ruff format --check` and `mypy scheduler/` alongside the test matrix, and all three block — keep them clean.
 
@@ -54,8 +54,8 @@ It does **not** run mypy. CI does: the `lint` job in `.github/workflows/test.yml
 
 ### Supported versions
 
-`requires-python = ">=3.11"` and `django>=5`. CI exercises Python 3.11–3.14 (plus free-threaded 3.14t)
-against Django 5.2 and 6.0; Django 5.0 and 5.1 are declared supported but nothing tests them.
+`requires-python = ">=3.11"` and `django>=5.2`. CI exercises Python 3.11–3.14 (plus free-threaded 3.14t)
+against Django 5.2, 6.0 and 6.1.
 
 ### Release
 

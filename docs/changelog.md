@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add support for Django 6.1
+- Drop support for Django 5.0 and 5.1, both end-of-life; Django 5.2 or later is required
+
 ## v4.4.0 🌈
 
 ### 🚀 Features
