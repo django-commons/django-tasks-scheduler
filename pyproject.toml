@@ -25,10 +25,9 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Web Environment",
   "Framework :: Django",
-  "Framework :: Django :: 5.0",
-  "Framework :: Django :: 5.1",
   "Framework :: Django :: 5.2",
   "Framework :: Django :: 6.0",
+  "Framework :: Django :: 6.1",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
@@ -41,7 +40,7 @@ classifiers = [
 dependencies = [
   "click~=8.2",
   "croniter>=2",
-  "django>=5",
+  "django>=5.2",
   "redis>=6",
   "typing-extensions>=4.15",
 ]
