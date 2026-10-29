@@ -57,7 +57,7 @@ jobs:
       fail-fast: false
       max-parallel: 6
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t", "3.15"]
         django-version: ["5.2.*", "6.0.*", "6.1.*"]
         broker: ["redis", "fakeredis", "valkey"]
         exclude:
