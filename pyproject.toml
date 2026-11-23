@@ -76,6 +76,12 @@ skip = "uv.lock,./.git,./.venv,./.mypy_cache,./.ruff_cache,./docs/media"
 build.targets.wheel.include = ["scheduler"]
 build.targets.sdist.include = ["scheduler"]
 
+[tool.uv]
+# Lock only for Python >= 3.11.5. Patched soupsieve (>= 3.0.2, a dev dependency via beautifulsoup4) needs
+# 3.11.5+, so without this the lock keeps a vulnerable soupsieve 2.10 for 3.11.0-3.11.4. Doesn't change the
+# package's requires-python.
+environments = ["python_full_version >= '3.11.5'"]
+
 [tool.ruff]
 line-length = 120
 exclude = [".venv", "__pycache__", "scheduler/migrations", "testproject"]
